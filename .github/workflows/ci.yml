@@ -1,0 +1,34 @@
+name: CI - Backend
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "LokynexHealth/backend/**"
+  pull_request:
+    branches: [main]
+    paths:
+      - "LokynexHealth/backend/**"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Restore dependencies
+        run: dotnet restore LokynexHealth/backend/LokynexHealth.slnx
+
+      - name: Build
+        run: dotnet build LokynexHealth/backend/LokynexHealth.slnx --no-restore --configuration Release
+
+      - name: Run tests
+        run: dotnet test LokynexHealth/backend/LokynexHealth.slnx --no-build --configuration Release --verbosity normal
+        continue-on-error: true

@@ -1,0 +1,1 @@
+"TenantDb": "Host=localhost;Port=5432;Database=lokynex_dev;Username=postgres;Password=devpass123;Search Path=lab_demo",

@@ -1,0 +1,34 @@
+# .NET build artifacts
+bin/
+obj/
+*.user
+
+# Visual Studio / VS Code
+.vs/
+.vscode/*
+!.vscode/extensions.json
+
+# Rider
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# NuGet
+*.nupkg
+.nuget/
+
+# Backend secrets — never commit real credentials
+LokynexHealth/backend/src/LokynexHealth.Api/appsettings.Development.json
+
+# --- Frontend (Next.js), path onujayi update kora ---
+LokynexHealth/frontend/node_modules/
+LokynexHealth/frontend/.next/
+LokynexHealth/frontend/out/
+LokynexHealth/frontend/.env*.local
+LokynexHealth/frontend/*.tsbuildinfo
+LokynexHealth/frontend/next-env.d.ts

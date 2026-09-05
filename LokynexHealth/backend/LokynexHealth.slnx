@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/LokynexHealth.Api/LokynexHealth.Api.csproj" />
+    <Project Path="src/LokynexHealth.Application/LokynexHealth.Application.csproj" />
+    <Project Path="src/LokynexHealth.Domain/LokynexHealth.Domain.csproj" />
+    <Project Path="src/LokynexHealth.Infrastructure/LokynexHealth.Infrastructure.csproj" />
+  </Folder>
+</Solution>
