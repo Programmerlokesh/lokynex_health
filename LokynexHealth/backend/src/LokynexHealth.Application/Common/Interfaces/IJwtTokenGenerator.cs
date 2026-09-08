@@ -4,5 +4,5 @@ namespace LokynexHealth.Application.Common.Interfaces;
 
 public interface IJwtTokenGenerator
 {
-    string GenerateToken(User user, string roleName, List<string> permissions);
+    LokynexHealth.Application.Common.Models.TokenResult GenerateToken(User user, string roleName, List<string> permissions);
 }
