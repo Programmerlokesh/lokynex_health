@@ -1,5 +1,6 @@
 using LokynexHealth.Application.Common.Exceptions;
 using LokynexHealth.Application.Common.Interfaces;
+using LokynexHealth.Application.Common.Models;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
@@ -29,7 +30,7 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, LoginResult>
                 .ThenInclude(p => p.Module)
             .FirstOrDefaultAsync(u => u.Username == request.Username, cancellationToken);
 
-        // Same generic exception for "not found" AND "wrong password" — see rule above.
+        // Same generic exception for "not found" AND "wrong password"
         if (user is null || !_passwordHasher.VerifyPassword(request.Password, user.PasswordHash))
             throw new UnauthorizedException("Invalid username or password.");
 
@@ -38,21 +39,21 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, LoginResult>
 
         var roleName = user.Role?.Name ?? "User";
 
-        // Build a flat permission-string list like "NewOrder:View", "NewOrder:Create" —
-        // consumed as O(1) HashSet-style checks later by a permission-based authorize filter.
+        // Build a flat permission-string list like "NewOrder:View", "NewOrder:Create"
         var permissions = user.Permissions
             .SelectMany(p => BuildPermissionStrings(p))
             .ToList();
 
-        var token = _tokenGenerator.GenerateToken(user, roleName, permissions);
+        // Use the token generator that now returns TokenResult (token + expiry)
+        TokenResult tokenResult = _tokenGenerator.GenerateToken(user, roleName, permissions);
 
         return new LoginResult
         {
-            Token = token,
+            Token = tokenResult.Token,
             UserId = user.Id,
             Name = user.Name,
             Role = roleName,
-            ExpiresAt = DateTime.UtcNow.AddHours(1)
+            ExpiresAt = tokenResult.ExpiresAt
         };
     }
 
