@@ -9,18 +9,21 @@ using MediatR;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using Microsoft.OpenApi;
+using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
 var connectionString = builder.Configuration.GetConnectionString("TenantDb");
+if (string.IsNullOrWhiteSpace(connectionString))
+{
+    throw new InvalidOperationException("Missing connection string: TenantDb");
+}
 
-var dataSourceBuilder = new Npgsql.NpgsqlDataSourceBuilder(connectionString);
-// ... (existing MapEnum calls stay exactly as they are — not repeated here for brevity)
-var dataSource = dataSourceBuilder.Build();
+// Optional: configure Npgsql enums on the data source builder if needed
+// (existing MapEnum calls would go here)
 
 builder.Services.AddDbContext<LokynexHealthDbContext>(options =>
-    options.UseNpgsql(dataSource)
+    options.UseNpgsql(connectionString)
            .UseSnakeCaseNamingConvention());
 
 builder.Services.AddScoped<IApplicationDbContext>(provider =>
@@ -33,7 +36,15 @@ builder.Services.AddScoped<ITenantProvisioningService, LokynexHealth.Infrastruct
 builder.Services.AddHttpContextAccessor();   // required by CurrentUserService
 
 // ---------- JWT Authentication ----------
-var jwtSecret = builder.Configuration["Jwt:Secret"]!;
+var jwtSecret = builder.Configuration["Jwt:Secret"];
+if (string.IsNullOrWhiteSpace(jwtSecret))
+{
+    throw new InvalidOperationException("Missing configuration: Jwt:Secret");
+}
+
+var jwtIssuer = builder.Configuration["Jwt:Issuer"];
+var jwtAudience = builder.Configuration["Jwt:Audience"];
+
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -44,9 +55,9 @@ builder.Services.AddAuthentication(options =>
     options.TokenValidationParameters = new TokenValidationParameters
     {
         ValidateIssuer = true,
-        ValidIssuer = builder.Configuration["Jwt:Issuer"],
+        ValidIssuer = jwtIssuer,
         ValidateAudience = true,
-        ValidAudience = builder.Configuration["Jwt:Audience"],
+        ValidAudience = jwtAudience,
         ValidateIssuerSigningKey = true,
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret)),
         ValidateLifetime = true,
@@ -87,6 +98,22 @@ builder.Services.AddSwaggerGen(c =>
         In = ParameterLocation.Header,
         Description = "Enter: Bearer {your token}"
     });
+
+    // Require the bearer token for protected endpoints in the UI
+    c.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            Array.Empty<string>()
+        }
+    });
 });
 
 var app = builder.Build();
@@ -102,9 +129,6 @@ if (app.Environment.IsDevelopment())
 }
 
 // ---------- Order matters: Authentication BEFORE Authorization ----------
-// Authentication figures out WHO the caller is (validates the token).
-// Authorization decides WHAT that identified caller is allowed to do.
-// Reversing this order would mean checking permissions before we even know who's asking.
 app.UseAuthentication();
 app.UseAuthorization();
 
