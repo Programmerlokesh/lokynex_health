@@ -79,7 +79,7 @@ export function CreateUserDialog() {
         fullWidth
         maxWidth="xs"
       >
-        <DialogTitle fontWeight={700}>Create User</DialogTitle>
+        <DialogTitle sx={{ fontWeight: 700 }}>Create User</DialogTitle>
         <Box component="form" onSubmit={handleSubmit}>
           <DialogContent
             sx={{ display: "flex", flexDirection: "column", gap: 2 }}

@@ -75,7 +75,7 @@ export default function DashboardPage() {
                     <stat.icon fontSize="medium" />
                   </Box>
                   <Box>
-                    <Typography variant="h6" fontWeight={700}>
+                    <Typography variant="h6" sx={{ fontWeight: 700 }}>
                       {stat.value}
                     </Typography>
                     <Typography variant="caption" color="text.secondary">

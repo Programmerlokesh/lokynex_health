@@ -9,5 +9,5 @@ public class Doctor : BaseEntity
     public string? Email { get; set; }
     public string? Address { get; set; }
     public string? Specialization { get; set; }
-    public PlatformRecordStatus Status { get; set; } = PlatformRecordStatus.Active;
+    public PlatformRecordStatus Status { get; set; } = PlatformRecordStatus.Active; // <-- confirm eta
 }

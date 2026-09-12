@@ -22,7 +22,7 @@ public class GetDepartmentsQueryHandler : IRequestHandler<GetDepartmentsQuery, L
                 Id = d.Id,
                 Name = d.Name,
                 Status = d.Status.ToString(),
-                TestCount = d.Tests.Count
+                TestCount = d.Tests.Count()
             })
             .ToListAsync(cancellationToken);
     }

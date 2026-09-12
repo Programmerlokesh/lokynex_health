@@ -80,7 +80,7 @@ export default function LoginPage() {
 
         <Box sx={{ display: "flex", alignItems: "center", gap: 1, zIndex: 1 }}>
           <TestTubeIcon sx={{ color: brand.cyan, fontSize: 26 }} />
-          <Typography fontWeight={700} letterSpacing={0.5}>
+          <Typography sx={{ fontWeight: 700, letterSpacing: 0.5 }}>
             LOKYNEX HEALTH
           </Typography>
         </Box>
@@ -88,8 +88,7 @@ export default function LoginPage() {
         <Box sx={{ zIndex: 1, maxWidth: 420 }}>
           <Typography
             variant="h4"
-            fontWeight={700}
-            sx={{ mb: 2, lineHeight: 1.25 }}
+            sx={{ mb: 2, lineHeight: 1.25, fontWeight: 700 }}
           >
             Precision lab management,{" "}
             <Box component="span" sx={{ color: brand.cyan }}>

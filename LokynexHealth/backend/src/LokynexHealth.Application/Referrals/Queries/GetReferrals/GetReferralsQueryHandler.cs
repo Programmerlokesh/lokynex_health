@@ -29,20 +29,21 @@ public class GetReferralsQueryHandler : IRequestHandler<GetReferralsQuery, Paged
 
         var totalCount = await query.CountAsync(cancellationToken);
 
-        var referrals = await query
+        var referralEntities = await query
             .OrderBy(r => r.FullName)
             .Skip((request.PageNumber - 1) * request.PageSize)
             .Take(request.PageSize)
-            .Select(r => new ReferralDto
-            {
-                Id = r.Id,
-                FullName = r.FullName,
-                Phone = r.Phone,
-                Email = r.Email,
-                Address = r.Address,
-                Status = r.Status.ToString()
-            })
             .ToListAsync(cancellationToken);
+
+        var referrals = referralEntities.Select(r => new ReferralDto
+        {
+            Id = r.Id,
+            FullName = r.FullName,
+            Phone = r.Phone,
+            Email = r.Email,
+            Address = r.Address,
+            Status = r.Status.ToString()
+        }).ToList();
 
         return new PagedResult<ReferralDto>
         {

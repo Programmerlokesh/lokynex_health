@@ -32,7 +32,7 @@ export default function UsersPage() {
           alignItems: "center",
         }}
       >
-        <Typography variant="h5" fontWeight={700}>
+        <Typography variant="h5" sx={{ fontWeight: 700 }}>
           Users
         </Typography>
         <CreateUserDialog />

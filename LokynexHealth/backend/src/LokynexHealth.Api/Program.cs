@@ -9,30 +9,83 @@ using MediatR;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using Microsoft.OpenApi;
+using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// ============================================================
+// Database + Postgres enum mapping
+// ============================================================
 var connectionString = builder.Configuration.GetConnectionString("TenantDb");
 
 var dataSourceBuilder = new Npgsql.NpgsqlDataSourceBuilder(connectionString);
-// ... (existing MapEnum calls stay exactly as they are — not repeated here for brevity)
+
+// ---------- Tenant-schema enums (lab_demo.*) ----------
+dataSourceBuilder.MapEnum<LokynexHealth.Domain.Enums.RecordStatus>(
+    "lab_demo.record_status", nameTranslator: new Npgsql.NameTranslation.NpgsqlNullNameTranslator());
+dataSourceBuilder.MapEnum<LokynexHealth.Domain.Enums.CommissionType>(
+    "lab_demo.commission_type", nameTranslator: new Npgsql.NameTranslation.NpgsqlNullNameTranslator());
+dataSourceBuilder.MapEnum<LokynexHealth.Domain.Enums.GenderType>(
+    "lab_demo.gender_type", nameTranslator: new Npgsql.NameTranslation.NpgsqlNullNameTranslator());
+dataSourceBuilder.MapEnum<LokynexHealth.Domain.Enums.DiscountType>(
+    "lab_demo.discount_type", nameTranslator: new Npgsql.NameTranslation.NpgsqlNullNameTranslator());
+dataSourceBuilder.MapEnum<LokynexHealth.Domain.Enums.PaymentMethodType>(
+    "lab_demo.payment_method_type", nameTranslator: new Npgsql.NameTranslation.NpgsqlNullNameTranslator());
+dataSourceBuilder.MapEnum<LokynexHealth.Domain.Enums.PaymentStatusType>(
+    "lab_demo.payment_status_type", nameTranslator: new Npgsql.NameTranslation.NpgsqlNullNameTranslator());
+dataSourceBuilder.MapEnum<LokynexHealth.Domain.Enums.ReportStatusType>(
+    "lab_demo.report_status_type", nameTranslator: new Npgsql.NameTranslation.NpgsqlNullNameTranslator());
+dataSourceBuilder.MapEnum<LokynexHealth.Domain.Enums.CommissionEntityType>(
+    "lab_demo.commission_entity_type", nameTranslator: new Npgsql.NameTranslation.NpgsqlNullNameTranslator());
+dataSourceBuilder.MapEnum<LokynexHealth.Domain.Enums.CommissionStatusType>(
+    "lab_demo.commission_status_type", nameTranslator: new Npgsql.NameTranslation.NpgsqlNullNameTranslator());
+dataSourceBuilder.MapEnum<LokynexHealth.Domain.Enums.ReportSourceType>(
+    "lab_demo.report_source_type", nameTranslator: new Npgsql.NameTranslation.NpgsqlNullNameTranslator());
+dataSourceBuilder.MapEnum<LokynexHealth.Domain.Enums.BookingStatusType>(
+    "lab_demo.booking_status_type", nameTranslator: new Npgsql.NameTranslation.NpgsqlNullNameTranslator());
+
+// ---------- Platform-schema enums (platform.*) — Doctor/Referral/Tenant/Plan/Subscription live here ----------
+dataSourceBuilder.MapEnum<LokynexHealth.Domain.Enums.PlatformRecordStatus>(
+    "platform.record_status", nameTranslator: new Npgsql.NameTranslation.NpgsqlNullNameTranslator());
+dataSourceBuilder.MapEnum<LokynexHealth.Domain.Enums.BillingCycleType>(
+    "platform.billing_cycle", nameTranslator: new Npgsql.NameTranslation.NpgsqlNullNameTranslator());
+dataSourceBuilder.MapEnum<LokynexHealth.Domain.Enums.SubscriptionStatusType>(
+    "platform.subscription_status", nameTranslator: new Npgsql.NameTranslation.NpgsqlNullNameTranslator());
+
 var dataSource = dataSourceBuilder.Build();
 
 builder.Services.AddDbContext<LokynexHealthDbContext>(options =>
     options.UseNpgsql(dataSource)
            .UseSnakeCaseNamingConvention());
 
+// ============================================================
+// Application services (Dependency Inversion — Application layer only knows interfaces)
+// ============================================================
 builder.Services.AddScoped<IApplicationDbContext>(provider =>
     provider.GetRequiredService<LokynexHealthDbContext>());
 
 builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
 builder.Services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
-builder.Services.AddScoped<ITenantProvisioningService, LokynexHealth.Infrastructure.Persistence.TenantProvisioningService>();
-builder.Services.AddHttpContextAccessor();   // required by CurrentUserService
+builder.Services.AddScoped<ITenantProvisioningService, TenantProvisioningService>();
+builder.Services.AddHttpContextAccessor(); // required by CurrentUserService
 
-// ---------- JWT Authentication ----------
+// ============================================================
+// CORS — allow the Next.js frontend to call this API
+// ============================================================
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowFrontend", policy =>
+    {
+        policy.WithOrigins("http://localhost:3000")
+              .AllowAnyHeader()
+              .AllowAnyMethod();
+    });
+});
+
+// ============================================================
+// Authentication (JWT) + Authorization
+// ============================================================
 var jwtSecret = builder.Configuration["Jwt:Secret"]!;
 builder.Services.AddAuthentication(options =>
 {
@@ -50,12 +103,15 @@ builder.Services.AddAuthentication(options =>
         ValidateIssuerSigningKey = true,
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret)),
         ValidateLifetime = true,
-        ClockSkew = TimeSpan.Zero   // no grace period after expiry — strict
+        ClockSkew = TimeSpan.Zero
     };
 });
 
 builder.Services.AddAuthorization();
 
+// ============================================================
+// MediatR + FluentValidation
+// ============================================================
 builder.Services.AddMediatR(cfg =>
 {
     cfg.RegisterServicesFromAssembly(typeof(CreateUserCommand).Assembly);
@@ -64,16 +120,9 @@ builder.Services.AddMediatR(cfg =>
 
 builder.Services.AddValidatorsFromAssembly(typeof(CreateUserCommand).Assembly);
 
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AllowFrontend", policy =>
-    {
-        policy.WithOrigins("http://localhost:3000")
-              .AllowAnyHeader()
-              .AllowAnyMethod();
-    });
-});
-
+// ============================================================
+// Controllers + Swagger (with Bearer auth support)
+// ============================================================
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
@@ -81,18 +130,35 @@ builder.Services.AddSwaggerGen(c =>
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         Name = "Authorization",
-        Type = SecuritySchemeType.Http,
-        Scheme = "bearer",
+        Type = SecuritySchemeType.ApiKey,
+        Scheme = "Bearer",
         BearerFormat = "JWT",
         In = ParameterLocation.Header,
         Description = "Enter: Bearer {your token}"
     });
+    c.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            Array.Empty<string>()
+        }
+    });
 });
 
+// ============================================================
+// Build + Middleware pipeline
+// ============================================================
 var app = builder.Build();
 
-app.UseCors("AllowFrontend");
-
+// Exception handling middleware goes FIRST — outermost wrapper, catches
+// anything thrown anywhere downstream in the pipeline.
 app.UseMiddleware<LokynexHealth.Api.Middleware.ExceptionHandlingMiddleware>();
 
 if (app.Environment.IsDevelopment())
@@ -101,10 +167,11 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-// ---------- Order matters: Authentication BEFORE Authorization ----------
-// Authentication figures out WHO the caller is (validates the token).
-// Authorization decides WHAT that identified caller is allowed to do.
-// Reversing this order would mean checking permissions before we even know who's asking.
+// CORS must run before Authentication/Authorization so preflight requests succeed.
+app.UseCors("AllowFrontend");
+
+// Authentication BEFORE Authorization — must know WHO the caller is before
+// deciding WHAT they're allowed to do.
 app.UseAuthentication();
 app.UseAuthorization();
 

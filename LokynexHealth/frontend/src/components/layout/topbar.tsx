@@ -15,13 +15,13 @@ export function Topbar() {
       sx={{ borderBottom: "1px solid #e2e8f0" }}
     >
       <Toolbar sx={{ display: "flex", justifyContent: "space-between" }}>
-        <Typography variant="subtitle1" fontWeight={600}>
+        <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
           Lokynex Health
         </Typography>
 
         <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
           <Box sx={{ textAlign: "right" }}>
-            <Typography variant="body2" fontWeight={500}>
+            <Typography variant="body2" sx={{ fontWeight: 500 }}>
               {user?.name}
             </Typography>
             <Typography variant="caption" color="text.secondary">

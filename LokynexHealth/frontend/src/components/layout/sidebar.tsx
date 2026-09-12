@@ -30,6 +30,11 @@ const navItems = [
   { label: "Departments & Tests", href: "/departments", icon: TestTubeIcon },
   { label: "New Order", href: "/orders/new", icon: OrderFlowIcon },
   { label: "Order List", href: "/orders", icon: OrderFlowIcon },
+  {
+    label: "Doctor / Referral / Technician",
+    href: "/directory",
+    icon: TeamIcon,
+  },
 ];
 
 const drawerWidth = 240;
@@ -108,8 +113,10 @@ export function Sidebar() {
                     primary={item.label}
                     slotProps={{
                       primary: {
-                        fontSize: 13.5,
-                        fontWeight: isActive ? 600 : 500,
+                        sx: {
+                          fontSize: 13.5,
+                          fontWeight: isActive ? 600 : 500,
+                        },
                       },
                     }}
                   />

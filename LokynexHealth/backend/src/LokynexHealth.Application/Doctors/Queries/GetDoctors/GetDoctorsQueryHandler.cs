@@ -29,21 +29,25 @@ public class GetDoctorsQueryHandler : IRequestHandler<GetDoctorsQuery, PagedResu
 
         var totalCount = await query.CountAsync(cancellationToken);
 
-        var doctors = await query
+        // Fetch the raw entities first (native enum stays as-is in the query) —
+        // ToListAsync() materializes the results, THEN we map to DTO with
+        // .ToString() running in memory (LINQ-to-Objects), not translated to SQL.
+        var doctorEntities = await query
             .OrderBy(d => d.FullName)
             .Skip((request.PageNumber - 1) * request.PageSize)
             .Take(request.PageSize)
-            .Select(d => new DoctorDto
-            {
-                Id = d.Id,
-                FullName = d.FullName,
-                Phone = d.Phone,
-                Email = d.Email,
-                Address = d.Address,
-                Specialization = d.Specialization,
-                Status = d.Status.ToString()
-            })
             .ToListAsync(cancellationToken);
+
+        var doctors = doctorEntities.Select(d => new DoctorDto
+        {
+            Id = d.Id,
+            FullName = d.FullName,
+            Phone = d.Phone,
+            Email = d.Email,
+            Address = d.Address,
+            Specialization = d.Specialization,
+            Status = d.Status.ToString()
+        }).ToList();
 
         return new PagedResult<DoctorDto>
         {

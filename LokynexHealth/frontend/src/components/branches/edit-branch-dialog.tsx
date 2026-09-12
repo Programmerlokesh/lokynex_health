@@ -48,7 +48,7 @@ export function EditBranchDialog({
 
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="xs">
-      <DialogTitle fontWeight={700}>Edit Branch</DialogTitle>
+      <DialogTitle sx={{ fontWeight: 700 }}>Edit Branch</DialogTitle>
       <Box component="form" onSubmit={handleSubmit}>
         <DialogContent
           sx={{ display: "flex", flexDirection: "column", gap: 2 }}

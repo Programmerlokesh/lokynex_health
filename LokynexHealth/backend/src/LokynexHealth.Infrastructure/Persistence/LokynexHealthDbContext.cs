@@ -41,8 +41,13 @@ public class LokynexHealthDbContext : DbContext, IApplicationDbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.HasPostgresEnum<Domain.Enums.RecordStatus>("record_status");
-        modelBuilder.ApplyConfigurationsFromAssembly(typeof(LokynexHealthDbContext).Assembly);
+        // ---------- ALL Postgres enum registrations MUST happen BEFORE
+        // ApplyConfigurationsFromAssembly(), because each entity configuration
+        // (e.g. DoctorConfiguration's .HasColumnType("platform.record_status"))
+        // needs the enum already registered to resolve it as a native enum
+        // instead of silently falling back to a plain int mapping. ----------
+
+        // Tenant-schema enums (lab_demo.*)
         modelBuilder.HasPostgresEnum<Domain.Enums.RecordStatus>("record_status");
         modelBuilder.HasPostgresEnum<Domain.Enums.CommissionType>("commission_type");
         modelBuilder.HasPostgresEnum<Domain.Enums.GenderType>("gender_type");
@@ -54,10 +59,15 @@ public class LokynexHealthDbContext : DbContext, IApplicationDbContext
         modelBuilder.HasPostgresEnum<Domain.Enums.CommissionStatusType>("commission_status_type");
         modelBuilder.HasPostgresEnum<Domain.Enums.ReportSourceType>("report_source_type");
         modelBuilder.HasPostgresEnum<Domain.Enums.BookingStatusType>("booking_status_type");
-        modelBuilder.HasPostgresEnum<Domain.Enums.PlatformRecordStatus>("platform.record_status");
+
+        // Platform-schema enums (platform.*)
         modelBuilder.HasPostgresEnum<Domain.Enums.PlatformRecordStatus>("platform.record_status");
         modelBuilder.HasPostgresEnum<Domain.Enums.BillingCycleType>("platform.billing_cycle");
         modelBuilder.HasPostgresEnum<Domain.Enums.SubscriptionStatusType>("platform.subscription_status");
+
+        // Entity configurations run AFTER all enums are registered.
+        modelBuilder.ApplyConfigurationsFromAssembly(typeof(LokynexHealthDbContext).Assembly);
+
         base.OnModelCreating(modelBuilder);
     }
 }

@@ -19,8 +19,8 @@ public class DepartmentConfiguration : IEntityTypeConfiguration<Department>
         builder.HasIndex(d => d.Name).IsUnique();
 
         builder.Property(d => d.Status)
-            .HasColumnType("record_status")
-            .HasDefaultValue(Domain.Enums.RecordStatus.Active);
+      .HasColumnType("record_status")
+      .HasDefaultValue(Domain.Enums.RecordStatus.Active);
 
         builder.HasMany(d => d.Tests)
             .WithOne(t => t.Department)
