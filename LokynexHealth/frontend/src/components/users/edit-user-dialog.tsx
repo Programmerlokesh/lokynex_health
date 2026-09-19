@@ -14,7 +14,7 @@ import {
   MenuItem,
   TextField,
 } from "@mui/material";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 export function EditUserDialog({
   user,
@@ -32,14 +32,14 @@ export function EditUserDialog({
   const updateUser = useUpdateUser();
 
   // Pre-fill the form whenever a different user is opened for editing.
-  useEffect(() => {
-    if (user) {
-      setName(user.name);
-      setEmail(user.email);
-      setPhone(user.phone);
-      setBranchId(user.branchId ?? "");
-    }
-  }, [user]);
+  // useEffect(() => {
+  //   if (user) {
+  //     setName(user.name);
+  //     setEmail(user.email);
+  //     setPhone(user.phone);
+  //     setBranchId(user.branchId ?? "");
+  //   }
+  // }, [user]);
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

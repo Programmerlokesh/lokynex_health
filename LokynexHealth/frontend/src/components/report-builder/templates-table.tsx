@@ -41,7 +41,7 @@ export function TemplatesTable({
     >
       <Table size="small">
         <TableHead>
-          <TableRow sx={{ bgcolor: "#F5F9FC" }}>
+          <TableRow sx={{ bgcolor: "action.hover" }}>
             <TableCell sx={{ fontWeight: 600 }}>Name</TableCell>
             <TableCell sx={{ fontWeight: 600 }}>Source</TableCell>
             <TableCell sx={{ fontWeight: 600 }}>Created</TableCell>

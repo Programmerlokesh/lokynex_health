@@ -2,7 +2,7 @@
 
 import { useSuperAdminAuthStore } from "@/store/superadmin-auth-store";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useSyncExternalStore } from "react";
 
 export function useSuperAdminAuthGuard() {
   const router = useRouter();
@@ -10,11 +10,17 @@ export function useSuperAdminAuthGuard() {
     (state) => state.isAuthenticated,
   );
 
+  const hydrated = useSyncExternalStore(
+    (onChange) => useSuperAdminAuthStore.persist.onFinishHydration(onChange),
+    () => useSuperAdminAuthStore.persist.hasHydrated(),
+    () => false,
+  );
+
   useEffect(() => {
-    if (!isAuthenticated) {
+    if (hydrated && !isAuthenticated) {
       router.push("/superadmin/login");
     }
-  }, [isAuthenticated, router]);
+  }, [hydrated, isAuthenticated, router]);
 
-  return isAuthenticated;
+  return hydrated && isAuthenticated;
 }

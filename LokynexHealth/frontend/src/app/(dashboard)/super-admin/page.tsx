@@ -38,6 +38,8 @@ export default function SuperAdminPage() {
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
+          flexWrap: "wrap",
+          gap: 1.5,
         }}
       >
         <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>

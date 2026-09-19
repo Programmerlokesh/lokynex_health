@@ -48,7 +48,7 @@ export function DepartmentList({
   }
 
   return (
-    <Box sx={{ width: 280 }}>
+    <Box sx={{ width: { xs: "100%", md: 280 }, flexShrink: 0 }}>
       <Typography variant="subtitle2" sx={{ mb: 1.5, fontWeight: 700 }}>
         Departments
       </Typography>
@@ -96,7 +96,7 @@ export function DepartmentList({
                 sx={{
                   borderRadius: 2,
                   mb: 0.5,
-                  "&.Mui-selected": { bgcolor: "#E0F2FE" },
+                  "&.Mui-selected": { bgcolor: "action.selected" },
                 }}
               >
                 <ListItemText

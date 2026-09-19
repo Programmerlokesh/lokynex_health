@@ -30,7 +30,7 @@ export function TestsTable({ tests }: { tests: TestDto[] }) {
     >
       <Table size="small">
         <TableHead>
-          <TableRow sx={{ bgcolor: "#F5F9FC" }}>
+          <TableRow sx={{ bgcolor: "action.hover" }}>
             <TableCell sx={{ fontWeight: 600 }}>Test Name</TableCell>
             <TableCell sx={{ fontWeight: 600 }}>Price</TableCell>
             <TableCell sx={{ fontWeight: 600 }}>Doctor Comm.</TableCell>

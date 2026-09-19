@@ -13,8 +13,9 @@ export function PayoutFilters({
   return (
     <Box
       sx={{
-        bgcolor: "#fff",
-        border: "1px solid #E2E8F0",
+        bgcolor: "background.paper",
+        border: 1,
+        borderColor: "divider",
         borderRadius: 3,
         p: 2.5,
         mb: 2.5,

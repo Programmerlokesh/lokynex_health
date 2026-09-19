@@ -40,7 +40,7 @@ export function SubscriptionsTable({ rows }: { rows: SubscriptionDto[] }) {
     >
       <Table size="small">
         <TableHead>
-          <TableRow sx={{ bgcolor: "#F5F9FC" }}>
+          <TableRow sx={{ bgcolor: "action.hover" }}>
             <TableCell sx={{ fontWeight: 600 }}>Lab / Tenant</TableCell>
             <TableCell sx={{ fontWeight: 600 }}>Plan</TableCell>
             <TableCell sx={{ fontWeight: 600 }}>Start</TableCell>

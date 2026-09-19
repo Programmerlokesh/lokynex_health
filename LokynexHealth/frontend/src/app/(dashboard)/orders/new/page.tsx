@@ -101,13 +101,13 @@ export default function NewOrderPage() {
 
       <Box component="form" onSubmit={handleSubmit}>
         <Grid container spacing={3}>
-          <Grid size={8}>
+          <Grid size={{ xs: 12, lg: 8 }}>
             <Paper sx={{ p: 3, borderRadius: 3, mb: 3 }}>
               <Typography variant="subtitle2" sx={{ mb: 2, fontWeight: 700 }}>
                 Patient & Branch
               </Typography>
               <Grid container spacing={2}>
-                <Grid size={6}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                   <TextField
                     select
                     label="Branch"
@@ -130,7 +130,7 @@ export default function NewOrderPage() {
                     )}
                   </TextField>
                 </Grid>
-                <Grid size={6}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                   <TextField
                     label="Patient Phone"
                     size="small"
@@ -140,7 +140,7 @@ export default function NewOrderPage() {
                     onChange={(e) => setPatientPhone(e.target.value)}
                   />
                 </Grid>
-                <Grid size={6}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                   <TextField
                     label="Age"
                     type="number"
@@ -150,7 +150,7 @@ export default function NewOrderPage() {
                     onChange={(e) => setPatientAge(e.target.value)}
                   />
                 </Grid>
-                <Grid size={6}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                   <TextField
                     select
                     label="Gender"
@@ -172,7 +172,7 @@ export default function NewOrderPage() {
                 Doctor & Referral (optional)
               </Typography>
               <Grid container spacing={2}>
-                <Grid size={6}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                   <Autocomplete
                     options={doctorResult?.items ?? []}
                     getOptionLabel={(d) => `${d.fullName} — ${d.phone}`}
@@ -183,7 +183,7 @@ export default function NewOrderPage() {
                     )}
                   />
                 </Grid>
-                <Grid size={6}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                   <Autocomplete
                     options={referralResult?.items ?? []}
                     getOptionLabel={(r) => `${r.fullName} — ${r.phone}`}
@@ -211,7 +211,7 @@ export default function NewOrderPage() {
             </Paper>
           </Grid>
 
-          <Grid size={4}>
+          <Grid size={{ xs: 12, lg: 4 }}>
             <Paper sx={{ p: 3, borderRadius: 3, mb: 3 }}>
               <Typography variant="subtitle2" sx={{ mb: 2, fontWeight: 700 }}>
                 Discount & Payment
@@ -231,7 +231,7 @@ export default function NewOrderPage() {
               {!isComplimentary && (
                 <>
                   <Grid container spacing={2} sx={{ mb: 2 }}>
-                    <Grid size={6}>
+                    <Grid size={{ xs: 12, sm: 6 }}>
                       <TextField
                         select
                         label="Discount Type"
@@ -244,7 +244,7 @@ export default function NewOrderPage() {
                         <MenuItem value="Percentage">Percentage</MenuItem>
                       </TextField>
                     </Grid>
-                    <Grid size={6}>
+                    <Grid size={{ xs: 12, sm: 6 }}>
                       <TextField
                         label="Discount Value"
                         type="number"

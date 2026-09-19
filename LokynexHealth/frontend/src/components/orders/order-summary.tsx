@@ -54,7 +54,7 @@ export function OrderSummary({
         : "#64748B";
 
   return (
-    <Box sx={{ bgcolor: "#F5F9FC", borderRadius: 2, p: 2.5 }}>
+    <Box sx={{ bgcolor: "action.hover", borderRadius: 2, p: 2.5 }}>
       <Row label="Gross Amount" value={`₹${grossAmount.toFixed(2)}`} />
       <Row label="Discount" value={`- ₹${discountAmount.toFixed(2)}`} />
       <Divider sx={{ my: 1 }} />

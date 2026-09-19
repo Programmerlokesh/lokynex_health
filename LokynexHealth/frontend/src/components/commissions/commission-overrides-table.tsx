@@ -34,7 +34,7 @@ export function CommissionOverridesTable({
     >
       <Table size="small">
         <TableHead>
-          <TableRow sx={{ bgcolor: "#F5F9FC" }}>
+          <TableRow sx={{ bgcolor: "action.hover" }}>
             <TableCell sx={{ fontWeight: 600 }}>Entity</TableCell>
             <TableCell sx={{ fontWeight: 600 }}>Type</TableCell>
             <TableCell sx={{ fontWeight: 600 }}>Test</TableCell>

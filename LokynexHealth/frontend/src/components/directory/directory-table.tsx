@@ -43,7 +43,7 @@ export function DirectoryTable<T extends BaseRow>({
     >
       <Table size="small">
         <TableHead>
-          <TableRow sx={{ bgcolor: "#F5F9FC" }}>
+          <TableRow sx={{ bgcolor: "action.hover" }}>
             <TableCell sx={{ fontWeight: 600 }}>Name</TableCell>
             <TableCell sx={{ fontWeight: 600 }}>Phone</TableCell>
             <TableCell sx={{ fontWeight: 600 }}>Email</TableCell>

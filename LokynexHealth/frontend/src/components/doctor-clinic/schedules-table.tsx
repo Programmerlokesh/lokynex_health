@@ -52,7 +52,7 @@ export function SchedulesTable({ rows }: { rows: ScheduleDto[] }) {
     >
       <Table size="small">
         <TableHead>
-          <TableRow sx={{ bgcolor: "#F5F9FC" }}>
+          <TableRow sx={{ bgcolor: "action.hover" }}>
             <TableCell sx={{ fontWeight: 600 }}>Doctor</TableCell>
             <TableCell sx={{ fontWeight: 600 }}>Branch</TableCell>
             <TableCell sx={{ fontWeight: 600 }}>Day</TableCell>
@@ -74,7 +74,11 @@ export function SchedulesTable({ rows }: { rows: ScheduleDto[] }) {
               <TableCell sx={{ fontWeight: 500 }}>{row.doctorName}</TableCell>
               <TableCell>{row.branchName}</TableCell>
               <TableCell>
-                <Chip label={DAYS[row.dayOfWeek]} size="small" variant="outlined" />
+                <Chip
+                  label={DAYS[row.dayOfWeek]}
+                  size="small"
+                  variant="outlined"
+                />
               </TableCell>
               <TableCell>
                 {formatTime(row.timeFrom)} – {formatTime(row.timeTo)}

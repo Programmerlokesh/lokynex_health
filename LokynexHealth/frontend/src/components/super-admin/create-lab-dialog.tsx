@@ -272,7 +272,7 @@ export function CreateLabDialog() {
               <Box
                 key={i}
                 sx={{
-                  border: "1px solid #E2E8F0",
+                  border: 1, borderColor: "divider",
                   borderRadius: 2,
                   p: 1.5,
                   display: "flex",

@@ -54,7 +54,7 @@ export default function LoginPage() {
   }
 
   return (
-    <Box sx={{ display: "flex", minHeight: "100vh" }}>
+    <Box sx={{ display: "flex", minHeight: "100dvh" }}>
       {/* Left brand panel */}
       <Box
         sx={{
@@ -62,7 +62,9 @@ export default function LoginPage() {
           display: { xs: "none", md: "flex" },
           flexDirection: "column",
           justifyContent: "space-between",
-          p: 7,
+                    flexWrap: "wrap",
+          gap: 1.5,
+          p: { md: 5, lg: 7 },
           color: "#fff",
           position: "relative",
           overflow: "hidden",
@@ -110,7 +112,8 @@ export default function LoginPage() {
         <Box
           sx={{
             display: "flex",
-            gap: 4,
+            flexWrap: "wrap",
+            gap: { md: 2, lg: 4 },
             zIndex: 1,
             pt: 3,
             borderTop: "1px solid rgba(255,255,255,0.15)",
@@ -142,24 +145,47 @@ export default function LoginPage() {
         sx={{
           flex: 1,
           display: "flex",
+          flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          bgcolor: "#F5F9FC",
+          gap: 3,
+          bgcolor: "background.default",
+          px: { xs: 2, sm: 4 },
+          py: { xs: 3, sm: 4 },
+          pt: "max(24px, var(--safe-top))",
+          pb: "max(24px, var(--safe-bottom))",
         }}
       >
+        {/* Phone e left panel hidden, tai chhoto brand mark */}
+        <Box
+          sx={{
+            display: { xs: "flex", md: "none" },
+            alignItems: "center",
+            gap: 1,
+          }}
+        >
+          <TestTubeIcon sx={{ color: brand.electricBlue, fontSize: 28 }} />
+          <Typography
+            sx={{ fontWeight: 700, letterSpacing: 0.5, color: "text.primary" }}
+          >
+            LOKYNEX HEALTH
+          </Typography>
+        </Box>
+
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.45, ease: "easeOut" }}
+          style={{ width: "100%", maxWidth: 420 }}
         >
           <Card
             sx={{
-              width: 380,
+              width: "100%",
               borderRadius: 3,
               boxShadow: "0 12px 32px rgba(23,43,77,0.08)",
             }}
           >
-            <CardContent sx={{ p: 4.5 }}>
+            <CardContent sx={{ p: { xs: 3, sm: 4.5 } }}>
               <Typography variant="h5" sx={{ mb: 0.5 }}>
                 Welcome back
               </Typography>
@@ -178,6 +204,10 @@ export default function LoginPage() {
               >
                 <TextField
                   label="Username"
+                  autoComplete="username"
+                  slotProps={{
+                    htmlInput: { autoCapitalize: "none", spellCheck: false },
+                  }}
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   required
@@ -186,6 +216,7 @@ export default function LoginPage() {
                 />
                 <TextField
                   label="Password"
+                  autoComplete="current-password"
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}

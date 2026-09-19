@@ -45,7 +45,7 @@ export function PayoutsTable({
     >
       <Table size="small">
         <TableHead>
-          <TableRow sx={{ bgcolor: "#F5F9FC" }}>
+          <TableRow sx={{ bgcolor: "action.hover" }}>
             <TableCell padding="checkbox">
               <Checkbox
                 size="small"
@@ -87,7 +87,9 @@ export function PayoutsTable({
               <TableCell>
                 <Chip label={row.entityType} size="small" variant="outlined" />
               </TableCell>
-              <TableCell>₹{row.commissionAmount.toLocaleString("en-IN")}</TableCell>
+              <TableCell>
+                ₹{row.commissionAmount.toLocaleString("en-IN")}
+              </TableCell>
               <TableCell>
                 <Chip
                   label={row.status}

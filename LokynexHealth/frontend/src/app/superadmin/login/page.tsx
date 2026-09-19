@@ -42,17 +42,21 @@ export default function SuperAdminLoginPage() {
   return (
     <Box
       sx={{
-        minHeight: "100vh",
+        minHeight: "100dvh",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
         bgcolor: "#0B1220",
+        p: 2,
+        pt: "max(16px, var(--safe-top))",
+        pb: "max(16px, var(--safe-bottom))",
       }}
     >
       <Paper
         sx={{
-          p: 4,
-          width: 360,
+          p: { xs: 3, sm: 4 },
+          width: "100%",
+          maxWidth: 400,
           borderRadius: 3,
           bgcolor: "#111A2E",
           border: "1px solid #243044",
@@ -100,6 +104,7 @@ export default function SuperAdminLoginPage() {
             fullWidth
             required
             autoFocus
+            autoComplete="username"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             slotProps={{
@@ -113,6 +118,7 @@ export default function SuperAdminLoginPage() {
           <TextField
             label="Password"
             type="password"
+            autoComplete="current-password"
             size="small"
             fullWidth
             required

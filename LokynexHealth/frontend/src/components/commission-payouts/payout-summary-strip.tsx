@@ -12,12 +12,18 @@ export function PayoutSummaryStrip({
   grandTotal: number;
 }) {
   return (
-    <Box sx={{ display: "flex", gap: 2, mb: 2.5, flexWrap: "wrap" }}>
+    <Box
+      sx={{
+        display: "grid",
+        gap: 2,
+        mb: 2.5,
+        gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 150px), 1fr))",
+      }}
+    >
       <Paper
         sx={{
           p: 2,
           borderRadius: 3,
-          minWidth: 160,
           bgcolor: brand.navy,
           color: "#fff",
         }}
@@ -36,8 +42,8 @@ export function PayoutSummaryStrip({
           sx={{
             p: 2,
             borderRadius: 3,
-            minWidth: 140,
-            border: "1px solid #E2E8F0",
+            border: 1,
+            borderColor: "divider",
           }}
         >
           <Typography variant="caption" color="text.secondary">

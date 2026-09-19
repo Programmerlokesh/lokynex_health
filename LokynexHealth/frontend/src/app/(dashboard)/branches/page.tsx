@@ -50,7 +50,7 @@ export default function BranchesPage() {
         size="small"
         value={search}
         onChange={(e) => setSearch(e.target.value)}
-        sx={{ maxWidth: 400 }}
+        sx={{ width: "100%", maxWidth: 400 }}
         slotProps={{
           input: {
             startAdornment: (

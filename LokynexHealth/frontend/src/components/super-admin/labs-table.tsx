@@ -35,7 +35,7 @@ export function LabsTable({ rows }: { rows: LabDto[] }) {
     >
       <Table size="small">
         <TableHead>
-          <TableRow sx={{ bgcolor: "#F5F9FC" }}>
+          <TableRow sx={{ bgcolor: "action.hover" }}>
             <TableCell sx={{ fontWeight: 600 }}>Lab Code</TableCell>
             <TableCell sx={{ fontWeight: 600 }}>Primary Branch</TableCell>
             <TableCell sx={{ fontWeight: 600 }}>Subdomain</TableCell>

@@ -12,6 +12,7 @@ import {
   Table,
   TableBody,
   TableCell,
+  TableContainer,
   TableHead,
   TableRow,
   TextField,
@@ -71,113 +72,119 @@ export function TestSelector({
   }
 
   return (
-    <Box>
-      <Autocomplete
-        options={
-          testResult?.items.filter((t) => !selectedTestIds.has(t.id)) ?? []
-        }
-        getOptionLabel={(t) => `${t.name} — ₹${t.price}`}
-        onInputChange={(_, value) => setTestSearch(value)}
-        onChange={(_, value) => addTest(value)}
-        renderInput={(params) => (
-          <TextField
-            {...params}
-            label="Add a test"
-            size="small"
-            placeholder="Search test name..."
+    <TableContainer>
+      <Table size="small">
+        <Box>
+          <Autocomplete
+            options={
+              testResult?.items.filter((t) => !selectedTestIds.has(t.id)) ?? []
+            }
+            getOptionLabel={(t) => `${t.name} — ₹${t.price}`}
+            onInputChange={(_, value) => setTestSearch(value)}
+            onChange={(_, value) => addTest(value)}
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                label="Add a test"
+                size="small"
+                placeholder="Search test name..."
+              />
+            )}
+            sx={{ mb: 2 }}
           />
-        )}
-        sx={{ mb: 2 }}
-      />
 
-      {items.length === 0 ? (
-        <Typography variant="body2" color="text.secondary">
-          No tests added yet.
-        </Typography>
-      ) : (
-        <Table size="small">
-          <TableHead>
-            <TableRow>
-              <TableCell>Test</TableCell>
-              <TableCell>Price</TableCell>
-              <TableCell>Technician</TableCell>
-              <TableCell align="center">Dr. Comm.</TableCell>
-              <TableCell align="center">Ref. Comm.</TableCell>
-              <TableCell align="right"></TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {items.map((item) => (
-              <TableRow key={item.testId}>
-                <TableCell>{item.testName}</TableCell>
-                <TableCell>₹{item.price.toFixed(2)}</TableCell>
-                <TableCell sx={{ minWidth: 160 }}>
-                  <Autocomplete
-                    size="small"
-                    options={technicianResult?.items ?? []}
-                    getOptionLabel={(t) => t.fullName}
-                    onChange={(_, tech) =>
-                      updateItem(item.testId, { technicianId: tech?.id })
-                    }
-                    renderInput={(params) => (
-                      <TextField {...params} placeholder="Select" />
-                    )}
-                  />
-                </TableCell>
-                <TableCell align="center">
-                  <Tooltip title={!doctorId ? "Select a doctor first" : ""}>
-                    <span>
-                      <Checkbox
+          {items.length === 0 ? (
+            <Typography variant="body2" color="text.secondary">
+              No tests added yet.
+            </Typography>
+          ) : (
+            <Table size="small">
+              <TableHead>
+                <TableRow>
+                  <TableCell>Test</TableCell>
+                  <TableCell>Price</TableCell>
+                  <TableCell>Technician</TableCell>
+                  <TableCell align="center">Dr. Comm.</TableCell>
+                  <TableCell align="center">Ref. Comm.</TableCell>
+                  <TableCell align="right"></TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {items.map((item) => (
+                  <TableRow key={item.testId}>
+                    <TableCell>{item.testName}</TableCell>
+                    <TableCell>₹{item.price.toFixed(2)}</TableCell>
+                    <TableCell sx={{ minWidth: 160 }}>
+                      <Autocomplete
                         size="small"
-                        disabled={!doctorId}
-                        checked={item.doctorCommissionEnabled}
-                        onChange={(e) =>
-                          // Mirrors the backend's mutual-exclusivity rule (order_items CHECK
-                          // constraint): enabling doctor commission here forces referral off,
-                          // on the SAME test line, immediately in the UI.
-                          updateItem(item.testId, {
-                            doctorCommissionEnabled: e.target.checked,
-                            referralCommissionEnabled: e.target.checked
-                              ? false
-                              : item.referralCommissionEnabled,
-                          })
+                        options={technicianResult?.items ?? []}
+                        getOptionLabel={(t) => t.fullName}
+                        onChange={(_, tech) =>
+                          updateItem(item.testId, { technicianId: tech?.id })
                         }
+                        renderInput={(params) => (
+                          <TextField {...params} placeholder="Select" />
+                        )}
                       />
-                    </span>
-                  </Tooltip>
-                </TableCell>
-                <TableCell align="center">
-                  <Tooltip title={!referralId ? "Select a referral first" : ""}>
-                    <span>
-                      <Checkbox
+                    </TableCell>
+                    <TableCell align="center">
+                      <Tooltip title={!doctorId ? "Select a doctor first" : ""}>
+                        <span>
+                          <Checkbox
+                            size="small"
+                            disabled={!doctorId}
+                            checked={item.doctorCommissionEnabled}
+                            onChange={(e) =>
+                              // Mirrors the backend's mutual-exclusivity rule (order_items CHECK
+                              // constraint): enabling doctor commission here forces referral off,
+                              // on the SAME test line, immediately in the UI.
+                              updateItem(item.testId, {
+                                doctorCommissionEnabled: e.target.checked,
+                                referralCommissionEnabled: e.target.checked
+                                  ? false
+                                  : item.referralCommissionEnabled,
+                              })
+                            }
+                          />
+                        </span>
+                      </Tooltip>
+                    </TableCell>
+                    <TableCell align="center">
+                      <Tooltip
+                        title={!referralId ? "Select a referral first" : ""}
+                      >
+                        <span>
+                          <Checkbox
+                            size="small"
+                            disabled={!referralId}
+                            checked={item.referralCommissionEnabled}
+                            onChange={(e) =>
+                              updateItem(item.testId, {
+                                referralCommissionEnabled: e.target.checked,
+                                doctorCommissionEnabled: e.target.checked
+                                  ? false
+                                  : item.doctorCommissionEnabled,
+                              })
+                            }
+                          />
+                        </span>
+                      </Tooltip>
+                    </TableCell>
+                    <TableCell align="right">
+                      <IconButton
                         size="small"
-                        disabled={!referralId}
-                        checked={item.referralCommissionEnabled}
-                        onChange={(e) =>
-                          updateItem(item.testId, {
-                            referralCommissionEnabled: e.target.checked,
-                            doctorCommissionEnabled: e.target.checked
-                              ? false
-                              : item.doctorCommissionEnabled,
-                          })
-                        }
-                      />
-                    </span>
-                  </Tooltip>
-                </TableCell>
-                <TableCell align="right">
-                  <IconButton
-                    size="small"
-                    onClick={() => removeTest(item.testId)}
-                  >
-                    <DeleteOutlineIcon fontSize="small" />
-                  </IconButton>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      )}
-    </Box>
+                        onClick={() => removeTest(item.testId)}
+                      >
+                        <DeleteOutlineIcon fontSize="small" />
+                      </IconButton>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </Box>
+      </Table>
+    </TableContainer>
   );
 }

@@ -29,6 +29,8 @@ export default function UsersPage() {
         sx={{
           display: "flex",
           justifyContent: "space-between",
+          flexWrap: "wrap",
+          gap: 1.5,
           alignItems: "center",
         }}
       >
@@ -43,7 +45,7 @@ export default function UsersPage() {
         size="small"
         value={search}
         onChange={(e) => setSearch(e.target.value)}
-        sx={{ maxWidth: 400 }}
+        sx={{ width: "100%", maxWidth: 400 }}
         slotProps={{
           input: {
             startAdornment: (

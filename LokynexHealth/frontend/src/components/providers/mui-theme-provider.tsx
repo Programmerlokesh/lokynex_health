@@ -1,9 +1,14 @@
 "use client";
 
+import {
+  createTheme,
+  responsiveFontSizes,
+  ThemeProvider,
+} from "@mui/material/styles";
+
 import { useThemeStore } from "@/store/theme-store";
 import { AppRouterCacheProvider } from "@mui/material-nextjs/v15-appRouter";
 import CssBaseline from "@mui/material/CssBaseline";
-import { createTheme, ThemeProvider } from "@mui/material/styles";
 import { useEffect, useMemo } from "react";
 
 // Brand colors stay fixed across light/dark — only backgrounds, paper and
@@ -24,7 +29,9 @@ const FONT_FAMILY = "var(--font-app), 'Public Sans', 'Inter', sans-serif";
 function buildTheme(mode: "light" | "dark") {
   const isDark = mode === "dark";
 
-  return createTheme({
+  const theme = createTheme({
+    // xs 0-599 phone | sm 600-899 | md 900-1199 tablet | lg 1200-1535 laptop | xl 1536+
+    breakpoints: { values: { xs: 0, sm: 600, md: 900, lg: 1200, xl: 1536 } },
     palette: {
       mode,
       primary: { main: "#1976D2", dark: "#0D47A1" },
@@ -50,7 +57,21 @@ function buildTheme(mode: "light" | "dark") {
       h6: { fontWeight: 700 },
     },
     components: {
+      MuiCssBaseline: {
+        styleOverrides: {
+          // touch device e: 16px input (iOS zoom bondho) + 44px tap target
+          "@media (hover: none) and (pointer: coarse)": {
+            ".MuiInputBase-input, .MuiSelect-select": { fontSize: 16 },
+            ".MuiIconButton-root": { minWidth: 44, minHeight: 44 },
+            ".MuiButton-root": { minHeight: 44 },
+            ".MuiListItemButton-root": { minHeight: 48 },
+            ".MuiCheckbox-root, .MuiRadio-root": { padding: 11 },
+            ".MuiTab-root": { minHeight: 48 },
+          },
+        },
+      },
       MuiButton: {
+        defaultProps: { disableElevation: true },
         styleOverrides: {
           root: { textTransform: "none", fontWeight: 600, borderRadius: 8 },
         },
@@ -60,8 +81,93 @@ function buildTheme(mode: "light" | "dark") {
           root: { border: `1px solid ${isDark ? "#243044" : "#E2E8F0"}` },
         },
       },
+
+      // Table: page na, card er bhitore scroll hobe
+      MuiTableContainer: {
+        styleOverrides: {
+          root: {
+            width: "100%",
+            overflowX: "auto",
+            WebkitOverflowScrolling: "touch",
+            overscrollBehaviorX: "contain",
+          },
+        },
+      },
+      MuiTableCell: {
+        styleOverrides: {
+          root: ({ theme }) => ({
+            [theme.breakpoints.down("md")]: { whiteSpace: "nowrap" },
+            [theme.breakpoints.down("sm")]: { padding: "10px 12px" },
+          }),
+          head: { fontWeight: 600 },
+        },
+      },
+
+      // Dialog: phone e comfortable
+      MuiDialog: {
+        styleOverrides: {
+          paper: ({ theme }) => ({
+            [theme.breakpoints.down("sm")]: {
+              margin: 12,
+              width: "calc(100% - 24px)",
+              maxWidth: "calc(100% - 24px)",
+              maxHeight: "calc(100% - 24px)",
+            },
+          }),
+        },
+      },
+      MuiDialogTitle: {
+        styleOverrides: {
+          root: ({ theme }) => ({
+            [theme.breakpoints.down("sm")]: { padding: "16px 16px 8px" },
+          }),
+        },
+      },
+      MuiDialogContent: {
+        styleOverrides: {
+          root: ({ theme }) => ({
+            [theme.breakpoints.down("sm")]: { padding: "8px 16px" },
+          }),
+        },
+      },
+      MuiDialogActions: {
+        styleOverrides: {
+          root: ({ theme }) => ({
+            flexWrap: "wrap",
+            gap: 8,
+            [theme.breakpoints.down("sm")]: {
+              padding: "12px 16px 16px !important",
+              "& > :not(style) ~ :not(style)": { marginLeft: 0 },
+              "& .MuiButton-root": { flex: "1 1 auto" },
+            },
+          }),
+        },
+      },
+
+      // Tab beshi hole swipe korbe
+      MuiTabs: {
+        defaultProps: {
+          variant: "scrollable",
+          scrollButtons: "auto",
+          allowScrollButtonsMobile: true,
+        },
+      },
+      MuiTab: {
+        styleOverrides: { root: { textTransform: "none", fontWeight: 600 } },
+      },
+
+      MuiTypography: {
+        styleOverrides: { root: { overflowWrap: "break-word" } },
+      },
+      MuiSnackbar: {
+        styleOverrides: {
+          root: { bottom: "calc(24px + env(safe-area-inset-bottom, 0px))" },
+        },
+      },
     },
   });
+
+  return responsiveFontSizes(theme, { factor: 2.5 });
 }
 
 export function MuiThemeProvider({ children }: { children: React.ReactNode }) {

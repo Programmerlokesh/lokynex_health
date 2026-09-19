@@ -100,15 +100,16 @@ export function BookAppointmentPanel() {
     <Box>
       <Box
         sx={{
-          bgcolor: "#fff",
-          border: "1px solid #E2E8F0",
+          bgcolor: "background.paper",
+          border: 1,
+          borderColor: "divider",
           borderRadius: 3,
           p: 2.5,
           mb: 2.5,
         }}
       >
         <Grid container spacing={2}>
-          <Grid size={4}>
+          <Grid size={{ xs: 12, sm: 6, md: 4 }}>
             <TextField
               select
               label="Branch"
@@ -127,7 +128,7 @@ export function BookAppointmentPanel() {
               ))}
             </TextField>
           </Grid>
-          <Grid size={4}>
+          <Grid size={{ xs: 12, sm: 6, md: 4 }}>
             <Autocomplete
               options={doctorResult?.items ?? []}
               getOptionLabel={(o) => `${o.fullName} — ${o.phone}`}
@@ -139,7 +140,7 @@ export function BookAppointmentPanel() {
               )}
             />
           </Grid>
-          <Grid size={4}>
+          <Grid size={{ xs: 12, sm: 6, md: 4 }}>
             <TextField
               label="Date"
               type="date"

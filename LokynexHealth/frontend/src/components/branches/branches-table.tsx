@@ -37,7 +37,7 @@ export function BranchesTable({ branches }: { branches: BranchDto[] }) {
       >
         <Table>
           <TableHead>
-            <TableRow sx={{ bgcolor: "#F5F9FC" }}>
+            <TableRow sx={{ bgcolor: "action.hover" }}>
               <TableCell sx={{ fontWeight: 600 }}>Branch Name</TableCell>
               <TableCell sx={{ fontWeight: 600 }}>Code</TableCell>
               <TableCell sx={{ fontWeight: 600 }}>Phone</TableCell>

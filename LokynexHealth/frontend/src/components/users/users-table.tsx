@@ -40,7 +40,7 @@ export function UsersTable({ users }: { users: UserDto[] }) {
       <TableContainer component={Paper} sx={{ borderRadius: 3, boxShadow: 1 }}>
         <Table>
           <TableHead>
-            <TableRow sx={{ bgcolor: "#f8fafc" }}>
+            <TableRow sx={{ bgcolor: "action.hover" }}>
               <TableCell sx={{ fontWeight: 600 }}>Name</TableCell>
               <TableCell sx={{ fontWeight: 600 }}>Username</TableCell>
               <TableCell sx={{ fontWeight: 600 }}>Email</TableCell>
@@ -114,7 +114,11 @@ export function UsersTable({ users }: { users: UserDto[] }) {
         </Table>
       </TableContainer>
 
-      <EditUserDialog user={editingUser} onClose={() => setEditingUser(null)} />
+      <EditUserDialog
+        key={editingUser?.id ?? "closed"}
+        user={editingUser}
+        onClose={() => setEditingUser(null)}
+      />
     </>
   );
 }

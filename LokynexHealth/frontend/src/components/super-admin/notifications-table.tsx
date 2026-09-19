@@ -30,7 +30,7 @@ export function NotificationsTable({ rows }: { rows: NotificationDto[] }) {
     >
       <Table size="small">
         <TableHead>
-          <TableRow sx={{ bgcolor: "#F5F9FC" }}>
+          <TableRow sx={{ bgcolor: "action.hover" }}>
             <TableCell sx={{ fontWeight: 600 }}>Title</TableCell>
             <TableCell sx={{ fontWeight: 600 }}>Message</TableCell>
             <TableCell sx={{ fontWeight: 600 }}>Recipient</TableCell>

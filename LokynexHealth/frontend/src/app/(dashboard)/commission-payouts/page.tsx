@@ -94,6 +94,8 @@ export default function CommissionPayoutPage() {
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
+          flexWrap: "wrap",
+          gap: 1.5,
           mb: 3,
         }}
       >

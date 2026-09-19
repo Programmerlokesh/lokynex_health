@@ -42,6 +42,8 @@ export default function DirectoryPage() {
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
+          flexWrap: "wrap",
+          gap: 1.5,
         }}
       >
         <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
@@ -76,7 +78,7 @@ export default function DirectoryPage() {
         size="small"
         value={search}
         onChange={(e) => setSearch(e.target.value)}
-        sx={{ maxWidth: 380 }}
+        sx={{ width: "100%", maxWidth: 380 }}
         slotProps={{
           input: {
             startAdornment: (

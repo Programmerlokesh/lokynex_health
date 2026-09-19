@@ -46,6 +46,8 @@
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
+  --font-sans: var(--font-app), ui-sans-serif, system-ui, sans-serif;
+  --font-heading: var(--font-app), ui-sans-serif, system-ui, sans-serif;
 }
 
 :root {
@@ -118,13 +120,77 @@
 }
 
 @layer base {
-  * {
-    @apply border-border outline-ring/50;
+  @layer base {
+    * {
+      @apply border-border outline-ring/50;
+    }
+    html {
+      @apply font-sans;
+      -webkit-text-size-adjust: 100%;
+      text-size-adjust: 100%;
+      scroll-padding-top: 4.5rem;
+    }
+    body {
+      @apply bg-background text-foreground;
+      min-height: 100vh;
+      min-height: 100dvh;
+      overflow-x: clip;
+      overscroll-behavior-y: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    img,
+    svg,
+    video {
+      max-width: 100%;
+    }
   }
-  body {
-    @apply bg-background text-foreground;
+
+  :root {
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-right: env(safe-area-inset-right, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+    --safe-left: env(safe-area-inset-left, 0px);
   }
-  html {
-    @apply font-sans;
+
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+
+  .skip-link {
+    position: fixed;
+    top: 8px;
+    left: 8px;
+    z-index: 2000;
+    padding: 10px 16px;
+    border-radius: 8px;
+    background: #062b5c;
+    color: #fff;
+    font-weight: 600;
+    text-decoration: none;
+    transform: translateY(-200%);
+    transition: transform 0.15s ease;
+  }
+  .skip-link:focus {
+    transform: translateY(0);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      scroll-behavior: auto !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+
+  @media print {
+    .no-print,
+    .MuiDrawer-root,
+    .MuiAppBar-root {
+      display: none !important;
+    }
   }
 }

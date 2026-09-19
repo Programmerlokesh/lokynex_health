@@ -44,6 +44,8 @@ export default function LedgerPage() {
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
+          flexWrap: "wrap",
+          gap: 1.5,
           mb: 3,
         }}
       >
@@ -72,15 +74,17 @@ export default function LedgerPage() {
 
       <Box
         sx={{
-          bgcolor: "#fff",
-          border: "1px solid #E2E8F0",
+          bgcolor: "background.paper",
+          border: 1,
+          borderColor: "divider",
           borderRadius: 3,
           p: 2.5,
           mb: 2.5,
         }}
       >
         <Grid container spacing={2}>
-          <Grid size={4}>
+          (3 ta){" "}
+          <Grid size={{ xs: 12, sm: 6, md: 4 }}>
             <TextField
               select
               label="Branch"
@@ -97,7 +101,8 @@ export default function LedgerPage() {
               ))}
             </TextField>
           </Grid>
-          <Grid size={4}>
+          (3 ta){" "}
+          <Grid size={{ xs: 12, sm: 6, md: 4 }}>
             <TextField
               label="Date From"
               type="date"
@@ -108,7 +113,8 @@ export default function LedgerPage() {
               onChange={(e) => setDateFrom(e.target.value)}
             />
           </Grid>
-          <Grid size={4}>
+          (3 ta){" "}
+          <Grid size={{ xs: 12, sm: 6, md: 4 }}>
             <TextField
               label="Date To"
               type="date"

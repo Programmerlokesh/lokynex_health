@@ -132,7 +132,7 @@ export function CreateTestDialog({
             sx={{ display: "flex", flexDirection: "column", gap: 2 }}
           >
             <Grid container spacing={2}>
-              <Grid size={8}>
+              <Grid size={{ xs: 12, sm: 8 }}>
                 <TextField
                   label="Test Name"
                   size="small"
@@ -142,7 +142,7 @@ export function CreateTestDialog({
                   fullWidth
                 />
               </Grid>
-              <Grid size={4}>
+              <Grid size={{ xs: 12, sm: 4 }}>
                 <TextField
                   label="Price"
                   type="number"

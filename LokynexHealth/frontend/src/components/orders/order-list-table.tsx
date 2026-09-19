@@ -43,7 +43,7 @@ export function OrderListTable({ orders }: { orders: OrderListItemDto[] }) {
     >
       <Table size="small">
         <TableHead>
-          <TableRow sx={{ bgcolor: "#F5F9FC" }}>
+          <TableRow sx={{ bgcolor: "action.hover" }}>
             <TableCell sx={{ fontWeight: 600 }}>Order #</TableCell>
             <TableCell sx={{ fontWeight: 600 }}>Patient</TableCell>
             <TableCell sx={{ fontWeight: 600 }}>Branch</TableCell>

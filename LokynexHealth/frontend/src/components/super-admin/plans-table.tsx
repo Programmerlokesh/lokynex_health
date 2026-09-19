@@ -30,7 +30,7 @@ export function PlansTable({ rows }: { rows: PlanDto[] }) {
     >
       <Table size="small">
         <TableHead>
-          <TableRow sx={{ bgcolor: "#F5F9FC" }}>
+          <TableRow sx={{ bgcolor: "action.hover" }}>
             <TableCell sx={{ fontWeight: 600 }}>Name</TableCell>
             <TableCell sx={{ fontWeight: 600 }}>Price</TableCell>
             <TableCell sx={{ fontWeight: 600 }}>Billing Cycle</TableCell>

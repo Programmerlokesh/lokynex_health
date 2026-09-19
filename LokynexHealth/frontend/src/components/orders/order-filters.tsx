@@ -34,15 +34,16 @@ export function OrderFilters({
   return (
     <Box
       sx={{
-        bgcolor: "#fff",
-        border: "1px solid #E2E8F0",
+        bgcolor: "background.paper",
+        border: 1,
+        borderColor: "divider",
         borderRadius: 3,
         p: 2.5,
         mb: 2.5,
       }}
     >
       <Grid container spacing={2}>
-        <Grid size={2.4}>
+        <Grid size={{ xs: 12, sm: 6, md: 4, lg: 2.4 }}>
           <TextField
             label="Date From"
             type="date"
@@ -53,7 +54,7 @@ export function OrderFilters({
             onChange={(e) => onChange({ dateFrom: e.target.value })}
           />
         </Grid>
-        <Grid size={2.4}>
+        <Grid size={{ xs: 12, sm: 6, md: 4, lg: 2.4 }}>
           <TextField
             label="Date To"
             type="date"
@@ -64,7 +65,7 @@ export function OrderFilters({
             onChange={(e) => onChange({ dateTo: e.target.value })}
           />
         </Grid>
-        <Grid size={2.4}>
+        <Grid size={{ xs: 12, sm: 6, md: 4, lg: 2.4 }}>
           <TextField
             select
             label="Branch"
@@ -81,7 +82,7 @@ export function OrderFilters({
             ))}
           </TextField>
         </Grid>
-        <Grid size={2.4}>
+        <Grid size={{ xs: 12, sm: 6, md: 4, lg: 2.4 }}>
           <TextField
             select
             label="Payment Status"
@@ -96,7 +97,7 @@ export function OrderFilters({
             <MenuItem value="Paid">Paid</MenuItem>
           </TextField>
         </Grid>
-        <Grid size={2.4}>
+        <Grid size={{ xs: 12, sm: 6, md: 4, lg: 2.4 }}>
           <TextField
             label="Order ID"
             size="small"

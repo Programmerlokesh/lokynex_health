@@ -23,9 +23,14 @@ apiClient.interceptors.request.use((config) => {
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    // Login endpoint er 401 mane "password vul", session expire na.
+    // Age ekhane page reload hoto, tai error message ta muche jeto.
+    const isAuthCall = String(error.config?.url ?? "").includes("/Auth/");
+    if (error.response?.status === 401 && !isAuthCall) {
       useAuthStore.getState().logout();
       if (typeof window !== "undefined") {
+        // purano cookie muchhe dao, jate proxy.ts ar store ek mot thake
+        document.cookie = "lokynex-token=; path=/; max-age=0";
         window.location.href = "/login";
       }
     }

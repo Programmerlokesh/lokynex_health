@@ -43,19 +43,32 @@ export default function DepartmentsPage() {
         </Typography>
       </Box>
 
-      <Box sx={{ display: "flex", gap: 3 }}>
+      <Box
+        sx={{
+          display: "flex",
+          flexDirection: { xs: "column", md: "row" },
+          gap: 3,
+        }}
+      >
         <DepartmentList
           selectedId={selectedDeptId}
           onSelect={setSelectedDeptId}
         />
 
-        <Divider orientation="vertical" flexItem />
+        <Divider
+          orientation="vertical"
+          flexItem
+          sx={{ display: { xs: "none", md: "block" } }}
+        />
+        <Divider sx={{ display: { xs: "block", md: "none" } }} />
 
-        <Box sx={{ flex: 1 }}>
+        <Box sx={{ flex: 1, minWidth: 0 }}>
           <Box
             sx={{
               display: "flex",
               justifyContent: "space-between",
+              flexWrap: "wrap",
+              gap: 1.5,
               alignItems: "center",
               mb: 2,
             }}

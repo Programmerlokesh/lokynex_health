@@ -24,12 +24,18 @@ export function LedgerSummaryCards({
   netProfitLoss: number;
 }) {
   return (
-    <Box sx={{ display: "flex", gap: 2, mb: 3, flexWrap: "wrap" }}>
+    <Box
+      sx={{
+        display: "grid",
+        gap: 2,
+        mb: 3,
+        gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 180px), 1fr))",
+      }}
+    >
       <Paper
         sx={{
           p: 2.5,
           borderRadius: 3,
-          minWidth: 200,
           bgcolor: brand.navy,
           color: "#fff",
         }}
@@ -54,8 +60,8 @@ export function LedgerSummaryCards({
           sx={{
             p: 2.5,
             borderRadius: 3,
-            minWidth: 170,
-            border: "1px solid #E2E8F0",
+            border: 1,
+            borderColor: "divider",
             borderTop: `3px solid ${TYPE_COLORS[entry.entryType] ?? brand.blue}`,
           }}
         >

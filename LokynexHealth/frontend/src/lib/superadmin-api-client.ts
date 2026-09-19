@@ -23,7 +23,10 @@ superAdminApiClient.interceptors.request.use((config) => {
 superAdminApiClient.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    // Same rule as api-client.ts: login call er 401 mane bad password,
+    // expired session na. Form nijei error dekhabe.
+    const isAuthCall = String(error.config?.url ?? "").includes("/Auth/");
+    if (error.response?.status === 401 && !isAuthCall) {
       useSuperAdminAuthStore.getState().logout();
       if (typeof window !== "undefined") {
         window.location.href = "/superadmin/login";

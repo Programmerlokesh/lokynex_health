@@ -12,7 +12,7 @@ import {
   DialogTitle,
   TextField,
 } from "@mui/material";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 export function EditDocumentDialog({
   document,
@@ -27,12 +27,12 @@ export function EditDocumentDialog({
 
   const updateDocument = useUpdateReportDocument();
 
-  useEffect(() => {
-    if (!document) return;
-    setHeaderContent(document.headerContent ?? "");
-    setFooterContent(document.footerContent ?? "");
-    setBodyContent(document.bodyContent ?? "");
-  }, [document]);
+  // useEffect(() => {
+  //   if (!document) return;
+  //   setHeaderContent(document.headerContent ?? "");
+  //   setFooterContent(document.footerContent ?? "");
+  //   setBodyContent(document.bodyContent ?? "");
+  // }, [document]);
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

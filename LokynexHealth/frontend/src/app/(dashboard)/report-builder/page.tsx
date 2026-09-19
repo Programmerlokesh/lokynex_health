@@ -42,6 +42,8 @@ export default function ReportBuilderPage() {
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
+          flexWrap: "wrap",
+          gap: 1.5,
         }}
       >
         <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
@@ -68,6 +70,8 @@ export default function ReportBuilderPage() {
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
+          flexWrap: "wrap",
+          gap: 1.5,
         }}
       >
         <Tabs value={tab} onChange={(_, v) => setTab(v)}>
@@ -110,6 +114,7 @@ export default function ReportBuilderPage() {
       )}
 
       <EditDocumentDialog
+        key={editingDoc?.id ?? "closed"}
         document={editingDoc}
         onClose={() => setEditingDoc(null)}
       />
