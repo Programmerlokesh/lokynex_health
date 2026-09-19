@@ -1,3 +1,4 @@
+using System.Reflection;
 using LokynexHealth.Application.Common.Interfaces;
 using Microsoft.Extensions.Configuration;
 using Npgsql;
@@ -6,6 +7,9 @@ namespace LokynexHealth.Infrastructure.Persistence;
 
 public class TenantProvisioningService : ITenantProvisioningService
 {
+    private const string TemplateResourceName =
+        "LokynexHealth.Infrastructure.Persistence.Scripts.TenantSchemaTemplate.sql";
+
     private readonly IConfiguration _configuration;
 
     public TenantProvisioningService(IConfiguration configuration)
@@ -15,23 +19,12 @@ public class TenantProvisioningService : ITenantProvisioningService
 
     public async Task ProvisionTenantSchemaAsync(string schemaName, CancellationToken cancellationToken)
     {
-        // Rule: schema name is sanitized BEFORE it ever reaches this method (Section D,
-        // GenerateUniqueSchemaNameAsync), but we double-check here too — never trust a
-        // string that ends up inside raw, non-parameterized SQL (schema names can't be
-        // parameterized like normal values in Npgsql, so this defensive check matters).
         if (!System.Text.RegularExpressions.Regex.IsMatch(schemaName, "^[a-z][a-z0-9_]{2,62}$"))
             throw new ArgumentException("Invalid schema name.", nameof(schemaName));
 
         var connectionString = _configuration.GetConnectionString("TenantDb");
 
-        // NOTE (dev-time pragmatic approach): the tenant template script's actual file path.
-        // In production this should be an embedded resource inside the Infrastructure
-        // assembly (Build Action: Embedded Resource) so it ships with the deployed app
-        // instead of depending on a file path on disk.
-        var templatePath = _configuration["TenantProvisioning:TemplateScriptPath"]
-            ?? throw new InvalidOperationException("TenantProvisioning:TemplateScriptPath is not configured.");
-
-        var templateSql = await File.ReadAllTextAsync(templatePath, cancellationToken);
+        var templateSql = await ReadEmbeddedTemplateAsync(cancellationToken);
 
         await using var connection = new NpgsqlConnection(connectionString);
         await connection.OpenAsync(cancellationToken);
@@ -39,11 +32,20 @@ public class TenantProvisioningService : ITenantProvisioningService
         await using var createSchemaCmd = new NpgsqlCommand($"CREATE SCHEMA IF NOT EXISTS \"{schemaName}\";", connection);
         await createSchemaCmd.ExecuteNonQueryAsync(cancellationToken);
 
-        // search_path + the full multi-statement template script run as one batch —
-        // mirrors exactly what was done manually via psql \i during development.
         var fullScript = $"SET search_path TO \"{schemaName}\", public;\n{templateSql}";
         await using var scriptCmd = new NpgsqlCommand(fullScript, connection);
-        scriptCmd.CommandTimeout = 120;   // schema creation runs many statements — give it room
+        scriptCmd.CommandTimeout = 120;
         await scriptCmd.ExecuteNonQueryAsync(cancellationToken);
+    }
+
+    private static async Task<string> ReadEmbeddedTemplateAsync(CancellationToken cancellationToken)
+    {
+        var assembly = Assembly.GetExecutingAssembly();
+        await using var stream = assembly.GetManifestResourceStream(TemplateResourceName)
+            ?? throw new InvalidOperationException(
+                $"Embedded resource '{TemplateResourceName}' not found. Check the .csproj EmbeddedResource entry.");
+
+        using var reader = new StreamReader(stream);
+        return await reader.ReadToEndAsync(cancellationToken);
     }
 }

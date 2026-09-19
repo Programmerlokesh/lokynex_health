@@ -31,11 +31,6 @@ public class CreateLabCommandHandler : IRequestHandler<CreateLabCommand, Guid>
         if (usernameExists)
             throw new ConflictException($"Admin username '{request.AdminUsername}' already in use.");
 
-        // ---------- 1. Generate-and-check with bounded retry — unique lab_code ----------
-        // Classic collision-avoidance pattern: derive a candidate from the branch name,
-        // check the DB for a collision, and if found, retry with a new random suffix.
-        // Bounded to a fixed number of attempts so a pathological case (extremely unlikely
-        // with a random suffix) can never spin forever — fails loudly instead of hanging.
         var labCode = await GenerateUniqueValueAsync(
             generateCandidate: () => Slugify(request.PrimaryBranchName, 6).ToUpperInvariant(),
             existsCheck: code => _db.Tenants.AnyAsync(t => t.LabCode == code, cancellationToken),
@@ -54,7 +49,6 @@ public class CreateLabCommandHandler : IRequestHandler<CreateLabCommand, Guid>
             maxAttempts: 5,
             cancellationToken);
 
-        // ---------- 2. Build and persist the platform-level tenant row ----------
         var tenant = new Tenant
         {
             Id = Guid.NewGuid(),
@@ -79,10 +73,6 @@ public class CreateLabCommandHandler : IRequestHandler<CreateLabCommand, Guid>
 
         _db.Tenants.Add(tenant);
 
-        // ---------- 3. Batch insert extend branches — single list, single SaveChanges ----------
-        // Same "build a list, add all, one SaveChanges" pattern used throughout this
-        // project (Module 4's order items, Module 1's permission grid) — one round-trip
-        // for N branches, not N round-trips.
         foreach (var branchInput in request.ExtendBranches)
         {
             _db.TenantBranches.Add(new TenantBranch
@@ -100,19 +90,22 @@ public class CreateLabCommandHandler : IRequestHandler<CreateLabCommand, Guid>
 
         await _db.SaveChangesAsync(cancellationToken);
 
-        // ---------- 4. Physically provision the tenant's PostgreSQL schema ----------
-        // NOTE: this is DDL against the same physical database but a DIFFERENT schema —
-        // it happens AFTER the platform-row commit above, deliberately outside that
-        // transaction. If this step fails, the tenant row already exists but is
-        // "unprovisioned" — a real production system would need a retry/cleanup job
-        // for this partial-failure case (flagging as a known limitation, not solving
-        // distributed-transaction consistency here).
-        await _provisioningService.ProvisionTenantSchemaAsync(schemaName, cancellationToken);
+        // FIX: provisioning fail করলে এখন tenant row rollback (delete) হয়ে যাবে,
+        // তাই retry করলে আর ভুয়া 409 আসবে না — আসল এরর দেখা যাবে।
+        try
+        {
+            await _provisioningService.ProvisionTenantSchemaAsync(schemaName, cancellationToken);
+        }
+        catch
+        {
+            _db.Tenants.Remove(tenant);
+            await _db.SaveChangesAsync(CancellationToken.None);
+            throw;
+        }
 
         return tenant.Id;
     }
 
-    // ---------- Reusable generate-and-check-with-retry helper ----------
     private static async Task<string> GenerateUniqueValueAsync(
         Func<string> generateCandidate,
         Func<string, Task<bool>> existsCheck,
