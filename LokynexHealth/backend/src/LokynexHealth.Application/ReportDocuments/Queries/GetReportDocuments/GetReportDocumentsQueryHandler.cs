@@ -16,7 +16,11 @@ public class GetReportDocumentsQueryHandler : IRequestHandler<GetReportDocuments
 
     public async Task<PagedResult<ReportDocumentDto>> Handle(GetReportDocumentsQuery request, CancellationToken cancellationToken)
     {
-        var query = _db.ReportDocuments.Where(d => d.IsDeleted == request.ShowDeleted);
+        var query = _db.ReportDocuments
+            .Include(d => d.OrderItem).ThenInclude(oi => oi.Test)
+            .Include(d => d.OrderItem).ThenInclude(oi => oi.Order).ThenInclude(o => o.Patient)
+            .Include(d => d.OrderItem).ThenInclude(oi => oi.Order).ThenInclude(o => o.Relative)
+            .Where(d => d.IsDeleted == request.ShowDeleted);
 
         if (request.OrderItemId.HasValue)
             query = query.Where(d => d.OrderItemId == request.OrderItemId.Value);
@@ -31,6 +35,11 @@ public class GetReportDocumentsQueryHandler : IRequestHandler<GetReportDocuments
             {
                 Id = d.Id,
                 OrderItemId = d.OrderItemId,
+                OrderNumber = d.OrderItem.Order.OrderNumber,
+                TestName = d.OrderItem.Test.Name,
+                PatientName = d.OrderItem.Order.Relative != null
+                    ? d.OrderItem.Order.Relative.Name
+                    : d.OrderItem.Order.Patient.Phone,
                 HeaderContent = d.HeaderContent,
                 FooterContent = d.FooterContent,
                 BodyContent = d.BodyContent,

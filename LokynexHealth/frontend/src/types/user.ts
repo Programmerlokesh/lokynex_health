@@ -4,6 +4,7 @@ export interface UserDto {
   username: string;
   email: string;
   phone: string;
+  branchId: string | null;
   branchName: string | null;
   roleName: string | null;
   status: string;
@@ -35,4 +36,15 @@ export interface CreateUserRequest {
   roleId?: string;
   password: string;
   permissions: ModulePermissionInput[];
+}
+
+export interface UpdateUserRequest {
+  name: string;
+  email: string;
+  phone: string;
+  branchId?: string;
+}
+
+export interface ToggleUserStatusRequest {
+  isActive: boolean;
 }

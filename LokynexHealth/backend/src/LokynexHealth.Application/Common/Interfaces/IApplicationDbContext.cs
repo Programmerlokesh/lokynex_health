@@ -1,10 +1,17 @@
 using LokynexHealth.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 
 namespace LokynexHealth.Application.Common.Interfaces;
 
 public interface IApplicationDbContext
 {
+    // Exposes DbContext.Database so Application-layer handlers can run raw SQL
+    // (Database.SqlQuery<T>) when they need to bypass EF's normal materialization
+    // path for a specific column — e.g. SuperAdminLoginCommandHandler casting an
+    // enum to text server-side. Everything else should keep using the DbSets below.
+    DatabaseFacade Database { get; }
+
     DbSet<Branch> Branches { get; }
     DbSet<Role> Roles { get; }
     DbSet<User> Users { get; }

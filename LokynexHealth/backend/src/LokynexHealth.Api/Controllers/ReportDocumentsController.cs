@@ -2,6 +2,7 @@ using LokynexHealth.Application.Common.Interfaces;
 using LokynexHealth.Application.ReportDocuments.Commands.DeleteReportDocument;
 using LokynexHealth.Application.ReportDocuments.Commands.GenerateReportDocument;
 using LokynexHealth.Application.ReportDocuments.Commands.UpdateReportDocument;
+using LokynexHealth.Application.ReportDocuments.Queries.GetOrderItemsForReport;
 using LokynexHealth.Application.ReportDocuments.Queries.GetReportDocuments;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -51,6 +52,13 @@ public class ReportDocumentsController : ControllerBase
     public async Task<IActionResult> GetAll([FromQuery] GetReportDocumentsQuery query, CancellationToken ct)
     {
         var result = await _mediator.Send(query, ct);
+        return Ok(result);
+    }
+
+    [HttpGet("order-items-lookup")]
+    public async Task<IActionResult> GetOrderItemsLookup([FromQuery] string? search, CancellationToken ct)
+    {
+        var result = await _mediator.Send(new GetOrderItemsForReportQuery { Search = search }, ct);
         return Ok(result);
     }
 }

@@ -30,11 +30,14 @@ public class GetPayoutsQueryHandler : IRequestHandler<GetPayoutsQuery, GetPayout
             query = query.Where(p => p.GeneratedAt <= to);
         }
 
+        // Compare enum-to-enum directly — NEVER p.EntityType.ToString() == someString.
+        // The .ToString() version gets translated to SQL and breaks native Postgres
+        // enums ("operator does not exist" errors — the exact bug already hit and
+        // fixed in GetTechniciansQueryHandler and GetCommissionOverridesQueryHandler).
         if (!string.IsNullOrWhiteSpace(request.EntityType) &&
             Enum.TryParse<CommissionEntityType>(request.EntityType, out var entityTypeEnum))
         {
-            var typeText = entityTypeEnum.ToString();
-            query = query.Where(p => p.EntityType.ToString() == typeText);
+            query = query.Where(p => p.EntityType == entityTypeEnum);
         }
 
         if (request.EntityId.HasValue)
@@ -47,8 +50,7 @@ public class GetPayoutsQueryHandler : IRequestHandler<GetPayoutsQuery, GetPayout
         {
             if (Enum.TryParse<CommissionStatusType>(request.Status, out var statusEnum))
             {
-                var statusText = statusEnum.ToString();
-                query = query.Where(p => p.Status.ToString() == statusText);
+                query = query.Where(p => p.Status == statusEnum);
             }
         }
 
@@ -69,16 +71,51 @@ public class GetPayoutsQueryHandler : IRequestHandler<GetPayoutsQuery, GetPayout
             })
             .ToListAsync(cancellationToken);
 
-        var items = payouts.Select(p => new PayoutDto
+        // ---------- Batch-fetch entity names (Doctor/Referral/Technician) ----------
+        // Same batch-fetch + Dictionary O(1) lookup pattern used in
+        // GetCommissionOverridesQueryHandler — avoids N+1 queries.
+        var doctorIds = payouts.Where(p => p.DoctorId.HasValue).Select(p => p.DoctorId!.Value).Distinct().ToList();
+        var referralIds = payouts.Where(p => p.ReferralId.HasValue).Select(p => p.ReferralId!.Value).Distinct().ToList();
+        var technicianIds = payouts.Where(p => p.TechnicianId.HasValue).Select(p => p.TechnicianId!.Value).Distinct().ToList();
+
+        var doctorNames = doctorIds.Count == 0
+            ? new Dictionary<Guid, string>()
+            : await _db.Doctors.Where(d => doctorIds.Contains(d.Id))
+                .ToDictionaryAsync(d => d.Id, d => d.FullName, cancellationToken);
+
+        var referralNames = referralIds.Count == 0
+            ? new Dictionary<Guid, string>()
+            : await _db.Referrals.Where(r => referralIds.Contains(r.Id))
+                .ToDictionaryAsync(r => r.Id, r => r.FullName, cancellationToken);
+
+        var technicianNames = technicianIds.Count == 0
+            ? new Dictionary<Guid, string>()
+            : await _db.Technicians.Where(t => technicianIds.Contains(t.Id))
+                .ToDictionaryAsync(t => t.Id, t => t.FullName, cancellationToken);
+
+        var items = payouts.Select(p =>
         {
-            Id = p.Id,
-            EntityType = p.EntityType.ToString(),
-            EntityId = (p.DoctorId ?? p.ReferralId ?? p.TechnicianId)!.Value,
-            OrderItemId = p.OrderItemId,
-            CommissionAmount = p.CommissionAmount,
-            Status = p.Status.ToString(),
-            GeneratedAt = p.GeneratedAt,
-            PaidAt = p.PaidAt
+            var entityId = (p.DoctorId ?? p.ReferralId ?? p.TechnicianId)!.Value;
+            var entityName = p.EntityType switch
+            {
+                CommissionEntityType.Doctor => doctorNames.GetValueOrDefault(entityId, "Unknown"),
+                CommissionEntityType.Referral => referralNames.GetValueOrDefault(entityId, "Unknown"),
+                CommissionEntityType.Technician => technicianNames.GetValueOrDefault(entityId, "Unknown"),
+                _ => "Unknown"
+            };
+
+            return new PayoutDto
+            {
+                Id = p.Id,
+                EntityType = p.EntityType.ToString(),
+                EntityId = entityId,
+                EntityName = entityName,
+                OrderItemId = p.OrderItemId,
+                CommissionAmount = p.CommissionAmount,
+                Status = p.Status.ToString(),
+                GeneratedAt = p.GeneratedAt,
+                PaidAt = p.PaidAt
+            };
         }).ToList();
 
         // ---------- Day/Week/Month bucketing — single grouping pass, O(n) ----------

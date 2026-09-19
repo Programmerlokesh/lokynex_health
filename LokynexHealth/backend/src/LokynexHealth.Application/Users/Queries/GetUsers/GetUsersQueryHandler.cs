@@ -32,34 +32,40 @@ public class GetUsersQueryHandler : IRequestHandler<GetUsersQuery, PagedResult<U
                 EF.Functions.ILike(u.Phone, searchTerm));
         }
 
+        // Compare enum-to-enum directly — NEVER u.Status.ToString() == someString.
+        // That gets translated to SQL and breaks native Postgres enums (the same
+        // recurring bug fixed across every other module in this codebase).
         if (!string.IsNullOrWhiteSpace(request.Status) && request.Status != "All")
         {
             if (Enum.TryParse<RecordStatus>(request.Status, out var statusEnum))
             {
-                var statusText = statusEnum.ToString();
-                query = query.Where(u => u.Status.ToString() == statusText);
+                query = query.Where(u => u.Status == statusEnum);
             }
         }
 
         var totalCount = await query.CountAsync(cancellationToken);
 
-        var users = await query
+        // Materialize FIRST — then map Status.ToString() in memory (LINQ-to-Objects),
+        // never inside a .Select() that runs before .ToListAsync().
+        var userEntities = await query
             .OrderByDescending(u => u.CreatedAt)
             .Skip((request.PageNumber - 1) * request.PageSize)
             .Take(request.PageSize)
-            .Select(u => new UserDto
-            {
-                Id = u.Id,
-                Name = u.Name,
-                Username = u.Username,
-                Email = u.Email,
-                Phone = u.Phone,
-                BranchName = u.Branch != null ? u.Branch.BranchName : null,
-                RoleName = u.Role != null ? u.Role.Name : null,
-                Status = u.Status.ToString(),
-                CreatedAt = u.CreatedAt
-            })
             .ToListAsync(cancellationToken);
+
+        var users = userEntities.Select(u => new UserDto
+        {
+            Id = u.Id,
+            Name = u.Name,
+            Username = u.Username,
+            Email = u.Email,
+            Phone = u.Phone,
+            BranchId = u.BranchId,
+            BranchName = u.Branch != null ? u.Branch.BranchName : null,
+            RoleName = u.Role != null ? u.Role.Name : null,
+            Status = u.Status.ToString(),
+            CreatedAt = u.CreatedAt
+        }).ToList();
 
         return new PagedResult<UserDto>
         {

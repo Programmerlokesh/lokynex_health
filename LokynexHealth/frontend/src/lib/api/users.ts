@@ -1,5 +1,11 @@
 import { apiClient } from "@/lib/api-client";
-import { CreateUserRequest, PagedResult, UserDto } from "@/types/user";
+import {
+  CreateUserRequest,
+  PagedResult,
+  ToggleUserStatusRequest,
+  UpdateUserRequest,
+  UserDto,
+} from "@/types/user";
 
 export async function getUsersApi(params: {
   search?: string;
@@ -18,4 +24,18 @@ export async function createUserApi(
 ): Promise<{ id: string }> {
   const response = await apiClient.post<{ id: string }>("/Users", data);
   return response.data;
+}
+
+export async function updateUserApi(
+  id: string,
+  data: UpdateUserRequest,
+): Promise<void> {
+  await apiClient.put(`/Users/${id}`, data);
+}
+
+export async function toggleUserStatusApi(
+  id: string,
+  data: ToggleUserStatusRequest,
+): Promise<void> {
+  await apiClient.patch(`/Users/${id}/status`, data);
 }

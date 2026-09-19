@@ -2,8 +2,12 @@
 
 import {
   BranchIcon,
+  CommissionIcon,
   DashboardGridIcon,
+  MicroscopeIcon,
   OrderFlowIcon,
+  PulseIcon,
+  ReportIcon,
   TeamIcon,
   TestTubeIcon,
 } from "@/components/icons/lab-icons";
@@ -34,6 +38,31 @@ const navItems = [
     label: "Doctor / Referral / Technician",
     href: "/directory",
     icon: TeamIcon,
+  },
+  {
+    label: "Commission Setup",
+    href: "/commission-setup",
+    icon: CommissionIcon,
+  },
+  {
+    label: "Commission Payout",
+    href: "/commission-payouts",
+    icon: CommissionIcon,
+  },
+  {
+    label: "Ledger & P&L",
+    href: "/ledger",
+    icon: PulseIcon,
+  },
+  {
+    label: "Doctor Clinic",
+    href: "/doctor-clinic",
+    icon: MicroscopeIcon,
+  },
+  {
+    label: "Report Builder",
+    href: "/report-builder",
+    icon: ReportIcon,
   },
 ];
 

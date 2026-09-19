@@ -5,6 +5,7 @@ public class CommissionOverrideDto
     public Guid Id { get; set; }
     public string EntityType { get; set; } = default!;
     public Guid EntityId { get; set; }
+    public string EntityName { get; set; } = default!;
     public Guid TestId { get; set; }
     public string TestName { get; set; } = default!;
     public string CommissionType { get; set; } = default!;

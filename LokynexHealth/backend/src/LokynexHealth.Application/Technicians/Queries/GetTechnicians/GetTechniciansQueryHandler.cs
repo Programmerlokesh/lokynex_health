@@ -32,22 +32,26 @@ public class GetTechniciansQueryHandler : IRequestHandler<GetTechniciansQuery, P
 
         var totalCount = await query.CountAsync(cancellationToken);
 
-        var technicians = await query
+        // Fetch the raw entities first (native enum stays as-is in the query) —
+        // ToListAsync() materializes the results, THEN we map to DTO with
+        // .ToString() running in memory (LINQ-to-Objects), not translated to SQL.
+        var technicianEntities = await query
             .OrderBy(t => t.FullName)
             .Skip((request.PageNumber - 1) * request.PageSize)
             .Take(request.PageSize)
-            .Select(t => new TechnicianDto
-            {
-                Id = t.Id,
-                BranchId = t.BranchId,
-                BranchName = t.Branch.BranchName,
-                FullName = t.FullName,
-                Phone = t.Phone,
-                Email = t.Email,
-                Address = t.Address,
-                Status = t.Status.ToString()
-            })
             .ToListAsync(cancellationToken);
+
+        var technicians = technicianEntities.Select(t => new TechnicianDto
+        {
+            Id = t.Id,
+            BranchId = t.BranchId,
+            BranchName = t.Branch.BranchName,
+            FullName = t.FullName,
+            Phone = t.Phone,
+            Email = t.Email,
+            Address = t.Address,
+            Status = t.Status.ToString()
+        }).ToList();
 
         return new PagedResult<TechnicianDto>
         {

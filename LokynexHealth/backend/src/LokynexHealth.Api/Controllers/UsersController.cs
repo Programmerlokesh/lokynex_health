@@ -1,4 +1,7 @@
+using LokynexHealth.Application.Common.Interfaces;
 using LokynexHealth.Application.Users.Commands.CreateUser;
+using LokynexHealth.Application.Users.Commands.ToggleUserStatus;
+using LokynexHealth.Application.Users.Commands.UpdateUser;
 using LokynexHealth.Application.Users.Queries.GetUsers;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -12,10 +15,12 @@ namespace LokynexHealth.Api.Controllers;
 public class UsersController : ControllerBase
 {
     private readonly IMediator _mediator;
+    private readonly ICurrentUserService _currentUser;
 
-    public UsersController(IMediator mediator)
+    public UsersController(IMediator mediator, ICurrentUserService currentUser)
     {
         _mediator = mediator;
+        _currentUser = currentUser;
     }
 
     [HttpPost]
@@ -45,5 +50,29 @@ public class UsersController : ControllerBase
 
         var result = await _mediator.Send(query, cancellationToken);
         return Ok(result);
+    }
+
+    [HttpPut("{id}")]
+    public async Task<IActionResult> UpdateUser(
+        Guid id,
+        [FromBody] UpdateUserCommand command,
+        CancellationToken cancellationToken)
+    {
+        command.Id = id;
+        command.UpdatedBy = _currentUser.UserId;
+        await _mediator.Send(command, cancellationToken);
+        return NoContent();
+    }
+
+    [HttpPatch("{id}/status")]
+    public async Task<IActionResult> ToggleStatus(
+        Guid id,
+        [FromBody] ToggleUserStatusCommand command,
+        CancellationToken cancellationToken)
+    {
+        command.Id = id;
+        command.UpdatedBy = _currentUser.UserId;
+        await _mediator.Send(command, cancellationToken);
+        return NoContent();
     }
 }

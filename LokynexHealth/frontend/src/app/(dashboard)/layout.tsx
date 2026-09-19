@@ -22,7 +22,9 @@ export default function DashboardLayout({
   return (
     <Box sx={{ display: "flex" }}>
       <Sidebar />
-      <Box sx={{ flexGrow: 1, minHeight: "100vh", bgcolor: "#f8fafc" }}>
+      <Box
+        sx={{ flexGrow: 1, minHeight: "100vh", bgcolor: "background.default" }}
+      >
         <Topbar />
         <Box sx={{ p: 4 }}>
           {/* AnimatePresence + pathname key = fade-transition every time the route changes,

@@ -7,6 +7,7 @@ public class UserDto
     public string Username { get; set; } = default!;
     public string Email { get; set; } = default!;
     public string Phone { get; set; } = default!;
+    public Guid? BranchId { get; set; }
     public string? BranchName { get; set; }
     public string? RoleName { get; set; }
     public string Status { get; set; } = default!;

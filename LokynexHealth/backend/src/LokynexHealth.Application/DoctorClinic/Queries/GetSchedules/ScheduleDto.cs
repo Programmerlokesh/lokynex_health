@@ -6,6 +6,7 @@ public class ScheduleDto
     public Guid BranchId { get; set; }
     public string BranchName { get; set; } = default!;
     public Guid DoctorId { get; set; }
+    public string DoctorName { get; set; } = default!;
     public short DayOfWeek { get; set; }
     public int SlotMinutes { get; set; }
     public TimeOnly TimeFrom { get; set; }

@@ -50,4 +50,39 @@ public class JwtTokenGenerator : IJwtTokenGenerator
 
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
+
+    // SuperAdmin tokens carry NO "permissions" claim (SuperAdmin authorizes purely
+    // by role, checked via [Authorize(Roles = "SuperAdmin")] on the Labs/Plans/
+    // Subscriptions/Notifications controllers) and are issued from a completely
+    // separate login path (/api/Auth/superadmin-login) against the platform-schema
+    // SuperAdmins table — never from the regular tenant User login.
+    public string GenerateSuperAdminToken(Guid superAdminId, string username)
+    {
+        var secret = _configuration["Jwt:Secret"]!;
+        var issuer = _configuration["Jwt:Issuer"]!;
+        var audience = _configuration["Jwt:Audience"]!;
+        var expiryMinutes = int.Parse(_configuration["Jwt:ExpiryMinutes"] ?? "60");
+
+        var claims = new List<Claim>
+        {
+            new(JwtRegisteredClaimNames.Sub, superAdminId.ToString()),
+            new(ClaimTypes.NameIdentifier, superAdminId.ToString()),
+            new(ClaimTypes.Name, username),
+            new(ClaimTypes.Role, "SuperAdmin"),
+            new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+        };
+
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret));
+        var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+        var token = new JwtSecurityToken(
+            issuer: issuer,
+            audience: audience,
+            claims: claims,
+            expires: DateTime.UtcNow.AddMinutes(expiryMinutes),
+            signingCredentials: credentials
+        );
+
+        return new JwtSecurityTokenHandler().WriteToken(token);
+    }
 }

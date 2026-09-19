@@ -26,22 +26,27 @@ public class GetLabsQueryHandler : IRequestHandler<GetLabsQuery, PagedResult<Lab
 
         var totalCount = await query.CountAsync(cancellationToken);
 
-        var labs = await query
+        // Materialize FIRST — then map Status.ToString() in memory (LINQ-to-Objects).
+        // The .ToString() inside a .Select() that runs before .ToListAsync() gets
+        // translated to SQL and breaks native Postgres enums — the recurring bug
+        // already fixed across GetTechniciansQueryHandler, GetPlansQueryHandler, etc.
+        var tenantEntities = await query
             .OrderByDescending(t => t.CreatedAt)
             .Skip((request.PageNumber - 1) * request.PageSize)
             .Take(request.PageSize)
-            .Select(t => new LabDto
-            {
-                Id = t.Id,
-                LabCode = t.LabCode,
-                PrimaryBranchName = t.PrimaryBranchName,
-                Subdomain = t.Subdomain,
-                AdminName = t.AdminName,
-                UserLimit = t.UserLimit,
-                Status = t.Status.ToString(),
-                CreatedAt = t.CreatedAt
-            })
             .ToListAsync(cancellationToken);
+
+        var labs = tenantEntities.Select(t => new LabDto
+        {
+            Id = t.Id,
+            LabCode = t.LabCode,
+            PrimaryBranchName = t.PrimaryBranchName,
+            Subdomain = t.Subdomain,
+            AdminName = t.AdminName,
+            UserLimit = t.UserLimit,
+            Status = t.Status.ToString(),
+            CreatedAt = t.CreatedAt
+        }).ToList();
 
         return new PagedResult<LabDto>
         {

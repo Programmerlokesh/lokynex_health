@@ -20,19 +20,24 @@ public class GetReportTemplatesQueryHandler : IRequestHandler<GetReportTemplates
 
         var totalCount = await query.CountAsync(cancellationToken);
 
-        var templates = await query
+        // Materialize FIRST — then map SourceType.ToString() in memory (LINQ-to-Objects).
+        // Doing .ToString() inside a .Select() that runs before .ToListAsync() gets
+        // translated to SQL and breaks native Postgres enums — the exact bug already
+        // fixed in GetTechniciansQueryHandler, GetCommissionOverridesQueryHandler, etc.
+        var templateEntities = await query
             .OrderByDescending(t => t.CreatedAt)
             .Skip((request.PageNumber - 1) * request.PageSize)
             .Take(request.PageSize)
-            .Select(t => new ReportTemplateDto
-            {
-                Id = t.Id,
-                Name = t.Name,
-                SourceType = t.SourceType.ToString(),
-                IsDeleted = t.IsDeleted,
-                CreatedAt = t.CreatedAt
-            })
             .ToListAsync(cancellationToken);
+
+        var templates = templateEntities.Select(t => new ReportTemplateDto
+        {
+            Id = t.Id,
+            Name = t.Name,
+            SourceType = t.SourceType.ToString(),
+            IsDeleted = t.IsDeleted,
+            CreatedAt = t.CreatedAt
+        }).ToList();
 
         return new PagedResult<ReportTemplateDto>
         {

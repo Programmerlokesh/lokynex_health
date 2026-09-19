@@ -1,4 +1,5 @@
 using LokynexHealth.Application.Auth.Commands.Login;
+using LokynexHealth.Application.Auth.Commands.SuperAdminLogin;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -19,6 +20,17 @@ public class AuthController : ControllerBase
     [AllowAnonymous]
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] LoginCommand command, CancellationToken ct)
+    {
+        var result = await _mediator.Send(command, ct);
+        return Ok(result);
+    }
+
+    // Completely separate from the tenant-user login above — checks the
+    // platform-schema SuperAdmins table, not the tenant Users table. This is
+    // the ONLY way to obtain a token with Role = "SuperAdmin".
+    [AllowAnonymous]
+    [HttpPost("superadmin-login")]
+    public async Task<IActionResult> SuperAdminLogin([FromBody] SuperAdminLoginCommand command, CancellationToken ct)
     {
         var result = await _mediator.Send(command, ct);
         return Ok(result);
