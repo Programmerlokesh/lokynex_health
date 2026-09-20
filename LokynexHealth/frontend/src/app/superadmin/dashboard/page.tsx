@@ -54,32 +54,20 @@ export default function SuperAdminDashboardPage() {
 
   function handleLogout() {
     logout();
-    router.push("/superadmin/login");
+    router.push("/login");
   }
 
   return (
-    <Box sx={{ minHeight: "100dvh", bgcolor: "background.default" }}>
+    <Box sx={{ minHeight: "100vh", bgcolor: "background.default" }}>
       {/* Deliberately its own AppBar — NOT the tenant Sidebar/Topbar — so a
           lab user can never navigate here, and this console never looks like
           part of any single lab's dashboard. */}
       <AppBar
         position="sticky"
         elevation={0}
-        sx={{
-          bgcolor: "#062B5C",
-          borderBottom: "1px solid #0A3872",
-          pt: "var(--safe-top)",
-        }}
+        sx={{ bgcolor: "#062B5C", borderBottom: "1px solid #0A3872" }}
       >
-        <Toolbar
-          sx={{
-            display: "flex",
-            justifyContent: "space-between",
-            flexWrap: "wrap",
-            gap: 1.5,
-            px: { xs: 1.5, sm: 3 },
-          }}
-        >
+        <Toolbar sx={{ display: "flex", justifyContent: "space-between" }}>
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
             <SampleDropIcon sx={{ color: "#22D3EE" }} fontSize="small" />
             <Typography sx={{ fontWeight: 700, color: "#fff" }}>
@@ -89,12 +77,7 @@ export default function SuperAdminDashboardPage() {
           <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
             <Typography
               variant="body2"
-              noWrap
-              sx={{
-                color: "rgba(255,255,255,0.75)",
-                display: { xs: "none", sm: "block" },
-                maxWidth: 200,
-              }}
+              sx={{ color: "rgba(255,255,255,0.75)" }}
             >
               {name}
             </Typography>
@@ -110,23 +93,12 @@ export default function SuperAdminDashboardPage() {
         </Toolbar>
       </AppBar>
 
-      <Box
-        sx={{
-          p: { xs: 2, sm: 3, md: 4 },
-          display: "flex",
-          flexDirection: "column",
-          gap: 2.5,
-          maxWidth: 1600,
-          mx: "auto",
-        }}
-      >
+      <Box sx={{ p: 4, display: "flex", flexDirection: "column", gap: 2.5 }}>
         <Box
           sx={{
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
-            flexWrap: "wrap",
-            gap: 1.5,
           }}
         >
           <Typography variant="h5" sx={{ fontWeight: 700 }}>

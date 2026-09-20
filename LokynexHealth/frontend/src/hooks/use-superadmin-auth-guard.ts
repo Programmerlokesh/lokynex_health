@@ -18,7 +18,7 @@ export function useSuperAdminAuthGuard() {
 
   useEffect(() => {
     if (hydrated && !isAuthenticated) {
-      router.push("/superadmin/login");
+      router.push("/login");
     }
   }, [hydrated, isAuthenticated, router]);
 

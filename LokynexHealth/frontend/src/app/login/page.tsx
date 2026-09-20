@@ -9,7 +9,9 @@ import {
 } from "@/components/icons/lab-icons";
 import { brand } from "@/components/providers/mui-theme-provider";
 import { loginApi } from "@/lib/api/auth";
+import { superAdminLoginApi } from "@/lib/api/superadmin-auth";
 import { useAuthStore } from "@/store/auth-store";
+import { useSuperAdminAuthStore } from "@/store/superadmin-auth-store";
 import {
   Alert,
   Box,
@@ -27,24 +29,68 @@ import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+// One login form, two possible accounts. We try the tenant (lab) login
+// first — that's the common case. Only if that fails do we try the
+// SuperAdmin login. This means SuperAdmin credentials NEVER grant tenant
+// dashboard access (they only ever match the SuperAdmin table, which only
+// ever routes to /superadmin/dashboard) — and a lab user's credentials
+// never match the SuperAdmin table either, since the two live in
+// completely separate tables with separate tokens and separate stores.
+type UnifiedLoginResult =
+  | {
+      kind: "tenant";
+      token: string;
+      userId: string;
+      name: string;
+      role: string;
+    }
+  | { kind: "superadmin"; token: string; name: string };
+
+async function unifiedLoginApi(credentials: {
+  username: string;
+  password: string;
+}): Promise<UnifiedLoginResult> {
+  try {
+    const tenant = await loginApi(credentials);
+    return {
+      kind: "tenant",
+      token: tenant.token,
+      userId: tenant.userId,
+      name: tenant.name,
+      role: tenant.role,
+    };
+  } catch {
+    // Tenant login failed — this username/password might belong to the
+    // SuperAdmin account instead, so try that before giving up.
+    const admin = await superAdminLoginApi(credentials);
+    return { kind: "superadmin", token: admin.token, name: admin.name };
+  }
+}
+
 export default function LoginPage() {
   const router = useRouter();
   const setAuth = useAuthStore((state) => state.setAuth);
+  const setSuperAdminAuth = useSuperAdminAuthStore((state) => state.setAuth);
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
   const loginMutation = useMutation({
-    mutationFn: loginApi,
-    onSuccess: (data) => {
-      setAuth(data.token, {
-        userId: data.userId,
-        name: data.name,
-        role: data.role,
-      });
-      document.cookie = `lokynex-token=${data.token}; path=/; max-age=3600`;
-      router.push("/dashboard");
+    mutationFn: unifiedLoginApi,
+    onSuccess: (result) => {
+      if (result.kind === "tenant") {
+        setAuth(result.token, {
+          userId: result.userId,
+          name: result.name,
+          role: result.role,
+        });
+        document.cookie = `lokynex-token=${result.token}; path=/; max-age=3600`;
+        router.push("/dashboard");
+      } else {
+        setSuperAdminAuth(result.token, result.name);
+        router.push("/superadmin/dashboard");
+      }
     },
   });
 
@@ -62,7 +108,7 @@ export default function LoginPage() {
           display: { xs: "none", md: "flex" },
           flexDirection: "column",
           justifyContent: "space-between",
-                    flexWrap: "wrap",
+          flexWrap: "wrap",
           gap: 1.5,
           p: { md: 5, lg: 7 },
           color: "#fff",

@@ -3,8 +3,8 @@ import axios from "axios";
 
 // A dedicated axios instance for SuperAdmin-only endpoints (Labs, Plans,
 // Subscriptions, Notifications) — attaches the SuperAdmin token, never the
-// tenant token, and on 401 redirects to the SuperAdmin login, never the
-// tenant one. Kept fully separate from lib/api-client.ts.
+// tenant token, and on 401 redirects to the unified login, never leaves the
+// person stranded. Kept fully separate from lib/api-client.ts.
 export const superAdminApiClient = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_BASE_URL,
   headers: {
@@ -29,7 +29,7 @@ superAdminApiClient.interceptors.response.use(
     if (error.response?.status === 401 && !isAuthCall) {
       useSuperAdminAuthStore.getState().logout();
       if (typeof window !== "undefined") {
-        window.location.href = "/superadmin/login";
+        window.location.href = "/login";
       }
     }
     return Promise.reject(error);
