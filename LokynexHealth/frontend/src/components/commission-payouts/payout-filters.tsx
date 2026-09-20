@@ -22,7 +22,7 @@ export function PayoutFilters({
       }}
     >
       <Grid container spacing={2}>
-        <Grid size={2.4}>
+        <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
           <TextField
             label="Date From"
             type="date"
@@ -33,7 +33,7 @@ export function PayoutFilters({
             onChange={(e) => onChange({ dateFrom: e.target.value })}
           />
         </Grid>
-        <Grid size={2.4}>
+        <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
           <TextField
             label="Date To"
             type="date"
@@ -44,7 +44,7 @@ export function PayoutFilters({
             onChange={(e) => onChange({ dateTo: e.target.value })}
           />
         </Grid>
-        <Grid size={2.4}>
+        <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
           <TextField
             select
             label="Entity Type"
@@ -59,7 +59,7 @@ export function PayoutFilters({
             <MenuItem value="Technician">Technician</MenuItem>
           </TextField>
         </Grid>
-        <Grid size={2.4}>
+        <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
           <TextField
             select
             label="Status"
@@ -73,7 +73,7 @@ export function PayoutFilters({
             <MenuItem value="Paid">Paid</MenuItem>
           </TextField>
         </Grid>
-        <Grid size={2.4}>
+        <Grid size={{ xs: 12, sm: 6, md: 2.4 }}>
           <TextField
             select
             label="Group By"

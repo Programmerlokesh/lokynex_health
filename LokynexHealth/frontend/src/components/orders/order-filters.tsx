@@ -107,7 +107,7 @@ export function OrderFilters({
           />
         </Grid>
 
-        <Grid size={6}>
+       <Grid size={{ xs: 12, sm: 6 }}>
           <TextField
             label="Patient Name / Phone"
             size="small"
@@ -126,14 +126,10 @@ export function OrderFilters({
             }}
           />
         </Grid>
-        <Grid
-          size={6}
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "flex-end",
-          }}
-        >
+<Grid
+  size={{ xs: 12, sm: 6 }}
+  sx={{ display: "flex", alignItems: "center", justifyContent: { xs: "flex-start", sm: "flex-end" } }}
+>
           <FormControlLabel
             control={
               <Switch

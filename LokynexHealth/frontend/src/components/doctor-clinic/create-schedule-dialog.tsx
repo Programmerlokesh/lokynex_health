@@ -148,7 +148,7 @@ export function CreateScheduleDialog() {
               ))}
             </TextField>
 
-            <Box sx={{ display: "flex", gap: 2 }}>
+            <Box sx={{ display: "flex", flexDirection: { xs: "column", sm: "row" }, gap: 2 }}>
               <TextField
                 label="Time From"
                 type="time"
@@ -171,7 +171,7 @@ export function CreateScheduleDialog() {
               />
             </Box>
 
-            <Box sx={{ display: "flex", gap: 2 }}>
+            <Box sx={{ display: "flex", flexDirection: { xs: "column", sm: "row" }, gap: 2 }}>
               <TextField
                 label="Slot Minutes"
                 type="number"

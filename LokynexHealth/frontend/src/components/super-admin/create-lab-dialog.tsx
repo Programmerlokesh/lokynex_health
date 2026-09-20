@@ -1,6 +1,7 @@
 "use client";
 
 import { useCreateLab } from "@/hooks/use-super-admin";
+import { getApiErrorMessage } from "@/lib/api-error";
 import { ExtendBranchInput } from "@/types/super-admin";
 import AddIcon from "@mui/icons-material/Add";
 import DeleteOutlineIcon from "@mui/icons-material/Delete";
@@ -140,8 +141,7 @@ export function CreateLabDialog() {
           >
             {createLab.isError && (
               <Alert severity="error">
-                Could not create the lab. Please check the details and try
-                again.
+                {getApiErrorMessage(createLab.error, "Could not create the lab.")}
               </Alert>
             )}
 
@@ -164,12 +164,13 @@ export function CreateLabDialog() {
               value={primaryBranchAddress}
               onChange={(e) => setPrimaryBranchAddress(e.target.value)}
             />
-            <Box sx={{ display: "flex", gap: 2 }}>
+            <Box sx={{ display: "flex", flexDirection: { xs: "column", sm: "row" }, gap: 2 }}>
               <TextField
                 label="Branch Phone"
                 size="small"
                 fullWidth
                 required
+                slotProps={{ htmlInput: { maxLength: 20 } }}
                 value={primaryBranchPhone}
                 onChange={(e) => setPrimaryBranchPhone(e.target.value)}
               />
@@ -178,6 +179,7 @@ export function CreateLabDialog() {
                 size="small"
                 fullWidth
                 required
+                slotProps={{ htmlInput: { maxLength: 10 } }}
                 value={primaryBranchPincode}
                 onChange={(e) => setPrimaryBranchPincode(e.target.value)}
               />
@@ -204,12 +206,13 @@ export function CreateLabDialog() {
               value={adminName}
               onChange={(e) => setAdminName(e.target.value)}
             />
-            <Box sx={{ display: "flex", gap: 2 }}>
+           <Box sx={{ display: "flex", flexDirection: { xs: "column", sm: "row" }, gap: 2 }}>
               <TextField
                 label="Admin Phone"
                 size="small"
                 fullWidth
                 required
+                slotProps={{ htmlInput: { maxLength: 20 } }}
                 value={adminPhone}
                 onChange={(e) => setAdminPhone(e.target.value)}
               />
@@ -223,7 +226,7 @@ export function CreateLabDialog() {
                 onChange={(e) => setAdminEmail(e.target.value)}
               />
             </Box>
-            <Box sx={{ display: "flex", gap: 2 }}>
+            <Box sx={{ display: "flex", flexDirection: { xs: "column", sm: "row" }, gap: 2 }}>
               <TextField
                 label="Admin Username"
                 size="small"
@@ -238,6 +241,7 @@ export function CreateLabDialog() {
                 size="small"
                 fullWidth
                 required
+                slotProps={{ htmlInput: { minLength: 8 } }}
                 value={adminPassword}
                 onChange={(e) => setAdminPassword(e.target.value)}
               />
@@ -285,6 +289,8 @@ export function CreateLabDialog() {
                     label="Branch Name"
                     size="small"
                     fullWidth
+                    required
+                    slotProps={{ htmlInput: { maxLength: 150 } }}
                     value={branch.branchName}
                     onChange={(e) =>
                       updateExtraBranch(i, { branchName: e.target.value })
@@ -294,6 +300,8 @@ export function CreateLabDialog() {
                     label="Branch Code"
                     size="small"
                     fullWidth
+                    required
+                    slotProps={{ htmlInput: { maxLength: 20 } }}
                     value={branch.branchCode}
                     onChange={(e) =>
                       updateExtraBranch(i, { branchCode: e.target.value })
@@ -321,6 +329,7 @@ export function CreateLabDialog() {
                     label="Pincode"
                     size="small"
                     fullWidth
+                    slotProps={{ htmlInput: { maxLength: 10 } }}
                     value={branch.branchPincode}
                     onChange={(e) =>
                       updateExtraBranch(i, { branchPincode: e.target.value })
@@ -330,6 +339,7 @@ export function CreateLabDialog() {
                     label="Phone"
                     size="small"
                     fullWidth
+                    slotProps={{ htmlInput: { maxLength: 20 } }}
                     value={branch.branchPhone}
                     onChange={(e) =>
                       updateExtraBranch(i, { branchPhone: e.target.value })
