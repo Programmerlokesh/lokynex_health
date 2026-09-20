@@ -8,8 +8,7 @@ import {
   TestTubeIcon,
 } from "@/components/icons/lab-icons";
 import { brand } from "@/components/providers/mui-theme-provider";
-import { loginApi } from "@/lib/api/auth";
-import { superAdminLoginApi } from "@/lib/api/superadmin-auth";
+import { unifiedLoginApi } from "@/lib/api/auth";
 import { useAuthStore } from "@/store/auth-store";
 import { useSuperAdminAuthStore } from "@/store/superadmin-auth-store";
 import {
@@ -25,46 +24,32 @@ import {
   Typography,
 } from "@mui/material";
 import { useMutation } from "@tanstack/react-query";
+import { isAxiosError } from "axios";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-// One login form, two possible accounts. We try the tenant (lab) login
-// first — that's the common case. Only if that fails do we try the
-// SuperAdmin login. This means SuperAdmin credentials NEVER grant tenant
-// dashboard access (they only ever match the SuperAdmin table, which only
-// ever routes to /superadmin/dashboard) — and a lab user's credentials
-// never match the SuperAdmin table either, since the two live in
-// completely separate tables with separate tokens and separate stores.
-type UnifiedLoginResult =
-  | {
-      kind: "tenant";
-      token: string;
-      userId: string;
-      name: string;
-      role: string;
+// ONE login form for everyone. The API decides who signed in:
+//   • SuperAdmin username + password  -> SuperAdmin session -> /superadmin/dashboard
+//   • Lab user username + password    -> lab session        -> /dashboard
+// A SuperAdmin login NEVER creates a lab session (and the API also rejects
+// SuperAdmin tokens on every lab endpoint). A wrong username/password
+// combination — including a lab username with the SuperAdmin's password —
+// is simply "Invalid username or password".
+function getLoginErrorMessage(error: unknown): string {
+  if (isAxiosError(error)) {
+    if (!error.response) {
+      return "Cannot reach the server. Check that the API is running and your internet is working.";
     }
-  | { kind: "superadmin"; token: string; name: string };
-
-async function unifiedLoginApi(credentials: {
-  username: string;
-  password: string;
-}): Promise<UnifiedLoginResult> {
-  try {
-    const tenant = await loginApi(credentials);
-    return {
-      kind: "tenant",
-      token: tenant.token,
-      userId: tenant.userId,
-      name: tenant.name,
-      role: tenant.role,
-    };
-  } catch {
-    // Tenant login failed — this username/password might belong to the
-    // SuperAdmin account instead, so try that before giving up.
-    const admin = await superAdminLoginApi(credentials);
-    return { kind: "superadmin", token: admin.token, name: admin.name };
+    const data = error.response.data as { errors?: string[] } | undefined;
+    if (error.response.status === 401 || error.response.status === 400) {
+      return data?.errors?.[0] ?? "Invalid username or password.";
+    }
+    if (error.response.status >= 500) {
+      return "Server error. Please try again in a moment.";
+    }
   }
+  return "Something went wrong. Please try again.";
 }
 
 export default function LoginPage() {
@@ -79,17 +64,24 @@ export default function LoginPage() {
   const loginMutation = useMutation({
     mutationFn: unifiedLoginApi,
     onSuccess: (result) => {
-      if (result.kind === "tenant") {
+      if (result.accountType === "SuperAdmin") {
+        // A SuperAdmin must never carry a lab session: wipe any lab
+        // session + cookie left over in this browser first.
+        useAuthStore.getState().logout();
+        document.cookie = "lokynex-token=; path=/; max-age=0";
+        setSuperAdminAuth(result.token, result.name);
+        router.push("/superadmin/dashboard");
+      } else {
+        // ...and a lab user must never carry a SuperAdmin session.
+        useSuperAdminAuthStore.getState().logout();
         setAuth(result.token, {
           userId: result.userId,
           name: result.name,
           role: result.role,
         });
-        document.cookie = `lokynex-token=${result.token}; path=/; max-age=3600`;
+        const secure = window.location.protocol === "https:" ? "; Secure" : "";
+        document.cookie = `lokynex-token=${result.token}; path=/; max-age=3600; SameSite=Lax${secure}`;
         router.push("/dashboard");
-      } else {
-        setSuperAdminAuth(result.token, result.name);
-        router.push("/superadmin/dashboard");
       }
     },
   });
@@ -108,8 +100,6 @@ export default function LoginPage() {
           display: { xs: "none", md: "flex" },
           flexDirection: "column",
           justifyContent: "space-between",
-          flexWrap: "wrap",
-          gap: 1.5,
           p: { md: 5, lg: 7 },
           color: "#fff",
           position: "relative",
@@ -240,7 +230,7 @@ export default function LoginPage() {
                 color="text.secondary"
                 sx={{ mb: 3.5 }}
               >
-                Sign in to your lab dashboard.
+                Sign in to continue.
               </Typography>
 
               <Box
@@ -294,7 +284,9 @@ export default function LoginPage() {
                 />
 
                 {loginMutation.isError && (
-                  <Alert severity="error">Invalid username or password.</Alert>
+                  <Alert severity="error">
+                    {getLoginErrorMessage(loginMutation.error)}
+                  </Alert>
                 )}
 
                 <Button

@@ -1,6 +1,7 @@
 using LokynexHealth.Application.Common.Interfaces;
 using LokynexHealth.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace LokynexHealth.Infrastructure.Persistence;
 
@@ -41,11 +42,8 @@ public class LokynexHealthDbContext : DbContext, IApplicationDbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        // ---------- ALL Postgres enum registrations MUST happen BEFORE
-        // ApplyConfigurationsFromAssembly(), because each entity configuration
-        // (e.g. DoctorConfiguration's .HasColumnType("platform.record_status"))
-        // needs the enum already registered to resolve it as a native enum
-        // instead of silently falling back to a plain int mapping. ----------
+        // Model-level enum registrations (used for migrations / model metadata).
+        // The runtime EF enum mappings live in Program.cs -> UseNpgsql(..., o => o.MapEnum<T>()).
 
         // Tenant-schema enums (lab_demo.*)
         modelBuilder.HasPostgresEnum<Domain.Enums.RecordStatus>("record_status");
@@ -67,6 +65,28 @@ public class LokynexHealthDbContext : DbContext, IApplicationDbContext
 
         // Entity configurations run AFTER all enums are registered.
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(LokynexHealthDbContext).Assembly);
+
+        // ---------- Let EF resolve every native PG enum by its CLR type ----------
+        // Entity configurations above set explicit column types such as
+        // HasColumnType("record_status") / ("platform.record_status") and, for
+        // User and Branch, HasConversion<string>(). EF's enum lookup by store-type
+        // name is ambiguous for "record_status" (it exists in BOTH lab_demo and
+        // platform) and a string conversion cannot be written to an enum column.
+        // So for every enum-typed property we drop the explicit column type and
+        // conversion; EF then uses the enum registered in Program.cs
+        // (UseNpgsql(..., o => o.MapEnum<T>(...))) for that CLR type.
+        foreach (var entityType in modelBuilder.Model.GetEntityTypes())
+        {
+            foreach (var property in entityType.GetProperties())
+            {
+                var clrType = Nullable.GetUnderlyingType(property.ClrType) ?? property.ClrType;
+                if (!clrType.IsEnum) continue;
+
+                property.SetColumnType(null);
+                property.SetProviderClrType(null);
+                property.SetValueConverter((ValueConverter?)null);
+            }
+        }
 
         base.OnModelCreating(modelBuilder);
     }

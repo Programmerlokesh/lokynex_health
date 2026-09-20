@@ -38,6 +38,12 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, LoginResult>
 
         var roleName = user.Role?.Name ?? "User";
 
+        // The platform "SuperAdmin" role only exists in platform.super_admins and
+        // is issued ONLY by the SuperAdmin login. A lab-side user that somehow
+        // carries a role called "SuperAdmin" must not get a token for it.
+        if (string.Equals(roleName, "SuperAdmin", StringComparison.OrdinalIgnoreCase))
+            throw new UnauthorizedException("Invalid username or password.");
+
         // Build a flat permission-string list like "NewOrder:View", "NewOrder:Create" —
         // consumed as O(1) HashSet-style checks later by a permission-based authorize filter.
         var permissions = user.Permissions

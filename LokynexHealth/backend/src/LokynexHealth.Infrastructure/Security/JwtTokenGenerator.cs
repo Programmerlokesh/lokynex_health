@@ -30,6 +30,9 @@ public class JwtTokenGenerator : IJwtTokenGenerator
             new(ClaimTypes.NameIdentifier, user.Id.ToString()),
             new(ClaimTypes.Name, user.Username),
             new(ClaimTypes.Role, roleName),
+            // Marks this as a LAB token. Program.cs uses this to make sure a
+            // SuperAdmin token can never be used on lab endpoints.
+            new("token_type", "Lab"),
             new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
         };
 
@@ -53,9 +56,9 @@ public class JwtTokenGenerator : IJwtTokenGenerator
 
     // SuperAdmin tokens carry NO "permissions" claim (SuperAdmin authorizes purely
     // by role, checked via [Authorize(Roles = "SuperAdmin")] on the Labs/Plans/
-    // Subscriptions/Notifications controllers) and are issued from a completely
-    // separate login path (/api/Auth/superadmin-login) against the platform-schema
-    // SuperAdmins table — never from the regular tenant User login.
+    // Subscriptions/Notifications controllers) and are issued only from the
+    // SuperAdmin login path against the platform-schema SuperAdmins table —
+    // never from the regular tenant User login.
     public string GenerateSuperAdminToken(Guid superAdminId, string username)
     {
         var secret = _configuration["Jwt:Secret"]!;
@@ -69,6 +72,7 @@ public class JwtTokenGenerator : IJwtTokenGenerator
             new(ClaimTypes.NameIdentifier, superAdminId.ToString()),
             new(ClaimTypes.Name, username),
             new(ClaimTypes.Role, "SuperAdmin"),
+            new("token_type", "SuperAdmin"),
             new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
         };
 
