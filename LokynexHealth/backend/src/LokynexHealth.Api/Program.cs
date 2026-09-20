@@ -14,6 +14,17 @@ using Microsoft.OpenApi.Models;
 var builder = WebApplication.CreateBuilder(args);
 
 // ============================================================
+// Railway (and most container hosts) assign the port dynamically via the
+// PORT env var. Locally (dotnet run / launchSettings) this is unset, so
+// Kestrel falls back to its normal default binding — no change in dev.
+// ============================================================
+var railwayPort = Environment.GetEnvironmentVariable("PORT");
+if (!string.IsNullOrWhiteSpace(railwayPort))
+{
+    builder.WebHost.UseUrls($"http://0.0.0.0:{railwayPort}");
+}
+
+// ============================================================
 // Database + Postgres enum mapping
 // ============================================================
 var connectionString = builder.Configuration.GetConnectionString("TenantDb");
@@ -73,11 +84,18 @@ builder.Services.AddHttpContextAccessor(); // required by CurrentUserService
 // ============================================================
 // CORS — allow the Next.js frontend to call this API
 // ============================================================
+// "AllowedOrigins" can be set as an env var (comma-separated) on Railway,
+// e.g. AllowedOrigins=https://your-frontend.vercel.app,https://your-codespace-3000.app.github.dev
+// Falls back to localhost:3000 for local dev when not set.
+var allowedOrigins = builder.Configuration["AllowedOrigins"]
+    ?.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+    ?? new[] { "http://localhost:3000" };
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.WithOrigins("http://localhost:3000")
+        policy.WithOrigins(allowedOrigins)
               .AllowAnyHeader()
               .AllowAnyMethod();
     });

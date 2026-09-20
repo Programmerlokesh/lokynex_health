@@ -17,6 +17,8 @@ import {
   IconButton,
   TextField,
   Typography,
+  useMediaQuery,
+  useTheme,
 } from "@mui/material";
 import { useState } from "react";
 
@@ -29,6 +31,8 @@ const emptyBranch: ExtendBranchInput = {
 };
 
 export function CreateLabDialog() {
+  const theme = useTheme();
+  const fullScreen = useMediaQuery(theme.breakpoints.down("sm"));
   const [open, setOpen] = useState(false);
 
   const [primaryBranchName, setPrimaryBranchName] = useState("");
@@ -131,6 +135,7 @@ export function CreateLabDialog() {
         onClose={() => setOpen(false)}
         fullWidth
         maxWidth="sm"
+        fullScreen={fullScreen}
       >
         <DialogTitle sx={{ fontWeight: 700 }}>
           Provision New Lab (Tenant)
@@ -284,33 +289,50 @@ export function CreateLabDialog() {
                   gap: 1,
                 }}
               >
-                <Box sx={{ display: "flex", gap: 1 }}>
-                  <TextField
-                    label="Branch Name"
-                    size="small"
-                    fullWidth
-                    required
-                    slotProps={{ htmlInput: { maxLength: 150 } }}
-                    value={branch.branchName}
-                    onChange={(e) =>
-                      updateExtraBranch(i, { branchName: e.target.value })
-                    }
-                  />
-                  <TextField
-                    label="Branch Code"
-                    size="small"
-                    fullWidth
-                    required
-                    slotProps={{ htmlInput: { maxLength: 20 } }}
-                    value={branch.branchCode}
-                    onChange={(e) =>
-                      updateExtraBranch(i, { branchCode: e.target.value })
-                    }
-                  />
+                <Box
+                  sx={{
+                    display: "flex",
+                    alignItems: { xs: "flex-start", sm: "center" },
+                    gap: 1,
+                  }}
+                >
+                  <Box
+                    sx={{
+                      display: "flex",
+                      flexDirection: { xs: "column", sm: "row" },
+                      gap: 1,
+                      flex: 1,
+                      minWidth: 0,
+                    }}
+                  >
+                    <TextField
+                      label="Branch Name"
+                      size="small"
+                      fullWidth
+                      required
+                      slotProps={{ htmlInput: { maxLength: 150 } }}
+                      value={branch.branchName}
+                      onChange={(e) =>
+                        updateExtraBranch(i, { branchName: e.target.value })
+                      }
+                    />
+                    <TextField
+                      label="Branch Code"
+                      size="small"
+                      fullWidth
+                      required
+                      slotProps={{ htmlInput: { maxLength: 20 } }}
+                      value={branch.branchCode}
+                      onChange={(e) =>
+                        updateExtraBranch(i, { branchCode: e.target.value })
+                      }
+                    />
+                  </Box>
                   <IconButton
                     size="small"
                     color="error"
                     onClick={() => removeExtraBranch(i)}
+                    sx={{ mt: { xs: 0.5, sm: 0 } }}
                   >
                     <DeleteOutlineIcon fontSize="small" />
                   </IconButton>
@@ -324,7 +346,13 @@ export function CreateLabDialog() {
                     updateExtraBranch(i, { branchAddress: e.target.value })
                   }
                 />
-                <Box sx={{ display: "flex", gap: 1 }}>
+                <Box
+                  sx={{
+                    display: "flex",
+                    flexDirection: { xs: "column", sm: "row" },
+                    gap: 1,
+                  }}
+                >
                   <TextField
                     label="Pincode"
                     size="small"
