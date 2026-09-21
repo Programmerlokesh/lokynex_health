@@ -9,6 +9,55 @@ export interface LabDto {
   createdAt: string;
 }
 
+export interface BranchDto {
+  id: string;
+  branchName: string;
+  branchCode: string;
+  branchAddress?: string | null;
+  branchPincode?: string | null;
+  branchPhone?: string | null;
+}
+
+export interface LabDetailDto {
+  id: string;
+  labCode: string;
+  schemaName: string;
+  subdomain: string;
+
+  primaryBranchName: string;
+  primaryBranchAddress: string;
+  primaryBranchPhone: string;
+  primaryBranchEmail: string;
+  primaryBranchPincode: string;
+
+  adminName: string;
+  adminPhone: string;
+  adminAddress?: string | null;
+  adminEmail: string;
+  adminUsername: string;
+
+  userLimit: number;
+  status: string;
+  createdAt: string;
+  updatedAt?: string | null;
+
+  extendBranches: BranchDto[];
+}
+
+export interface UpdateLabRequest {
+  primaryBranchName: string;
+  primaryBranchAddress: string;
+  primaryBranchPhone: string;
+  primaryBranchEmail: string;
+  primaryBranchPincode: string;
+  adminName: string;
+  adminPhone: string;
+  adminAddress?: string;
+  adminEmail: string;
+  userLimit: number;
+  status: string;
+}
+
 export interface ExtendBranchInput {
   branchName: string;
   branchCode: string;
@@ -37,7 +86,7 @@ export interface PlanDto {
   id: string;
   name: string;
   price: number;
-  billingCycle: string; // "Monthly" | "Quarterly" | "Yearly"
+  billingCycle: string;
   maxUsers: number;
   maxBranches: number;
   isActive: boolean;

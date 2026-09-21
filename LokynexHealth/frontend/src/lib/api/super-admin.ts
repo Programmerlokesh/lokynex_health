@@ -3,11 +3,13 @@ import {
   CreateLabRequest,
   CreatePlanRequest,
   CreateSubscriptionRequest,
+  LabDetailDto,
   LabDto,
   NotificationDto,
   PlanDto,
   SendNotificationRequest,
   SubscriptionDto,
+  UpdateLabRequest,
 } from "@/types/super-admin";
 import { PagedResult } from "@/types/user";
 
@@ -21,11 +23,23 @@ export async function getLabsApi(params: {
   return res.data;
 }
 
+export async function getLabByIdApi(id: string): Promise<LabDetailDto> {
+  const res = await apiClient.get<LabDetailDto>(`/Labs/${id}`);
+  return res.data;
+}
+
 export async function createLabApi(
   data: CreateLabRequest,
 ): Promise<{ id: string }> {
   const res = await apiClient.post<{ id: string }>("/Labs", data);
   return res.data;
+}
+
+export async function updateLabApi(
+  id: string,
+  data: UpdateLabRequest,
+): Promise<void> {
+  await apiClient.put(`/Labs/${id}`, data);
 }
 
 // ---- Plans ----

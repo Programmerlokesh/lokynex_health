@@ -2,17 +2,20 @@ import {
   createLabApi,
   createPlanApi,
   createSubscriptionApi,
+  getLabByIdApi,
   getLabsApi,
   getNotificationsApi,
   getPlansApi,
   getSubscriptionsApi,
   sendNotificationApi,
+  updateLabApi,
 } from "@/lib/api/super-admin";
 import {
   CreateLabRequest,
   CreatePlanRequest,
   CreateSubscriptionRequest,
   SendNotificationRequest,
+  UpdateLabRequest,
 } from "@/types/super-admin";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
@@ -24,11 +27,29 @@ export function useLabs(params: { search?: string }) {
   });
 }
 
+export function useLab(id: string | null) {
+  return useQuery({
+    queryKey: ["labs", id],
+    queryFn: () => getLabByIdApi(id!),
+    enabled: !!id,
+  });
+}
+
 export function useCreateLab() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (data: CreateLabRequest) => createLabApi(data),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["labs"] }),
+  });
+}
+
+export function useUpdateLab(id: string | null) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: UpdateLabRequest) => updateLabApi(id!, data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["labs"] });
+    },
   });
 }
 

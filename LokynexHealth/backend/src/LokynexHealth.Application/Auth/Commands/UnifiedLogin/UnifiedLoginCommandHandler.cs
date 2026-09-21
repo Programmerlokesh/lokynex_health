@@ -1,22 +1,12 @@
 using LokynexHealth.Application.Auth.Commands.Login;
 using LokynexHealth.Application.Auth.Commands.SuperAdminLogin;
+using LokynexHealth.Application.Auth.Commands.TenantAdminLogin;
 using LokynexHealth.Application.Common.Exceptions;
 using MediatR;
 using Microsoft.Extensions.Logging;
 
 namespace LokynexHealth.Application.Auth.Commands.UnifiedLogin;
 
-// Reuses the two existing, already-working handlers instead of duplicating
-// their SQL:
-//   1) try the LAB user login   (tenant Users table)
-//   2) try the SUPERADMIN login (platform.super_admins table)
-// Rules that fall out of this:
-//   • SuperAdmin username + password  -> a SuperAdmin token (never a lab token)
-//   • Lab username + password         -> a lab token
-//   • Lab username + SuperAdmin's password (or any other mix) -> 401
-//     "Invalid username or password."
-//   • If a database lookup itself crashes (e.g. wrong connection string) we
-//     surface a 500 instead of pretending the password was wrong.
 public class UnifiedLoginCommandHandler : IRequestHandler<UnifiedLoginCommand, UnifiedLoginResult>
 {
     private const string GenericFailure = "Invalid username or password.";
@@ -54,8 +44,6 @@ public class UnifiedLoginCommandHandler : IRequestHandler<UnifiedLoginCommand, U
         }
         catch (UnauthorizedException ex)
         {
-            // Not a lab user (or wrong password). Keep a specific message such
-            // as "account is inactive", otherwise stay generic.
             if (ex.Message != GenericFailure) failureMessage = ex.Message;
         }
         catch (Exception ex)
@@ -64,7 +52,34 @@ public class UnifiedLoginCommandHandler : IRequestHandler<UnifiedLoginCommand, U
             infrastructureError = ex;
         }
 
-        // ---------- 2) Platform SuperAdmin ----------
+        // ---------- 2) Tenant Admin (Create Lab's built-in admin account) ----------
+        try
+        {
+            var tenantAdmin = await _mediator.Send(
+                new TenantAdminLoginCommand { Username = request.Username, Password = request.Password },
+                cancellationToken);
+
+            return new UnifiedLoginResult
+            {
+                AccountType = "Lab",
+                Token = tenantAdmin.Token,
+                UserId = tenantAdmin.TenantId,
+                Name = tenantAdmin.Name,
+                Role = "LabAdmin",
+                ExpiresAt = tenantAdmin.ExpiresAt
+            };
+        }
+        catch (UnauthorizedException ex)
+        {
+            if (ex.Message != GenericFailure) failureMessage = ex.Message;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Tenant admin lookup failed during unified login.");
+            infrastructureError ??= ex;
+        }
+
+        // ---------- 3) Platform SuperAdmin ----------
         try
         {
             var admin = await _mediator.Send(
@@ -91,8 +106,6 @@ public class UnifiedLoginCommandHandler : IRequestHandler<UnifiedLoginCommand, U
             infrastructureError ??= ex;
         }
 
-        // Neither matched. If one of the lookups crashed, say so (500) rather
-        // than blaming the user's password.
         if (infrastructureError is not null)
             throw infrastructureError;
 

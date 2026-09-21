@@ -30,14 +30,10 @@ public class JwtTokenGenerator : IJwtTokenGenerator
             new(ClaimTypes.NameIdentifier, user.Id.ToString()),
             new(ClaimTypes.Name, user.Username),
             new(ClaimTypes.Role, roleName),
-            // Marks this as a LAB token. Program.cs uses this to make sure a
-            // SuperAdmin token can never be used on lab endpoints.
             new("token_type", "Lab"),
             new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
         };
 
-        // Permissions stored as a single comma-joined claim — cheaper than N separate
-        // claims for N permissions, and still O(1) to split/check on the receiving end.
         claims.Add(new Claim("permissions", string.Join(",", permissions)));
 
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret));
@@ -54,11 +50,6 @@ public class JwtTokenGenerator : IJwtTokenGenerator
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
 
-    // SuperAdmin tokens carry NO "permissions" claim (SuperAdmin authorizes purely
-    // by role, checked via [Authorize(Roles = "SuperAdmin")] on the Labs/Plans/
-    // Subscriptions/Notifications controllers) and are issued only from the
-    // SuperAdmin login path against the platform-schema SuperAdmins table —
-    // never from the regular tenant User login.
     public string GenerateSuperAdminToken(Guid superAdminId, string username)
     {
         var secret = _configuration["Jwt:Secret"]!;
@@ -73,6 +64,39 @@ public class JwtTokenGenerator : IJwtTokenGenerator
             new(ClaimTypes.Name, username),
             new(ClaimTypes.Role, "SuperAdmin"),
             new("token_type", "SuperAdmin"),
+            new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+        };
+
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret));
+        var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+        var token = new JwtSecurityToken(
+            issuer: issuer,
+            audience: audience,
+            claims: claims,
+            expires: DateTime.UtcNow.AddMinutes(expiryMinutes),
+            signingCredentials: credentials
+        );
+
+        return new JwtSecurityTokenHandler().WriteToken(token);
+    }
+
+    public string GenerateTenantAdminToken(Guid tenantId, string username, string name, string schemaName, string labCode)
+    {
+        var secret = _configuration["Jwt:Secret"]!;
+        var issuer = _configuration["Jwt:Issuer"]!;
+        var audience = _configuration["Jwt:Audience"]!;
+        var expiryMinutes = int.Parse(_configuration["Jwt:ExpiryMinutes"] ?? "60");
+
+        var claims = new List<Claim>
+        {
+            new(JwtRegisteredClaimNames.Sub, tenantId.ToString()),
+            new(ClaimTypes.NameIdentifier, tenantId.ToString()),
+            new(ClaimTypes.Name, name),
+            new(ClaimTypes.Role, "LabAdmin"),
+            new("token_type", "TenantAdmin"),
+            new("schema_name", schemaName),
+            new("lab_code", labCode),
             new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
         };
 

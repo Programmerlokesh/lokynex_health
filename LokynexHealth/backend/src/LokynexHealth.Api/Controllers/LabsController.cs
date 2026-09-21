@@ -1,4 +1,6 @@
 using LokynexHealth.Application.Labs.Commands.CreateLab;
+using LokynexHealth.Application.Labs.Commands.UpdateLab;
+using LokynexHealth.Application.Labs.Queries.GetLabById;
 using LokynexHealth.Application.Labs.Queries.GetLabs;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -22,7 +24,7 @@ public class LabsController : ControllerBase
     public async Task<IActionResult> Create([FromBody] CreateLabCommand command, CancellationToken ct)
     {
         var id = await _mediator.Send(command, ct);
-        return CreatedAtAction(nameof(Create), new { id }, new { id });
+        return CreatedAtAction(nameof(GetById), new { id }, new { id });
     }
 
     [HttpGet]
@@ -30,5 +32,20 @@ public class LabsController : ControllerBase
     {
         var result = await _mediator.Send(query, ct);
         return Ok(result);
+    }
+
+    [HttpGet("{id:guid}")]
+    public async Task<IActionResult> GetById(Guid id, CancellationToken ct)
+    {
+        var result = await _mediator.Send(new GetLabByIdQuery { Id = id }, ct);
+        return Ok(result);
+    }
+
+    [HttpPut("{id:guid}")]
+    public async Task<IActionResult> Update(Guid id, [FromBody] UpdateLabCommand command, CancellationToken ct)
+    {
+        command.Id = id;
+        await _mediator.Send(command, ct);
+        return NoContent();
     }
 }
