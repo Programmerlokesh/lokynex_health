@@ -624,7 +624,7 @@ export function LabDetailDialog({
                   No additional branches yet.
                 </Typography>
               ) : (
-                <Stack direction="row" gap={1} sx={{ flexWrap: "wrap" }}>
+                <Stack direction="row" sx={{ flexWrap: "wrap", gap: 1 }}>
                   {lab.extendBranches.map((b) => (
                     <Tooltip
                       key={b.id}
