@@ -25,7 +25,7 @@ import {
 import { motion } from "framer-motion";
 import { useState } from "react";
 
-const STATUS_COLOR: Record
+const STATUS_COLOR: Record<
   string,
   "success" | "warning" | "error" | "default"
 > = {
