@@ -116,18 +116,38 @@ builder.Services.AddHttpContextAccessor(); // required by CurrentUserService
 // ============================================================
 // CORS — allow the Next.js frontend to call this API
 // ============================================================
-// "AllowedOrigins" can be set as an env var (comma-separated) on Railway,
-// e.g. AllowedOrigins=https://your-frontend.vercel.app,https://your-codespace-3000.app.github.dev
-// Falls back to localhost:3000 for local dev when not set.
-var allowedOrigins = builder.Configuration["AllowedOrigins"]
+// Always allowed: local dev + the production Vercel domain.
+// Extra origins can be added with the "AllowedOrigins" env var on Railway
+// (comma-separated). Vercel preview deployments of THIS project
+// (lokynex-health-<hash>-lokesh-debnaths-projects.vercel.app) are allowed too.
+var allowedOrigins = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+{
+    "http://localhost:3000",
+    "https://lokynex-health-five.vercel.app"
+};
+
+var extraOrigins = builder.Configuration["AllowedOrigins"]
     ?.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-    ?? new[] { "http://localhost:3000" };
+    ?? Array.Empty<string>();
+foreach (var extra in extraOrigins)
+{
+    allowedOrigins.Add(extra.TrimEnd('/'));
+}
+
+static bool IsProjectVercelPreview(string origin)
+{
+    if (!Uri.TryCreate(origin, UriKind.Absolute, out var uri)) return false;
+    return uri.Scheme == Uri.UriSchemeHttps
+        && uri.Host.StartsWith("lokynex-health-", StringComparison.OrdinalIgnoreCase)
+        && uri.Host.EndsWith("-lokesh-debnaths-projects.vercel.app", StringComparison.OrdinalIgnoreCase);
+}
 
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.WithOrigins(allowedOrigins)
+        policy.SetIsOriginAllowed(origin =>
+                  allowedOrigins.Contains(origin) || IsProjectVercelPreview(origin))
               .AllowAnyHeader()
               .AllowAnyMethod();
     });
