@@ -1,5 +1,6 @@
 using LokynexHealth.Application.Common.Exceptions;
 using LokynexHealth.Application.Common.Interfaces;
+using LokynexHealth.Application.Labs.Common;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
@@ -23,6 +24,19 @@ public class GetLabByIdQueryHandler : IRequestHandler<GetLabByIdQuery, LabDetail
         if (tenant is null)
             throw new NotFoundException("Lab", request.Id);
 
+        // Loaded separately rather than as a navigation property: Subscription has
+        // no Tenant nav, and this keeps the query to one extra round trip.
+        var subscriptions = await _db.Subscriptions
+            .Where(s => s.TenantId == tenant.Id)
+            .ToListAsync(cancellationToken);
+
+        var planIds = subscriptions.Select(s => s.PlanId).Distinct().ToList();
+        var planNames = await _db.Plans
+            .Where(p => planIds.Contains(p.Id))
+            .ToDictionaryAsync(p => p.Id, p => p.Name, cancellationToken);
+
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+
         return new LabDetailDto
         {
             Id = tenant.Id,
@@ -43,6 +57,7 @@ public class GetLabByIdQueryHandler : IRequestHandler<GetLabByIdQuery, LabDetail
             Status = tenant.Status.ToString(),
             CreatedAt = tenant.CreatedAt,
             UpdatedAt = tenant.UpdatedAt,
+            Subscription = LabSubscriptionCalculator.Build(subscriptions, planNames, today),
             ExtendBranches = tenant.ExtendBranches.Select(b => new BranchDto
             {
                 Id = b.Id,

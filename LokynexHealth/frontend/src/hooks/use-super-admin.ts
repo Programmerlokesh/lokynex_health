@@ -1,20 +1,25 @@
 import {
+  addLabBranchApi,
   createLabApi,
   createPlanApi,
   createSubscriptionApi,
+  deleteLabBranchApi,
   getLabByIdApi,
   getLabsApi,
   getNotificationsApi,
   getPlansApi,
   getSubscriptionsApi,
   sendNotificationApi,
+  sendRenewalReminderApi,
   updateLabApi,
 } from "@/lib/api/super-admin";
 import {
+  AddLabBranchRequest,
   CreateLabRequest,
   CreatePlanRequest,
   CreateSubscriptionRequest,
   SendNotificationRequest,
+  SendRenewalReminderRequest,
   UpdateLabRequest,
 } from "@/types/super-admin";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -50,6 +55,39 @@ export function useUpdateLab(id: string | null) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["labs"] });
     },
+  });
+}
+
+export function useAddLabBranch(labId: string | null) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: AddLabBranchRequest) => addLabBranchApi(labId!, data),
+    // Invalidating ["labs"] alone would not refresh the open detail dialog,
+    // whose key is ["labs", labId] — so refetch that explicitly.
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["labs"] });
+      qc.invalidateQueries({ queryKey: ["labs", labId] });
+    },
+  });
+}
+
+export function useDeleteLabBranch(labId: string | null) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (branchId: string) => deleteLabBranchApi(labId!, branchId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["labs"] });
+      qc.invalidateQueries({ queryKey: ["labs", labId] });
+    },
+  });
+}
+
+export function useSendRenewalReminder(labId: string | null) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: SendRenewalReminderRequest = {}) =>
+      sendRenewalReminderApi(labId!, data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["notifications"] }),
   });
 }
 

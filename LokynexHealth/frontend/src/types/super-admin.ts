@@ -1,3 +1,20 @@
+export interface LabSubscriptionSummary {
+  subscriptionId: string;
+  planName: string;
+  startDate: string;
+  endDate: string;
+  amountPaid: number;
+  autoRenew: boolean;
+  /** Status as stored in the DB — usually you want effectiveStatus instead. */
+  storedStatus: string;
+  /** Status after comparing endDate with today. This is what the UI shows. */
+  effectiveStatus: string;
+  /** Negative once the subscription has lapsed. */
+  daysRemaining: number;
+  isExpired: boolean;
+  isExpiringSoon: boolean;
+}
+
 export interface LabDto {
   id: string;
   labCode: string;
@@ -7,6 +24,7 @@ export interface LabDto {
   userLimit: number;
   status: string;
   createdAt: string;
+  subscription: LabSubscriptionSummary | null;
 }
 
 export interface BranchDto {
@@ -41,7 +59,21 @@ export interface LabDetailDto {
   createdAt: string;
   updatedAt?: string | null;
 
+  subscription: LabSubscriptionSummary | null;
   extendBranches: BranchDto[];
+}
+
+export interface AddLabBranchRequest {
+  branchName: string;
+  branchCode: string;
+  branchAddress?: string;
+  branchPincode?: string;
+  branchPhone?: string;
+}
+
+export interface SendRenewalReminderRequest {
+  title?: string;
+  message?: string;
 }
 
 export interface UpdateLabRequest {

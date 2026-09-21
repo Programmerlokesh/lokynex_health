@@ -1,16 +1,31 @@
 "use client";
 
 import { brand } from "@/components/providers/mui-theme-provider";
-import { useLab, useUpdateLab } from "@/hooks/use-super-admin";
+import {
+  SubscriptionChip,
+  formatDate,
+} from "@/components/super-admin/subscription-status";
+import {
+  useAddLabBranch,
+  useDeleteLabBranch,
+  useLab,
+  useSendRenewalReminder,
+  useUpdateLab,
+} from "@/hooks/use-super-admin";
 import { getApiErrorMessage } from "@/lib/api-error";
+import AddIcon from "@mui/icons-material/Add";
 import BusinessIcon from "@mui/icons-material/Business";
+import CalendarMonthOutlinedIcon from "@mui/icons-material/CalendarMonthOutlined";
 import CloseIcon from "@mui/icons-material/Close";
+import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import EditIcon from "@mui/icons-material/Edit";
 import EmailOutlinedIcon from "@mui/icons-material/EmailOutlined";
+import NotificationsActiveOutlinedIcon from "@mui/icons-material/NotificationsActiveOutlined";
 import PersonOutlineIcon from "@mui/icons-material/Person";
 import PhoneOutlinedIcon from "@mui/icons-material/PhoneOutlined";
 import PinDropOutlinedIcon from "@mui/icons-material/PinDropOutlined";
 import SaveIcon from "@mui/icons-material/Save";
+import WorkspacePremiumOutlinedIcon from "@mui/icons-material/WorkspacePremiumOutlined";
 import {
   Alert,
   Avatar,
@@ -18,15 +33,18 @@ import {
   Button,
   Chip,
   CircularProgress,
+  Collapse,
   Dialog,
   DialogActions,
   DialogContent,
   Divider,
   IconButton,
   MenuItem,
+  Paper,
   Skeleton,
   Stack,
   TextField,
+  Tooltip,
   Typography,
   useMediaQuery,
   useTheme,
@@ -56,6 +74,22 @@ type EditForm = {
   adminEmail: string;
   userLimit: string;
   status: string;
+};
+
+type BranchForm = {
+  branchName: string;
+  branchCode: string;
+  branchAddress: string;
+  branchPincode: string;
+  branchPhone: string;
+};
+
+const EMPTY_BRANCH: BranchForm = {
+  branchName: "",
+  branchCode: "",
+  branchAddress: "",
+  branchPincode: "",
+  branchPhone: "",
 };
 
 function initials(name: string) {
@@ -108,9 +142,14 @@ export function LabDetailDialog({
 
   const { data: lab, isLoading } = useLab(labId);
   const updateLab = useUpdateLab(labId);
+  const addBranch = useAddLabBranch(labId);
+  const deleteBranch = useDeleteLabBranch(labId);
+  const sendReminder = useSendRenewalReminder(labId);
 
   const [editMode, setEditMode] = useState(false);
   const [form, setForm] = useState<EditForm | null>(null);
+  const [branchFormOpen, setBranchFormOpen] = useState(false);
+  const [branchForm, setBranchForm] = useState<BranchForm>(EMPTY_BRANCH);
 
   useEffect(() => {
     if (lab) {
@@ -133,7 +172,12 @@ export function LabDetailDialog({
   useEffect(() => {
     if (!open) {
       setEditMode(false);
+      setBranchFormOpen(false);
+      setBranchForm(EMPTY_BRANCH);
       updateLab.reset();
+      addBranch.reset();
+      deleteBranch.reset();
+      sendReminder.reset();
     }
   }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -161,10 +205,35 @@ export function LabDetailDialog({
     );
   }
 
+  function handleAddBranch() {
+    if (!branchForm.branchName.trim() || !branchForm.branchCode.trim()) return;
+
+    addBranch.mutate(
+      {
+        branchName: branchForm.branchName.trim(),
+        branchCode: branchForm.branchCode.trim(),
+        branchAddress: branchForm.branchAddress.trim() || undefined,
+        branchPincode: branchForm.branchPincode.trim() || undefined,
+        branchPhone: branchForm.branchPhone.trim() || undefined,
+      },
+      {
+        onSuccess: () => {
+          setBranchForm(EMPTY_BRANCH);
+          setBranchFormOpen(false);
+        },
+      },
+    );
+  }
+
   function handleClose() {
     setEditMode(false);
+    setBranchFormOpen(false);
     onClose();
   }
+
+  const branchFormValid =
+    branchForm.branchName.trim().length > 0 &&
+    branchForm.branchCode.trim().length > 0;
 
   return (
     <Dialog
@@ -225,6 +294,33 @@ export function LabDetailDialog({
         )}
         {updateLab.isSuccess && !editMode && (
           <Alert severity="success">Lab details updated.</Alert>
+        )}
+        {addBranch.isError && (
+          <Alert severity="error">
+            {getApiErrorMessage(addBranch.error, "Could not add the branch.")}
+          </Alert>
+        )}
+        {deleteBranch.isError && (
+          <Alert severity="error">
+            {getApiErrorMessage(
+              deleteBranch.error,
+              "Could not remove the branch.",
+            )}
+          </Alert>
+        )}
+        {sendReminder.isError && (
+          <Alert severity="error">
+            {getApiErrorMessage(
+              sendReminder.error,
+              "Could not send the renewal reminder.",
+            )}
+          </Alert>
+        )}
+        {sendReminder.isSuccess && (
+          <Alert severity="success">
+            Renewal reminder sent. It will appear in this lab&apos;s
+            notification inbox.
+          </Alert>
         )}
 
         {isLoading || !form || !lab ? (
@@ -316,29 +412,241 @@ export function LabDetailDialog({
               )}
             </Stack>
 
-            {lab.extendBranches.length > 0 && (
-              <>
-                <Divider />
-                <Box>
-                  <Typography
-                    variant="subtitle2"
-                    sx={{ fontWeight: 700, mb: 1.5 }}
+            <Divider />
+
+            {/* ---------- Subscription ---------- */}
+            <Box>
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: 1,
+                  mb: 1.5,
+                }}
+              >
+                <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                  Subscription
+                </Typography>
+                <SubscriptionChip subscription={lab.subscription} />
+              </Box>
+
+              {lab.subscription ? (
+                <Paper
+                  variant="outlined"
+                  sx={{ p: 2, borderRadius: 2, bgcolor: "action.hover" }}
+                >
+                  <Stack spacing={1.5}>
+                    <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+                      <InfoRow
+                        icon={<WorkspacePremiumOutlinedIcon fontSize="small" />}
+                        label="Plan"
+                        value={lab.subscription.planName}
+                      />
+                      <InfoRow
+                        icon={<CalendarMonthOutlinedIcon fontSize="small" />}
+                        label="Status"
+                        value={lab.subscription.effectiveStatus}
+                      />
+                    </Stack>
+                    <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+                      <InfoRow
+                        icon={<CalendarMonthOutlinedIcon fontSize="small" />}
+                        label="Started"
+                        value={formatDate(lab.subscription.startDate)}
+                      />
+                      <InfoRow
+                        icon={<CalendarMonthOutlinedIcon fontSize="small" />}
+                        label={
+                          lab.subscription.isExpired
+                            ? "Expired on"
+                            : "Expires on"
+                        }
+                        value={formatDate(lab.subscription.endDate)}
+                      />
+                    </Stack>
+                  </Stack>
+                </Paper>
+              ) : (
+                <Alert severity="warning" sx={{ mb: 0 }}>
+                  This lab has no subscription on record. Create one from the
+                  Subscriptions tab.
+                </Alert>
+              )}
+
+              {/* The reminder button only appears when there is something to
+                  remind about — sending "you expire in 340 days" is noise. */}
+              {lab.subscription &&
+                (lab.subscription.isExpired ||
+                  lab.subscription.isExpiringSoon) && (
+                  <Button
+                    fullWidth
+                    variant="outlined"
+                    color={lab.subscription.isExpired ? "error" : "warning"}
+                    startIcon={
+                      sendReminder.isPending ? (
+                        <CircularProgress size={16} color="inherit" />
+                      ) : (
+                        <NotificationsActiveOutlinedIcon fontSize="small" />
+                      )
+                    }
+                    disabled={sendReminder.isPending}
+                    onClick={() => sendReminder.mutate({})}
+                    sx={{ mt: 1.5 }}
                   >
-                    Additional Branches
-                  </Typography>
-                  <Stack direction="row" flexWrap="wrap" gap={1}>
-                    {lab.extendBranches.map((b) => (
+                    {sendReminder.isPending
+                      ? "Sending..."
+                      : "Send renewal reminder to this lab"}
+                  </Button>
+                )}
+            </Box>
+
+            <Divider />
+
+            {/* ---------- Branches ---------- */}
+            <Box>
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: 1,
+                  mb: 1.5,
+                }}
+              >
+                <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                  Additional Branches ({lab.extendBranches.length})
+                </Typography>
+                <Button
+                  size="small"
+                  startIcon={<AddIcon fontSize="small" />}
+                  onClick={() => setBranchFormOpen((v) => !v)}
+                >
+                  {branchFormOpen ? "Cancel" : "Add Branch"}
+                </Button>
+              </Box>
+
+              <Collapse in={branchFormOpen} unmountOnExit>
+                <Paper variant="outlined" sx={{ p: 2, borderRadius: 2, mb: 2 }}>
+                  <Stack spacing={2}>
+                    <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+                      <TextField
+                        label="Branch Name"
+                        size="small"
+                        fullWidth
+                        required
+                        value={branchForm.branchName}
+                        onChange={(e) =>
+                          setBranchForm((f) => ({
+                            ...f,
+                            branchName: e.target.value,
+                          }))
+                        }
+                      />
+                      <TextField
+                        label="Branch Code"
+                        size="small"
+                        fullWidth
+                        required
+                        slotProps={{ htmlInput: { maxLength: 20 } }}
+                        helperText="Must be unique within this lab"
+                        value={branchForm.branchCode}
+                        onChange={(e) =>
+                          setBranchForm((f) => ({
+                            ...f,
+                            branchCode: e.target.value.toUpperCase(),
+                          }))
+                        }
+                      />
+                    </Stack>
+                    <TextField
+                      label="Branch Address"
+                      size="small"
+                      fullWidth
+                      value={branchForm.branchAddress}
+                      onChange={(e) =>
+                        setBranchForm((f) => ({
+                          ...f,
+                          branchAddress: e.target.value,
+                        }))
+                      }
+                    />
+                    <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+                      <TextField
+                        label="Branch Phone"
+                        size="small"
+                        fullWidth
+                        slotProps={{ htmlInput: { maxLength: 20 } }}
+                        value={branchForm.branchPhone}
+                        onChange={(e) =>
+                          setBranchForm((f) => ({
+                            ...f,
+                            branchPhone: e.target.value,
+                          }))
+                        }
+                      />
+                      <TextField
+                        label="Branch Pincode"
+                        size="small"
+                        fullWidth
+                        slotProps={{ htmlInput: { maxLength: 10 } }}
+                        value={branchForm.branchPincode}
+                        onChange={(e) =>
+                          setBranchForm((f) => ({
+                            ...f,
+                            branchPincode: e.target.value,
+                          }))
+                        }
+                      />
+                    </Stack>
+                    <Button
+                      variant="contained"
+                      size="small"
+                      disabled={!branchFormValid || addBranch.isPending}
+                      startIcon={
+                        addBranch.isPending ? (
+                          <CircularProgress size={16} color="inherit" />
+                        ) : (
+                          <AddIcon fontSize="small" />
+                        )
+                      }
+                      onClick={handleAddBranch}
+                      sx={{ alignSelf: "flex-start" }}
+                    >
+                      {addBranch.isPending ? "Adding..." : "Save Branch"}
+                    </Button>
+                  </Stack>
+                </Paper>
+              </Collapse>
+
+              {lab.extendBranches.length === 0 ? (
+                <Typography variant="body2" color="text.secondary">
+                  No additional branches yet.
+                </Typography>
+              ) : (
+                <Stack direction="row" gap={1} sx={{ flexWrap: "wrap" }}>
+                  {lab.extendBranches.map((b) => (
+                    <Tooltip
+                      key={b.id}
+                      title={
+                        [b.branchAddress, b.branchPincode, b.branchPhone]
+                          .filter(Boolean)
+                          .join(" · ") || "No contact details"
+                      }
+                    >
                       <Chip
-                        key={b.id}
                         label={`${b.branchName} (${b.branchCode})`}
                         variant="outlined"
                         size="small"
+                        deleteIcon={<DeleteOutlineIcon />}
+                        disabled={deleteBranch.isPending}
+                        onDelete={() => deleteBranch.mutate(b.id)}
                       />
-                    ))}
-                  </Stack>
-                </Box>
-              </>
-            )}
+                    </Tooltip>
+                  ))}
+                </Stack>
+              )}
+            </Box>
           </>
         ) : (
           <>

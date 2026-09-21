@@ -1,5 +1,6 @@
 "use client";
 
+import { NotificationBell } from "@/components/layout/notification-bell";
 import { useAuthStore } from "@/store/auth-store";
 import { useThemeStore } from "@/store/theme-store";
 import DarkModeOutlinedIcon from "@mui/icons-material/DarkModeOutlined";
@@ -111,6 +112,8 @@ export function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
             flexShrink: 0,
           }}
         >
+          <NotificationBell />
+
           <Tooltip
             title={
               mode === "light" ? "Switch to dark mode" : "Switch to light mode"

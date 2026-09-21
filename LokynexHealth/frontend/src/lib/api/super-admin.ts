@@ -1,5 +1,6 @@
 import { superAdminApiClient as apiClient } from "@/lib/superadmin-api-client";
 import {
+  AddLabBranchRequest,
   CreateLabRequest,
   CreatePlanRequest,
   CreateSubscriptionRequest,
@@ -8,6 +9,7 @@ import {
   NotificationDto,
   PlanDto,
   SendNotificationRequest,
+  SendRenewalReminderRequest,
   SubscriptionDto,
   UpdateLabRequest,
 } from "@/types/super-admin";
@@ -40,6 +42,35 @@ export async function updateLabApi(
   data: UpdateLabRequest,
 ): Promise<void> {
   await apiClient.put(`/Labs/${id}`, data);
+}
+
+export async function addLabBranchApi(
+  labId: string,
+  data: AddLabBranchRequest,
+): Promise<{ id: string }> {
+  const res = await apiClient.post<{ id: string }>(
+    `/Labs/${labId}/branches`,
+    data,
+  );
+  return res.data;
+}
+
+export async function deleteLabBranchApi(
+  labId: string,
+  branchId: string,
+): Promise<void> {
+  await apiClient.delete(`/Labs/${labId}/branches/${branchId}`);
+}
+
+export async function sendRenewalReminderApi(
+  labId: string,
+  data: SendRenewalReminderRequest = {},
+): Promise<{ id: string }> {
+  const res = await apiClient.post<{ id: string }>(
+    `/Labs/${labId}/renewal-reminder`,
+    data,
+  );
+  return res.data;
 }
 
 // ---- Plans ----

@@ -1,3 +1,5 @@
+using LokynexHealth.Application.Labs.Common;
+
 namespace LokynexHealth.Application.Labs.Queries.GetLabById;
 
 public class LabDetailDto
@@ -23,6 +25,9 @@ public class LabDetailDto
     public string Status { get; set; } = default!;
     public DateTimeOffset CreatedAt { get; set; }
     public DateTimeOffset? UpdatedAt { get; set; }
+
+    /// <summary>Null when the lab has never been given a subscription.</summary>
+    public LabSubscriptionSummary? Subscription { get; set; }
 
     public List<BranchDto> ExtendBranches { get; set; } = new();
 }

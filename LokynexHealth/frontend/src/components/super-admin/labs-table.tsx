@@ -1,6 +1,7 @@
 "use client";
 
 import { LabDetailDialog } from "@/components/super-admin/lab-detail-dialog";
+import { SubscriptionChip } from "@/components/super-admin/subscription-status";
 import { LabDto } from "@/types/super-admin";
 import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
 import {
@@ -24,7 +25,7 @@ import {
 import { motion } from "framer-motion";
 import { useState } from "react";
 
-const STATUS_COLOR: Record<
+const STATUS_COLOR: Record
   string,
   "success" | "warning" | "error" | "default"
 > = {
@@ -64,8 +65,10 @@ export function LabsTable({ rows }: { rows: LabDto[] }) {
               >
                 <Stack
                   direction="row"
-                  justifyContent="space-between"
-                  alignItems="flex-start"
+                  sx={{
+                    justifyContent: "space-between",
+                    alignItems: "flex-start",
+                  }}
                 >
                   <Box sx={{ minWidth: 0 }}>
                     <Typography sx={{ fontWeight: 700 }} noWrap>
@@ -84,8 +87,7 @@ export function LabsTable({ rows }: { rows: LabDto[] }) {
                 </Stack>
                 <Stack
                   direction="row"
-                  justifyContent="space-between"
-                  sx={{ mt: 1.5 }}
+                  sx={{ justifyContent: "space-between", mt: 1.5 }}
                 >
                   <Box>
                     <Typography variant="caption" color="text.secondary">
@@ -100,6 +102,17 @@ export function LabsTable({ rows }: { rows: LabDto[] }) {
                     <Typography variant="body2">{row.userLimit}</Typography>
                   </Box>
                 </Stack>
+                <Box sx={{ mt: 1.5 }}>
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    component="div"
+                    sx={{ mb: 0.5 }}
+                  >
+                    Subscription
+                  </Typography>
+                  <SubscriptionChip subscription={row.subscription} />
+                </Box>
               </Card>
             </motion.div>
           ))}
@@ -118,6 +131,7 @@ export function LabsTable({ rows }: { rows: LabDto[] }) {
                 <TableCell sx={{ fontWeight: 600 }}>Admin</TableCell>
                 <TableCell sx={{ fontWeight: 600 }}>User Limit</TableCell>
                 <TableCell sx={{ fontWeight: 600 }}>Status</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>Subscription</TableCell>
                 <TableCell sx={{ fontWeight: 600 }}>Created</TableCell>
                 <TableCell sx={{ fontWeight: 600 }} align="right">
                   Actions
@@ -145,6 +159,9 @@ export function LabsTable({ rows }: { rows: LabDto[] }) {
                       color={STATUS_COLOR[row.status] ?? "default"}
                       variant="outlined"
                     />
+                  </TableCell>
+                  <TableCell>
+                    <SubscriptionChip subscription={row.subscription} />
                   </TableCell>
                   <TableCell>
                     {new Date(row.createdAt).toLocaleDateString()}

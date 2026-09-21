@@ -95,6 +95,11 @@ public class JwtTokenGenerator : IJwtTokenGenerator
             new(ClaimTypes.Name, name),
             new(ClaimTypes.Role, "LabAdmin"),
             new("token_type", "TenantAdmin"),
+            // tenant_id is what scopes a lab's notification inbox. NameIdentifier
+            // happens to hold the same value for this token type, but relying on
+            // that coincidence would break the moment per-user lab tokens also
+            // need a tenant — so the claim is written explicitly.
+            new("tenant_id", tenantId.ToString()),
             new("schema_name", schemaName),
             new("lab_code", labCode),
             new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())

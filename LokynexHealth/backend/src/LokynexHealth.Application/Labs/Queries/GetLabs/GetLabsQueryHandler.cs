@@ -1,5 +1,6 @@
 using LokynexHealth.Application.Common.Interfaces;
 using LokynexHealth.Application.Common.Models;
+using LokynexHealth.Application.Labs.Common;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
@@ -36,6 +37,24 @@ public class GetLabsQueryHandler : IRequestHandler<GetLabsQuery, PagedResult<Lab
             .Take(request.PageSize)
             .ToListAsync(cancellationToken);
 
+        // One batched query for the whole page instead of N per-lab lookups.
+        var tenantIds = tenantEntities.Select(t => t.Id).ToList();
+
+        var subscriptions = await _db.Subscriptions
+            .Where(s => tenantIds.Contains(s.TenantId))
+            .ToListAsync(cancellationToken);
+
+        var planIds = subscriptions.Select(s => s.PlanId).Distinct().ToList();
+        var planNames = await _db.Plans
+            .Where(p => planIds.Contains(p.Id))
+            .ToDictionaryAsync(p => p.Id, p => p.Name, cancellationToken);
+
+        var subscriptionsByTenant = subscriptions
+            .GroupBy(s => s.TenantId)
+            .ToDictionary(g => g.Key, g => g.ToList());
+
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+
         var labs = tenantEntities.Select(t => new LabDto
         {
             Id = t.Id,
@@ -45,7 +64,10 @@ public class GetLabsQueryHandler : IRequestHandler<GetLabsQuery, PagedResult<Lab
             AdminName = t.AdminName,
             UserLimit = t.UserLimit,
             Status = t.Status.ToString(),
-            CreatedAt = t.CreatedAt
+            CreatedAt = t.CreatedAt,
+            Subscription = subscriptionsByTenant.TryGetValue(t.Id, out var rows)
+                ? LabSubscriptionCalculator.Build(rows, planNames, today)
+                : null
         }).ToList();
 
         return new PagedResult<LabDto>
