@@ -3,7 +3,7 @@
 import { EditPlanDialog } from "@/components/super-admin/edit-plan-dialog";
 import { useDeletePlan } from "@/hooks/use-super-admin";
 import { PlanDto } from "@/types/super-admin";
-import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
+import DeleteOutlineIcon from "@mui/icons-material/Delete";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import {
   Chip,
