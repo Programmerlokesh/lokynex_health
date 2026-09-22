@@ -13,6 +13,7 @@ internal class TenantAdminAuthRow
     public string AdminPasswordHash { get; set; } = default!;
     public string SchemaName { get; set; } = default!;
     public string LabCode { get; set; } = default!;
+    public string PrimaryBranchName { get; set; } = default!;
     public string Status { get; set; } = default!;
 }
 
@@ -37,7 +38,7 @@ public class TenantAdminLoginCommandHandler : IRequestHandler<TenantAdminLoginCo
         var tenant = await _db.Database
             .SqlQuery<TenantAdminAuthRow>($@"
                 SELECT id, admin_name, admin_username, admin_password_hash,
-                       schema_name, lab_code, status::text AS status
+                       schema_name, lab_code, primary_branch_name, status::text AS status
                 FROM platform.tenants
                 WHERE admin_username = {request.Username}")
             .FirstOrDefaultAsync(cancellationToken);
@@ -58,6 +59,7 @@ public class TenantAdminLoginCommandHandler : IRequestHandler<TenantAdminLoginCo
             Name = tenant.AdminName,
             SchemaName = tenant.SchemaName,
             LabCode = tenant.LabCode,
+            LabName = tenant.PrimaryBranchName,
             ExpiresAt = DateTime.UtcNow.AddHours(1)
         };
     }

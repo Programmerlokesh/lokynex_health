@@ -90,7 +90,7 @@ export function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
             <MenuIcon />
           </IconButton>
           <Typography variant="subtitle1" noWrap sx={{ fontWeight: 600 }}>
-            Lokynex Health
+            {user?.labName || "Lokynex Health"}
           </Typography>
           {now && showClock && (
             <Typography

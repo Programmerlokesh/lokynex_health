@@ -12,6 +12,8 @@ import {
   SendRenewalReminderRequest,
   SubscriptionDto,
   UpdateLabRequest,
+  UpdatePlanRequest,
+  UpdateSubscriptionRequest,
 } from "@/types/super-admin";
 import { PagedResult } from "@/types/user";
 
@@ -86,6 +88,17 @@ export async function createPlanApi(
   return res.data;
 }
 
+export async function updatePlanApi(
+  id: string,
+  data: UpdatePlanRequest,
+): Promise<void> {
+  await apiClient.put(`/Plans/${id}`, data);
+}
+
+export async function deletePlanApi(id: string): Promise<void> {
+  await apiClient.delete(`/Plans/${id}`);
+}
+
 // ---- Subscriptions ----
 export async function getSubscriptionsApi(params: {
   tenantId?: string;
@@ -101,6 +114,13 @@ export async function createSubscriptionApi(
 ): Promise<{ id: string }> {
   const res = await apiClient.post<{ id: string }>("/Subscriptions", data);
   return res.data;
+}
+
+export async function updateSubscriptionApi(
+  id: string,
+  data: UpdateSubscriptionRequest,
+): Promise<void> {
+  await apiClient.put(`/Subscriptions/${id}`, data);
 }
 
 // ---- Notifications ----

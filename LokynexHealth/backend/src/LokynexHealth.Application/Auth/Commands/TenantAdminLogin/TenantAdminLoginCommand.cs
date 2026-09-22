@@ -15,5 +15,6 @@ public class TenantAdminLoginResult
     public string Name { get; set; } = default!;
     public string SchemaName { get; set; } = default!;
     public string LabCode { get; set; } = default!;
+    public string? LabName { get; set; }
     public DateTime ExpiresAt { get; set; }
 }

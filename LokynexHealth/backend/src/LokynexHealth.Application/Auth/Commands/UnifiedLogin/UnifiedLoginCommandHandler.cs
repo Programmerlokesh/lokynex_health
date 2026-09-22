@@ -39,6 +39,7 @@ public class UnifiedLoginCommandHandler : IRequestHandler<UnifiedLoginCommand, U
                 UserId = lab.UserId,
                 Name = lab.Name,
                 Role = lab.Role,
+                LabName = lab.LabName,
                 ExpiresAt = lab.ExpiresAt
             };
         }
@@ -66,6 +67,7 @@ public class UnifiedLoginCommandHandler : IRequestHandler<UnifiedLoginCommand, U
                 UserId = tenantAdmin.TenantId,
                 Name = tenantAdmin.Name,
                 Role = "LabAdmin",
+                LabName = tenantAdmin.LabName,
                 ExpiresAt = tenantAdmin.ExpiresAt
             };
         }
@@ -93,6 +95,7 @@ public class UnifiedLoginCommandHandler : IRequestHandler<UnifiedLoginCommand, U
                 UserId = admin.SuperAdminId,
                 Name = admin.Name,
                 Role = "SuperAdmin",
+                LabName = null,
                 ExpiresAt = admin.ExpiresAt
             };
         }

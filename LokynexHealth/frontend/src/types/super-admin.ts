@@ -133,14 +133,26 @@ export interface CreatePlanRequest {
   maxBranches: number;
 }
 
+export interface UpdatePlanRequest {
+  name: string;
+  description?: string;
+  price: number;
+  billingCycle: string;
+  maxUsers: number;
+  maxBranches: number;
+  isActive: boolean;
+}
+
 export interface SubscriptionDto {
   id: string;
   tenantId: string;
   tenantName: string;
+  planId: string;
   planName: string;
   startDate: string;
   endDate: string;
   amountPaid: number;
+  autoRenew: boolean;
   status: string;
 }
 
@@ -150,6 +162,15 @@ export interface CreateSubscriptionRequest {
   startDate: string;
   endDate: string;
   amountPaid: number;
+}
+
+export interface UpdateSubscriptionRequest {
+  planId: string;
+  startDate: string;
+  endDate: string;
+  amountPaid: number;
+  status: string;
+  autoRenew: boolean;
 }
 
 export interface NotificationDto {

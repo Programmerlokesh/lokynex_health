@@ -5,6 +5,10 @@ interface AuthUser {
   userId: string;
   name: string;
   role: string;
+  // The current tenant's own lab name (e.g. "Sunrise Diagnostics") — shown in
+  // the Topbar instead of a generic "Lokynex Health" label, so a lab's own
+  // staff always see which lab they're actually signed into.
+  labName?: string | null;
 }
 
 interface AuthState {

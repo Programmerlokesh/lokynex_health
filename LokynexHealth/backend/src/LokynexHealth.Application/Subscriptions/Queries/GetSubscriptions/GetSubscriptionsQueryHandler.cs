@@ -35,10 +35,12 @@ public class GetSubscriptionsQueryHandler : IRequestHandler<GetSubscriptionsQuer
             Id = x.s.Id,
             TenantId = x.s.TenantId,
             TenantName = x.TenantName,
+            PlanId = x.s.PlanId,
             PlanName = x.PlanName,
             StartDate = x.s.StartDate,
             EndDate = x.s.EndDate,
             AmountPaid = x.s.AmountPaid,
+            AutoRenew = x.s.AutoRenew,
             Status = x.s.Status.ToString()
         }).ToList();
     }

@@ -1,4 +1,5 @@
 using LokynexHealth.Application.Subscriptions.Commands.CreateSubscription;
+using LokynexHealth.Application.Subscriptions.Commands.UpdateSubscription;
 using LokynexHealth.Application.Subscriptions.Queries.GetSubscriptions;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -30,5 +31,13 @@ public class SubscriptionsController : ControllerBase
     {
         var result = await _mediator.Send(query, ct);
         return Ok(result);
+    }
+
+    [HttpPut("{id}")]
+    public async Task<IActionResult> Update(Guid id, [FromBody] UpdateSubscriptionCommand command, CancellationToken ct)
+    {
+        command.Id = id;
+        await _mediator.Send(command, ct);
+        return NoContent();
     }
 }

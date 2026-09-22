@@ -1,4 +1,6 @@
 using LokynexHealth.Application.Plans.Commands.CreatePlan;
+using LokynexHealth.Application.Plans.Commands.DeletePlan;
+using LokynexHealth.Application.Plans.Commands.UpdatePlan;
 using LokynexHealth.Application.Plans.Queries.GetPlans;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -30,5 +32,20 @@ public class PlansController : ControllerBase
     {
         var result = await _mediator.Send(new GetPlansQuery(), ct);
         return Ok(result);
+    }
+
+    [HttpPut("{id}")]
+    public async Task<IActionResult> Update(Guid id, [FromBody] UpdatePlanCommand command, CancellationToken ct)
+    {
+        command.Id = id;
+        await _mediator.Send(command, ct);
+        return NoContent();
+    }
+
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> Delete(Guid id, CancellationToken ct)
+    {
+        await _mediator.Send(new DeletePlanCommand { Id = id }, ct);
+        return NoContent();
     }
 }

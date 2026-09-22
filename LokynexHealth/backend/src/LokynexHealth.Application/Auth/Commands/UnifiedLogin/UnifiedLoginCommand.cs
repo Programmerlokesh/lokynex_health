@@ -18,5 +18,7 @@ public class UnifiedLoginResult
     public Guid UserId { get; set; }
     public string Name { get; set; } = default!;
     public string Role { get; set; } = default!;
+    // Only populated for AccountType = "Lab" — this lab's own name, for the Topbar.
+    public string? LabName { get; set; }
     public DateTime ExpiresAt { get; set; }
 }

@@ -8,6 +8,7 @@ export interface LoginResponse {
   userId: string;
   name: string;
   role: string;
+  labName?: string | null;
   expiresAt: string;
 }
 
@@ -20,5 +21,7 @@ export interface UnifiedLoginResponse {
   userId: string;
   name: string;
   role: string;
+  // This lab's own name — only present when accountType is "Lab".
+  labName?: string | null;
   expiresAt: string;
 }

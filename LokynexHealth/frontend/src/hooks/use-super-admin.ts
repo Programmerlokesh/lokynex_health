@@ -4,6 +4,7 @@ import {
   createPlanApi,
   createSubscriptionApi,
   deleteLabBranchApi,
+  deletePlanApi,
   getLabByIdApi,
   getLabsApi,
   getNotificationsApi,
@@ -12,6 +13,8 @@ import {
   sendNotificationApi,
   sendRenewalReminderApi,
   updateLabApi,
+  updatePlanApi,
+  updateSubscriptionApi,
 } from "@/lib/api/super-admin";
 import {
   AddLabBranchRequest,
@@ -21,6 +24,8 @@ import {
   SendNotificationRequest,
   SendRenewalReminderRequest,
   UpdateLabRequest,
+  UpdatePlanRequest,
+  UpdateSubscriptionRequest,
 } from "@/types/super-admin";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
@@ -107,6 +112,23 @@ export function useCreatePlan() {
   });
 }
 
+export function useUpdatePlan() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: UpdatePlanRequest }) =>
+      updatePlanApi(id, data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["plans"] }),
+  });
+}
+
+export function useDeletePlan() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => deletePlanApi(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["plans"] }),
+  });
+}
+
 // ---- Subscriptions ----
 export function useSubscriptions(params: { tenantId?: string }) {
   return useQuery({
@@ -120,6 +142,20 @@ export function useCreateSubscription() {
   return useMutation({
     mutationFn: (data: CreateSubscriptionRequest) =>
       createSubscriptionApi(data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["subscriptions"] }),
+  });
+}
+
+export function useUpdateSubscription() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      id,
+      data,
+    }: {
+      id: string;
+      data: UpdateSubscriptionRequest;
+    }) => updateSubscriptionApi(id, data),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["subscriptions"] }),
   });
 }

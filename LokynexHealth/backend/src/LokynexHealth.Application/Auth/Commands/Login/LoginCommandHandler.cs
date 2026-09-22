@@ -52,12 +52,25 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, LoginResult>
 
         var token = _tokenGenerator.GenerateToken(user, roleName, permissions);
 
+        // This whole deployment connects to ONE tenant schema (see the "Search Path"
+        // in the connection string). current_schema() returns that schema's name at
+        // the DB level, so we can look up "whose lab is this" without needing any
+        // extra config wiring — a single scalar raw-SQL query, no enum, no fuss.
+        var labName = await _db.Database
+            .SqlQuery<string>($@"
+                SELECT primary_branch_name
+                FROM platform.tenants
+                WHERE schema_name = current_schema()
+                LIMIT 1")
+            .FirstOrDefaultAsync(cancellationToken);
+
         return new LoginResult
         {
             Token = token,
             UserId = user.Id,
             Name = user.Name,
             Role = roleName,
+            LabName = labName,
             ExpiresAt = DateTime.UtcNow.AddHours(1)
         };
     }
