@@ -22,6 +22,9 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
         builder.HasIndex(u => u.Email).IsUnique();
 
         builder.Property(u => u.Phone).HasMaxLength(20).IsRequired();
+        builder.Property(u => u.Address);
+        builder.Property(u => u.Pincode).HasMaxLength(10);
+        builder.Property(u => u.ProfilePictureUrl);
         builder.Property(u => u.PasswordHash).HasMaxLength(255).IsRequired();
 
         builder.Property(u => u.Status)

@@ -77,19 +77,22 @@ INSERT INTO modules (id, name) VALUES
 
 -- ---------- USERS ----------
 CREATE TABLE users (
-    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    name            VARCHAR(150) NOT NULL,
-    username        VARCHAR(100) UNIQUE NOT NULL,
-    email           CITEXT UNIQUE NOT NULL,
-    phone           VARCHAR(20) NOT NULL,
-    branch_id       UUID REFERENCES branches(id),
-    role_id         UUID REFERENCES roles(id),
-    password_hash   VARCHAR(255) NOT NULL,
-    status          record_status NOT NULL DEFAULT 'Active',
-    created_by      UUID REFERENCES users(id),
-    created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_by      UUID REFERENCES users(id),
-    updated_at      TIMESTAMPTZ
+    id                   UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name                 VARCHAR(150) NOT NULL,
+    username             VARCHAR(100) UNIQUE NOT NULL,
+    email                CITEXT UNIQUE NOT NULL,
+    phone                VARCHAR(20) NOT NULL,
+    address              TEXT,
+    pincode              VARCHAR(10),
+    profile_picture_url  TEXT,
+    branch_id            UUID REFERENCES branches(id),
+    role_id              UUID REFERENCES roles(id),
+    password_hash        VARCHAR(255) NOT NULL,
+    status               record_status NOT NULL DEFAULT 'Active',
+    created_by           UUID REFERENCES users(id),
+    created_at           TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_by           UUID REFERENCES users(id),
+    updated_at           TIMESTAMPTZ
 );
 
 CREATE INDEX idx_users_name_trgm ON users USING gin (name gin_trgm_ops);
@@ -267,24 +270,19 @@ CREATE INDEX idx_order_items_test        ON order_items (test_id);
 CREATE INDEX idx_order_items_technician  ON order_items (technician_id);
 
 -- ---------- REPORT BUILDER (templates + editable per-order reports) ----------
--- report_templates: reusable letterheads/layouts. Lab Admin can design one
--- manually (set header/footer/body in the in-app editor) OR upload an
--- existing .docx and keep editing it from there — original_file_path keeps
--- the uploaded source, header/footer/body_content hold the editable HTML
--- (converted from docx on upload) that the in-app editor actually works on.
 CREATE TABLE report_templates (
     id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name                VARCHAR(150) NOT NULL,
-    department_id       UUID REFERENCES departments(id),  -- optional: scope a template to a department's tests
+    department_id       UUID REFERENCES departments(id),
 
-    header_content      TEXT,   -- HTML, rendered by the in-app rich-text editor
-    footer_content      TEXT,   -- HTML
-    body_content        TEXT,   -- HTML, holds merge placeholders e.g. {{patient_name}}, {{test_result}}
+    header_content      TEXT,
+    footer_content      TEXT,
+    body_content        TEXT,
 
     source_type         report_source_type NOT NULL DEFAULT 'Manual',
-    original_file_path  VARCHAR(500),  -- set when source_type = 'UploadedDocument'; keeps the original .docx
+    original_file_path  VARCHAR(500),
 
-    is_deleted          BOOLEAN NOT NULL DEFAULT false,   -- soft delete -> shows up in the Deleted Folder view
+    is_deleted          BOOLEAN NOT NULL DEFAULT false,
     deleted_at          TIMESTAMPTZ,
     deleted_by          UUID REFERENCES users(id),
 
@@ -300,24 +298,20 @@ CREATE TRIGGER trg_report_templates_updated_at
 BEFORE UPDATE ON report_templates
 FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
--- report_documents: the actual report generated/edited for one order line.
--- Starts either from a template (merge-filled) or from a fresh upload, and
--- stays editable afterwards. Supersedes the old plain-upload table — this
--- is the single source of truth for "Upload Report" in the Order List module.
 CREATE TABLE report_documents (
     id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     order_item_id       UUID NOT NULL REFERENCES order_items(id) ON DELETE CASCADE,
-    template_id         UUID REFERENCES report_templates(id),  -- which template this was generated from, if any
+    template_id         UUID REFERENCES report_templates(id),
 
-    header_content      TEXT,   -- own copy — editing a document never mutates its source template
+    header_content      TEXT,
     footer_content      TEXT,
     body_content        TEXT,
 
     source_type         report_source_type NOT NULL DEFAULT 'Manual',
-    original_file_path  VARCHAR(500),   -- set when source_type = 'UploadedDocument'
-    exported_file_path  VARCHAR(500),   -- final rendered PDF, generated on "finalize/print"
+    original_file_path  VARCHAR(500),
+    exported_file_path  VARCHAR(500),
 
-    is_deleted          BOOLEAN NOT NULL DEFAULT false,   -- soft delete -> Deleted Folder
+    is_deleted          BOOLEAN NOT NULL DEFAULT false,
     deleted_at          TIMESTAMPTZ,
     deleted_by          UUID REFERENCES users(id),
 
@@ -334,7 +328,6 @@ CREATE TRIGGER trg_report_documents_updated_at
 BEFORE UPDATE ON report_documents
 FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
--- payment collections against an order (supports Open -> Partial -> Paid)
 CREATE TABLE order_payments (
     id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     order_id        UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
@@ -345,8 +338,6 @@ CREATE TABLE order_payments (
 );
 CREATE INDEX idx_order_payments_order ON order_payments (order_id);
 
--- "jodi keu akbar create korar por kono kichu update kore tobe seta
---  database e user er name er time show korbe" -> full audit trail
 CREATE TABLE order_audit_logs (
     id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     order_id        UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
@@ -358,7 +349,7 @@ CREATE TABLE order_audit_logs (
 );
 CREATE INDEX idx_order_audit_logs_order ON order_audit_logs (order_id);
 
--- ---------- COMMISSION SETUP (per-entity override on top of tests.*_commission_value) ----------
+-- ---------- COMMISSION SETUP ----------
 CREATE TABLE commission_overrides (
     id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     entity_type         commission_entity_type NOT NULL,
@@ -380,7 +371,7 @@ CREATE UNIQUE INDEX uq_commission_override_doctor     ON commission_overrides (d
 CREATE UNIQUE INDEX uq_commission_override_referral   ON commission_overrides (referral_id, test_id)   WHERE referral_id IS NOT NULL;
 CREATE UNIQUE INDEX uq_commission_override_technician ON commission_overrides (technician_id, test_id) WHERE technician_id IS NOT NULL;
 
--- ---------- COMMISSION PAYOUTS (Commission tab: Paid/Unpaid tracking) ----------
+-- ---------- COMMISSION PAYOUTS ----------
 CREATE TABLE commission_payouts (
     id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     entity_type         commission_entity_type NOT NULL,
@@ -410,8 +401,8 @@ CREATE TABLE ledger_entries (
     id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     branch_id       UUID REFERENCES branches(id),
     entry_date      DATE NOT NULL DEFAULT CURRENT_DATE,
-    entry_type      VARCHAR(30) NOT NULL,     -- Income / Expense / CommissionPayout / Refund
-    reference_table VARCHAR(50),              -- e.g. 'orders', 'commission_payouts'
+    entry_type      VARCHAR(30) NOT NULL,
+    reference_table VARCHAR(50),
     reference_id    UUID,
     amount          NUMERIC(12,2) NOT NULL,
     description     TEXT,
@@ -425,12 +416,12 @@ CREATE TABLE doctor_clinic_schedules (
     id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     branch_id       UUID NOT NULL REFERENCES branches(id),
     doctor_id       UUID NOT NULL REFERENCES platform.doctors(id),
-    day_of_week     SMALLINT NOT NULL CHECK (day_of_week BETWEEN 0 AND 6), -- 0=Sunday..6=Saturday
+    day_of_week     SMALLINT NOT NULL CHECK (day_of_week BETWEEN 0 AND 6),
     slot_minutes    INT NOT NULL,
     time_from       TIME NOT NULL,
     time_to         TIME NOT NULL,
     max_patients    INT NOT NULL,
-    is_active       BOOLEAN NOT NULL DEFAULT true,  -- Enable/Disable action on Schedules List
+    is_active       BOOLEAN NOT NULL DEFAULT true,
     created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at      TIMESTAMPTZ,
     UNIQUE (branch_id, doctor_id, day_of_week, time_from)

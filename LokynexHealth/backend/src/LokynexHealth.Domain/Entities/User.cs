@@ -9,6 +9,12 @@ public class User : BaseEntity
     public string Email { get; set; } = default!;
     public string Phone { get; set; } = default!;
 
+    // Profile fields — editable by the user themselves via UpdateOwnProfile,
+    // never via the password change path.
+    public string? Address { get; set; }
+    public string? Pincode { get; set; }
+    public string? ProfilePictureUrl { get; set; }
+
     public Guid? BranchId { get; set; }
     public Branch? Branch { get; set; }
 
