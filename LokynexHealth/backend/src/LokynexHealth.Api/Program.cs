@@ -79,10 +79,22 @@ var dataSource = dataSourceBuilder.Build();
 // with "Reading as 'System.Int32' is not supported for fields having DataTypeName
 // 'platform.record_status'". The schema is given explicitly because
 // lab_demo.record_status and platform.record_status share the same name.
+// IMPORTANT: this translator is created ONCE here, not inside the UseNpgsql
+// lambda. AddDbContext re-invokes that lambda on every DbContext instantiation
+// (once per request), and a `new NpgsqlNullNameTranslator()` there made every
+// request's options "look different" by reference — EF Core couldn't cache its
+// internal model/service provider between requests, so it built a fresh
+// IServiceProvider on every single request. After ~20 requests EF throws
+// ManyServiceProvidersCreatedWarning as a safety valve ("more than twenty
+// IServiceProvider instances created"), which is exactly the 500 error seen on
+// /api/Users and /api/my/notifications. Reusing ONE static instance keeps the
+// options fingerprint stable so EF reuses its cached internals.
+var pgEnumNameTranslator = new Npgsql.NameTranslation.NpgsqlNullNameTranslator();
+
 builder.Services.AddDbContext<LokynexHealthDbContext>(options =>
     options.UseNpgsql(dataSource, npgsql =>
     {
-        var enumNames = new Npgsql.NameTranslation.NpgsqlNullNameTranslator();
+        var enumNames = pgEnumNameTranslator;
 
         npgsql.MapEnum<LokynexHealth.Domain.Enums.RecordStatus>("record_status", "lab_demo", enumNames);
         npgsql.MapEnum<LokynexHealth.Domain.Enums.CommissionType>("commission_type", "lab_demo", enumNames);
