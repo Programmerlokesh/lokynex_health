@@ -5,7 +5,7 @@ import { ResetPasswordDialog } from "@/components/users/reset-password-dialog";
 import { useDeleteUser, useToggleUserStatus } from "@/hooks/use-users";
 import { useAuthStore } from "@/store/auth-store";
 import { UserDto } from "@/types/user";
-import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
+import DeleteOutlineIcon from "@mui/icons-material/Delete";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import VpnKeyOutlinedIcon from "@mui/icons-material/VpnKeyOutlined";
 import {
