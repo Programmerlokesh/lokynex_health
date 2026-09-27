@@ -13,6 +13,7 @@ import {
 } from "@/components/icons/lab-icons";
 import { brand } from "@/components/providers/mui-theme-provider";
 import { useAuthStore } from "@/store/auth-store";
+import AccountCircleOutlinedIcon from "@mui/icons-material/AccountCircleOutlined";
 import CloseIcon from "@mui/icons-material/Close";
 import LogoutIcon from "@mui/icons-material/Logout";
 import {
@@ -30,32 +31,90 @@ import { motion } from "framer-motion";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 
+// `moduleName` must match a name row in the `modules` table (see
+// TenantSchemaTemplate.sql) — it's what a plain lab user's JWT "permissions"
+// claim gates ("ModuleName:View"). `moduleName: null` means always visible
+// to any logged-in user (Dashboard, My Profile) — nothing to gate.
+// A LabAdmin always sees every item regardless of moduleName — see
+// visibleNavItems below.
 const navItems = [
-  { label: "Dashboard", href: "/dashboard", icon: DashboardGridIcon },
-  { label: "Users", href: "/users", icon: TeamIcon },
-  { label: "Branches", href: "/branches", icon: BranchIcon },
-  { label: "Departments & Tests", href: "/departments", icon: TestTubeIcon },
-  { label: "New Order", href: "/orders/new", icon: OrderFlowIcon },
-  { label: "Order List", href: "/orders", icon: OrderFlowIcon },
+  {
+    label: "Dashboard",
+    href: "/dashboard",
+    icon: DashboardGridIcon,
+    moduleName: null,
+  },
+  { label: "Users", href: "/users", icon: TeamIcon, moduleName: "Users" },
+  {
+    label: "Branches",
+    href: "/branches",
+    icon: BranchIcon,
+    moduleName: "Branches",
+  },
+  {
+    label: "Departments & Tests",
+    href: "/departments",
+    icon: TestTubeIcon,
+    moduleName: "DepartmentsAndTests",
+  },
+  {
+    label: "New Order",
+    href: "/orders/new",
+    icon: OrderFlowIcon,
+    moduleName: "NewOrder",
+  },
+  {
+    label: "Order List",
+    href: "/orders",
+    icon: OrderFlowIcon,
+    moduleName: "OrderListAndReports",
+  },
   {
     label: "Doctor / Referral / Technician",
     href: "/directory",
     icon: TeamIcon,
+    moduleName: "DoctorReferralTechnician",
   },
   {
     label: "Commission Setup",
     href: "/commission-setup",
     icon: CommissionIcon,
+    moduleName: "CommissionSetup",
   },
   {
     label: "Commission Payout",
     href: "/commission-payouts",
     icon: CommissionIcon,
+    moduleName: "Commission",
   },
-  { label: "Ledger & P&L", href: "/ledger", icon: PulseIcon },
-  { label: "Doctor Clinic", href: "/doctor-clinic", icon: MicroscopeIcon },
-  { label: "Report Builder", href: "/report-builder", icon: ReportIcon },
+  {
+    label: "Ledger & P&L",
+    href: "/ledger",
+    icon: PulseIcon,
+    moduleName: "Ledger",
+  },
+  {
+    label: "Doctor Clinic",
+    href: "/doctor-clinic",
+    icon: MicroscopeIcon,
+    moduleName: "DoctorClinic",
+  },
+  {
+    label: "Report Builder",
+    href: "/report-builder",
+    icon: ReportIcon,
+    // No dedicated module for this one yet — gate it alongside Order
+    // List/Reports since that's the closest existing permission.
+    moduleName: "OrderListAndReports",
+  },
 ];
+
+const profileNavItem = {
+  label: "My Profile",
+  href: "/profile",
+  icon: AccountCircleOutlinedIcon,
+  moduleName: null as string | null,
+};
 
 export const DRAWER_WIDTH = 248; // laptop (lg+) full sidebar
 export const RAIL_WIDTH = 76; // tablet (md-lg) icon-only rail
@@ -82,6 +141,20 @@ function SidebarContent({
   const pathname = usePathname();
   const router = useRouter();
   const logout = useAuthStore((state) => state.logout);
+  const role = useAuthStore((state) => state.user?.role);
+  const permissions = useAuthStore((state) => state.user?.permissions ?? []);
+
+  // A LabAdmin's access is role-based (everything) — never gated by the
+  // module permission grid, which only applies to regular staff accounts.
+  const isLabAdmin = role === "LabAdmin";
+  const canView = (moduleName: string | null) =>
+    moduleName === null ||
+    isLabAdmin ||
+    permissions.includes(`${moduleName}:View`);
+
+  const visibleNavItems = [...navItems, profileNavItem].filter((item) =>
+    canView(item.moduleName),
+  );
 
   const labelDisplay = rail ? { md: "none", lg: "block" } : "block";
   const rowJustify = rail ? { md: "center", lg: "flex-start" } : "flex-start";
@@ -134,7 +207,7 @@ function SidebarContent({
         aria-label="Main navigation"
         sx={{ px: 1.25, py: 1.5, flex: 1, overflowY: "auto" }}
       >
-        {navItems.map((item) => {
+        {visibleNavItems.map((item) => {
           const isActive = pathname === item.href;
           return (
             <Box key={item.href} sx={{ position: "relative", mb: 0.5 }}>

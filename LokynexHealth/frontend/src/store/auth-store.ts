@@ -9,6 +9,11 @@ interface AuthUser {
   // the Topbar instead of a generic "Lokynex Health" label, so a lab's own
   // staff always see which lab they're actually signed into.
   labName?: string | null;
+  // Flat "ModuleName:View" style strings from the JWT's permissions claim.
+  // Empty for LabAdmin — a LabAdmin's access is role-based (sees everything),
+  // never grid-based. The Sidebar uses this to hide modules a plain user
+  // hasn't been granted access to.
+  permissions: string[];
 }
 
 interface AuthState {

@@ -40,6 +40,7 @@ public class UnifiedLoginCommandHandler : IRequestHandler<UnifiedLoginCommand, U
                 Name = lab.Name,
                 Role = lab.Role,
                 LabName = lab.LabName,
+                Permissions = lab.Permissions,
                 ExpiresAt = lab.ExpiresAt
             };
         }

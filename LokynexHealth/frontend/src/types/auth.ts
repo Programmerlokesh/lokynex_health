@@ -10,6 +10,8 @@ export interface LoginResponse {
   role: string;
   labName?: string | null;
   expiresAt: string;
+  // "ModuleName:View" style strings — empty for LabAdmin (role-based, sees all).
+  permissions: string[];
 }
 
 // Response of the single sign-in endpoint (POST /Auth/sign-in).
@@ -24,4 +26,6 @@ export interface UnifiedLoginResponse {
   // This lab's own name — only present when accountType is "Lab".
   labName?: string | null;
   expiresAt: string;
+  // "ModuleName:View" style strings — empty for LabAdmin/SuperAdmin.
+  permissions: string[];
 }

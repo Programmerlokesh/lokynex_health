@@ -21,4 +21,5 @@ public class UnifiedLoginResult
     // Only populated for AccountType = "Lab" — this lab's own name, for the Topbar.
     public string? LabName { get; set; }
     public DateTime ExpiresAt { get; set; }
+    public List<string> Permissions { get; set; } = new();
 }

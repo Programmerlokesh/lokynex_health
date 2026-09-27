@@ -71,6 +71,7 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, LoginResult>
             Name = user.Name,
             Role = roleName,
             LabName = labName,
+            Permissions = permissions,
             ExpiresAt = DateTime.UtcNow.AddHours(1)
         };
     }

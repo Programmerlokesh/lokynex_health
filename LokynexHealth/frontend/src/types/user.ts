@@ -48,3 +48,59 @@ export interface UpdateUserRequest {
 export interface ToggleUserStatusRequest {
   isActive: boolean;
 }
+
+export interface ResetUserPasswordRequest {
+  newPassword: string;
+}
+
+// Self-service profile — never includes password/role/branch/status.
+export interface MyProfileDto {
+  id: string;
+  name: string;
+  username: string;
+  email: string;
+  phone: string;
+  address: string | null;
+  pincode: string | null;
+  profilePictureUrl: string | null;
+  roleName: string | null;
+  branchName: string | null;
+}
+
+export interface UpdateOwnProfileRequest {
+  name: string;
+  email: string;
+  phone: string;
+  address?: string;
+  pincode?: string;
+  profilePictureUrl?: string;
+}
+
+export interface RoleDto {
+  id: string;
+  name: string;
+  description: string | null;
+}
+
+export interface ModuleListItemDto {
+  id: number;
+  name: string;
+}
+
+export interface UserPermissionsDto {
+  userId: string;
+  roleId: string | null;
+  permissions: {
+    moduleId: number;
+    moduleName: string;
+    canView: boolean;
+    canCreate: boolean;
+    canEdit: boolean;
+    canDelete: boolean;
+  }[];
+}
+
+export interface UpdateUserPermissionsRequest {
+  roleId?: string;
+  permissions: ModulePermissionInput[];
+}

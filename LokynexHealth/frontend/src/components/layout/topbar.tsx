@@ -18,6 +18,7 @@ import {
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import { motion } from "framer-motion";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 
 function formatDateTime(date: Date) {
@@ -136,33 +137,50 @@ export function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
             </IconButton>
           </Tooltip>
 
-          <Box
-            sx={{
-              textAlign: "right",
-              display: { xs: "none", sm: "block" },
-              maxWidth: 180,
-            }}
-          >
-            <Typography variant="body2" noWrap sx={{ fontWeight: 500 }}>
-              {user?.name}
-            </Typography>
-            <Typography
-              variant="caption"
-              color="text.secondary"
-              noWrap
-              component="div"
+          <Tooltip title="My Profile">
+            <Box
+              component={Link}
+              href="/profile"
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                gap: 1.25,
+                textDecoration: "none",
+                color: "inherit",
+              }}
             >
-              {user?.role}
-            </Typography>
-          </Box>
-          <motion.div whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.95 }}>
-            <Avatar
-              sx={{ bgcolor: "#0f172a", width: 36, height: 36 }}
-              aria-label={user?.name ? `Signed in as ${user.name}` : "User"}
-            >
-              {user?.name?.charAt(0) ?? "U"}
-            </Avatar>
-          </motion.div>
+              <Box
+                sx={{
+                  textAlign: "right",
+                  display: { xs: "none", sm: "block" },
+                  maxWidth: 180,
+                }}
+              >
+                <Typography variant="body2" noWrap sx={{ fontWeight: 500 }}>
+                  {user?.name}
+                </Typography>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  noWrap
+                  component="div"
+                >
+                  {user?.role}
+                </Typography>
+              </Box>
+              <motion.div
+                whileHover={{ scale: 1.08 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <Avatar
+                  sx={{ bgcolor: "#0f172a", width: 36, height: 36 }}
+                  aria-label={user?.name ? `Signed in as ${user.name}` : "User"}
+                >
+                  {user?.name?.charAt(0) ?? "U"}
+                </Avatar>
+              </motion.div>
+            </Box>
+          </Tooltip>
         </Box>
       </Toolbar>
     </AppBar>

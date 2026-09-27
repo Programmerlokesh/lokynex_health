@@ -79,6 +79,7 @@ export default function LoginPage() {
           name: result.name,
           role: result.role,
           labName: result.labName ?? null,
+          permissions: result.permissions ?? [],
         });
         const secure = window.location.protocol === "https:" ? "; Secure" : "";
         document.cookie = `lokynex-token=${result.token}; path=/; max-age=3600; SameSite=Lax${secure}`;

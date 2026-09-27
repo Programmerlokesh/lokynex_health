@@ -5,7 +5,9 @@ using LokynexHealth.Application.Users.Commands.ResetUserPassword;
 using LokynexHealth.Application.Users.Commands.ToggleUserStatus;
 using LokynexHealth.Application.Users.Commands.UpdateOwnProfile;
 using LokynexHealth.Application.Users.Commands.UpdateUser;
+using LokynexHealth.Application.Users.Commands.UpdateUserPermissions;
 using LokynexHealth.Application.Users.Queries.GetMyProfile;
+using LokynexHealth.Application.Users.Queries.GetUserPermissions;
 using LokynexHealth.Application.Users.Queries.GetUsers;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -109,6 +111,34 @@ public class UsersController : ControllerBase
     {
         command.TargetUserId = id;
         command.PerformedBy = _currentUser.UserId;
+        await _mediator.Send(command, cancellationToken);
+        return NoContent();
+    }
+
+    // Returns the user's current role + a full grid (every module, with this
+    // user's flags or all-false if they have no row yet) so the Edit User
+    // dialog's Role select and permission grid open already populated.
+    [HttpGet("{id}/permissions")]
+    [Authorize(Roles = "LabAdmin")]
+    public async Task<IActionResult> GetUserPermissions(Guid id, CancellationToken cancellationToken)
+    {
+        var result = await _mediator.Send(
+            new GetUserPermissionsQuery { UserId = id },
+            cancellationToken);
+        return Ok(result);
+    }
+
+    // Replaces the user's role + entire permission grid in one call — the
+    // ONLY way a user's RoleId or module access ever changes after creation.
+    [HttpPut("{id}/permissions")]
+    [Authorize(Roles = "LabAdmin")]
+    public async Task<IActionResult> UpdateUserPermissions(
+        Guid id,
+        [FromBody] UpdateUserPermissionsCommand command,
+        CancellationToken cancellationToken)
+    {
+        command.UserId = id;
+        command.UpdatedBy = _currentUser.UserId;
         await _mediator.Send(command, cancellationToken);
         return NoContent();
     }

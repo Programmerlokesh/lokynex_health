@@ -19,4 +19,5 @@ public class LoginResult
     // THEIR lab's name, not a generic "Lokynex Health" label.
     public string? LabName { get; set; }
     public DateTime ExpiresAt { get; set; }
+    public List<string> Permissions { get; set; } = new();
 }
