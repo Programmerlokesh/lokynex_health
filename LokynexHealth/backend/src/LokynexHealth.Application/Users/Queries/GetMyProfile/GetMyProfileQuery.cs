@@ -5,6 +5,12 @@ namespace LokynexHealth.Application.Users.Queries.GetMyProfile;
 public class GetMyProfileQuery : IRequest<MyProfileDto>
 {
     public Guid UserId { get; set; }
+
+    // Set by the controller from ICurrentUserService.IsTenantAdmin. The
+    // Tenant Admin (lab owner) account has no row in the tenant `users`
+    // table — its "profile" lives in platform.tenants instead — so the
+    // handler needs to know which table to read before it runs the query.
+    public bool IsTenantAdmin { get; set; }
 }
 
 public class MyProfileDto

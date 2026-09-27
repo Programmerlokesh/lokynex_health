@@ -152,7 +152,11 @@ public class UsersController : ControllerBase
             return Unauthorized();
 
         var result = await _mediator.Send(
-            new GetMyProfileQuery { UserId = _currentUser.UserId.Value },
+            new GetMyProfileQuery
+            {
+                UserId = _currentUser.UserId.Value,
+                IsTenantAdmin = _currentUser.IsTenantAdmin
+            },
             cancellationToken);
         return Ok(result);
     }
@@ -168,6 +172,7 @@ public class UsersController : ControllerBase
             return Unauthorized();
 
         command.UserId = _currentUser.UserId.Value;
+        command.IsTenantAdmin = _currentUser.IsTenantAdmin;
         await _mediator.Send(command, cancellationToken);
         return NoContent();
     }

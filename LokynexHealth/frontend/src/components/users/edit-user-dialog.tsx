@@ -40,10 +40,15 @@ export function EditUserDialog({
   const [roleId, setRoleId] = useState("");
   const [permissions, setPermissions] = useState<ModulePermissionInput[]>([]);
 
-  const { data: branches } = useBranches({ pageSize: 100 });
-  const { data: roles } = useRoles();
-  const { data: userPermissions, isLoading: isLoadingPermissions } =
-    useUserPermissions(user?.id ?? null);
+  const { data: branches, isError: isBranchesError } = useBranches({
+    pageSize: 100,
+  });
+  const { data: roles, isError: isRolesError } = useRoles();
+  const {
+    data: userPermissions,
+    isLoading: isLoadingPermissions,
+    isError: isPermissionsError,
+  } = useUserPermissions(user?.id ?? null);
 
   const updateUser = useUpdateUser();
   const updatePermissions = useUpdateUserPermissions();
@@ -128,6 +133,26 @@ export function EditUserDialog({
           {hasError && (
             <Alert severity="error">
               Could not save changes. Email may already be in use.
+            </Alert>
+          )}
+
+          {/* Surfaced separately from the save error above: these mean the
+              form couldn't even load this user's role/permissions/branch
+              list in the first place — without this, a failed fetch just
+              silently left the Role select and permission grid blank/empty,
+              which looked like missing data instead of a failed request. */}
+          {isPermissionsError && (
+            <Alert severity="error">
+              Could not load this user&apos;s role and permissions. Try closing
+              and reopening this dialog.
+            </Alert>
+          )}
+          {isRolesError && (
+            <Alert severity="warning">Could not load the list of roles.</Alert>
+          )}
+          {isBranchesError && (
+            <Alert severity="warning">
+              Could not load the list of branches.
             </Alert>
           )}
 

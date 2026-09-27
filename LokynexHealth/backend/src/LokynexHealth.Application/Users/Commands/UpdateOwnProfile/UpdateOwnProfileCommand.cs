@@ -20,4 +20,8 @@ public class UpdateOwnProfileCommand : IRequest
     // request body. This is what makes the command "self-service only": there
     // is no Id field a caller could point at someone else's account.
     public Guid UserId { get; set; }
+
+    // Set by the controller from ICurrentUserService.IsTenantAdmin — see the
+    // same flag on GetMyProfileQuery for why this split exists.
+    public bool IsTenantAdmin { get; set; }
 }

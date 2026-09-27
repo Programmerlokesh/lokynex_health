@@ -16,6 +16,31 @@ public class UpdateOwnProfileCommandHandler : IRequestHandler<UpdateOwnProfileCo
 
     public async Task Handle(UpdateOwnProfileCommand request, CancellationToken cancellationToken)
     {
+        // Tenant Admin has no `users` row — their profile fields live on
+        // platform.tenants (see GetMyProfileQueryHandler for the read side of
+        // this same split). Pincode/ProfilePictureUrl have no home on Tenant,
+        // so they're accepted but silently ignored for this account type
+        // rather than erroring.
+        if (request.IsTenantAdmin)
+        {
+            var tenant = await _db.Tenants.FirstOrDefaultAsync(t => t.Id == request.UserId, cancellationToken);
+            if (tenant is null)
+                throw new NotFoundException(nameof(Domain.Entities.Tenant), request.UserId);
+
+            var tenantEmailTaken = await _db.Tenants
+                .AnyAsync(t => t.Id != request.UserId && t.AdminEmail == request.Email, cancellationToken);
+            if (tenantEmailTaken)
+                throw new ConflictException($"Email '{request.Email}' already exists.");
+
+            tenant.AdminName = request.Name;
+            tenant.AdminEmail = request.Email;
+            tenant.AdminPhone = request.Phone;
+            tenant.AdminAddress = request.Address;
+
+            await _db.SaveChangesAsync(cancellationToken);
+            return;
+        }
+
         var user = await _db.Users.FirstOrDefaultAsync(u => u.Id == request.UserId, cancellationToken);
         if (user is null)
             throw new NotFoundException(nameof(Domain.Entities.User), request.UserId);

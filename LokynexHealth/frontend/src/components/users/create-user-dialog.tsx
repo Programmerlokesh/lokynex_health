@@ -41,8 +41,10 @@ export function CreateUserDialog() {
   const theme = useTheme();
   const fullScreen = useMediaQuery(theme.breakpoints.down("sm"));
 
-  const { data: roles } = useRoles();
-  const { data: branches } = useBranches({ pageSize: 100 });
+  const { data: roles, isError: isRolesError } = useRoles();
+  const { data: branches, isError: isBranchesError } = useBranches({
+    pageSize: 100,
+  });
   const createUser = useCreateUser();
 
   function resetAndClose() {
@@ -183,6 +185,17 @@ export function CreateUserDialog() {
                 ))}
               </TextField>
             </Box>
+
+            {isRolesError && (
+              <Alert severity="warning">
+                Could not load the list of roles.
+              </Alert>
+            )}
+            {isBranchesError && (
+              <Alert severity="warning">
+                Could not load the list of branches.
+              </Alert>
+            )}
 
             <Divider />
 
