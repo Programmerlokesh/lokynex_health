@@ -1,6 +1,7 @@
 "use client";
 
 import { NotificationBell } from "@/components/layout/notification-bell";
+import { useMyProfile } from "@/hooks/use-users";
 import { useAuthStore } from "@/store/auth-store";
 import { useThemeStore } from "@/store/theme-store";
 import DarkModeOutlinedIcon from "@mui/icons-material/DarkModeOutlined";
@@ -38,6 +39,10 @@ function formatDateTime(date: Date) {
 
 export function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
   const user = useAuthStore((state) => state.user);
+  // Same query key as the Profile page, so a new photo/name shows up here
+  // instantly after saving.
+  const { data: profile } = useMyProfile();
+  const displayName = profile?.name ?? user?.name;
   const { mode, toggleMode } = useThemeStore();
 
   const [now, setNow] = useState<Date | null>(null);
@@ -141,6 +146,7 @@ export function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
             <Box
               component={Link}
               href="/profile"
+              aria-label="Open my profile"
               sx={{
                 display: "flex",
                 alignItems: "center",
@@ -157,7 +163,7 @@ export function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
                 }}
               >
                 <Typography variant="body2" noWrap sx={{ fontWeight: 500 }}>
-                  {user?.name}
+                  {displayName}
                 </Typography>
                 <Typography
                   variant="caption"
@@ -173,10 +179,11 @@ export function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
                 whileTap={{ scale: 0.95 }}
               >
                 <Avatar
+                  src={profile?.profilePictureUrl || undefined}
+                  alt={displayName ?? "User"}
                   sx={{ bgcolor: "#0f172a", width: 36, height: 36 }}
-                  aria-label={user?.name ? `Signed in as ${user.name}` : "User"}
                 >
-                  {user?.name?.charAt(0) ?? "U"}
+                  {displayName?.charAt(0) ?? "U"}
                 </Avatar>
               </motion.div>
             </Box>

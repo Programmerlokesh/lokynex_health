@@ -18,9 +18,9 @@ public class UpdateOwnProfileCommandHandler : IRequestHandler<UpdateOwnProfileCo
     {
         // Tenant Admin has no `users` row — their profile fields live on
         // platform.tenants (see GetMyProfileQueryHandler for the read side of
-        // this same split). Pincode/ProfilePictureUrl have no home on Tenant,
-        // so they're accepted but silently ignored for this account type
-        // rather than erroring.
+        // this same split). Pincode has no home on Tenant, so it's accepted but
+        // silently ignored for this account type. The photo is stored in
+        // platform.tenants.admin_profile_picture_url.
         if (request.IsTenantAdmin)
         {
             var tenant = await _db.Tenants.FirstOrDefaultAsync(t => t.Id == request.UserId, cancellationToken);
@@ -36,6 +36,9 @@ public class UpdateOwnProfileCommandHandler : IRequestHandler<UpdateOwnProfileCo
             tenant.AdminEmail = request.Email;
             tenant.AdminPhone = request.Phone;
             tenant.AdminAddress = request.Address;
+            tenant.AdminProfilePictureUrl = string.IsNullOrWhiteSpace(request.ProfilePictureUrl)
+                ? null
+                : request.ProfilePictureUrl;
 
             await _db.SaveChangesAsync(cancellationToken);
             return;
@@ -58,7 +61,9 @@ public class UpdateOwnProfileCommandHandler : IRequestHandler<UpdateOwnProfileCo
         user.Phone = request.Phone;
         user.Address = request.Address;
         user.Pincode = request.Pincode;
-        user.ProfilePictureUrl = request.ProfilePictureUrl;
+        user.ProfilePictureUrl = string.IsNullOrWhiteSpace(request.ProfilePictureUrl)
+            ? null
+            : request.ProfilePictureUrl;
         user.UpdatedBy = request.UserId;
 
         await _db.SaveChangesAsync(cancellationToken);

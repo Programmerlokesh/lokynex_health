@@ -76,6 +76,12 @@ export interface UpdateOwnProfileRequest {
   profilePictureUrl?: string;
 }
 
+// LabAdmin changing their OWN password (needs the current one).
+export interface ChangeOwnPasswordRequest {
+  currentPassword: string;
+  newPassword: string;
+}
+
 export interface RoleDto {
   id: string;
   name: string;

@@ -1,4 +1,5 @@
 import {
+  changeMyPasswordApi,
   createUserApi,
   deleteUserApi,
   getMyProfileApi,
@@ -11,6 +12,7 @@ import {
   updateUserPermissionsApi,
 } from "@/lib/api/users";
 import {
+  ChangeOwnPasswordRequest,
   CreateUserRequest,
   ResetUserPasswordRequest,
   ToggleUserStatusRequest,
@@ -140,5 +142,12 @@ export function useUpdateMyProfile() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["my-profile"] });
     },
+  });
+}
+
+// LabAdmin changing their own password.
+export function useChangeMyPassword() {
+  return useMutation({
+    mutationFn: (data: ChangeOwnPasswordRequest) => changeMyPasswordApi(data),
   });
 }

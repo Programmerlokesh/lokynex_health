@@ -3,6 +3,7 @@
 import { EditUserDialog } from "@/components/users/edit-user-dialog";
 import { ResetPasswordDialog } from "@/components/users/reset-password-dialog";
 import { useDeleteUser, useToggleUserStatus } from "@/hooks/use-users";
+import { getApiErrorMessage } from "@/lib/api-error";
 import { useAuthStore } from "@/store/auth-store";
 import { UserDto } from "@/types/user";
 import DeleteOutlineIcon from "@mui/icons-material/Delete";
@@ -19,6 +20,7 @@ import {
   DialogTitle,
   IconButton,
   Paper,
+  Snackbar,
   Switch,
   Table,
   TableBody,
@@ -36,6 +38,7 @@ export function UsersTable({ users }: { users: UserDto[] }) {
   const [editingUser, setEditingUser] = useState<UserDto | null>(null);
   const [resettingUser, setResettingUser] = useState<UserDto | null>(null);
   const [deletingUser, setDeletingUser] = useState<UserDto | null>(null);
+  const [statusError, setStatusError] = useState<string | null>(null);
 
   const currentUserId = useAuthStore((s) => s.user?.userId);
   const toggleStatus = useToggleUserStatus();
@@ -152,10 +155,21 @@ export function UsersTable({ users }: { users: UserDto[] }) {
                           checked={user.status === "Active"}
                           disabled={isSelf || toggleStatus.isPending}
                           onChange={(e) =>
-                            toggleStatus.mutate({
-                              id: user.id,
-                              data: { isActive: e.target.checked },
-                            })
+                            toggleStatus.mutate(
+                              {
+                                id: user.id,
+                                data: { isActive: e.target.checked },
+                              },
+                              {
+                                onError: (err) =>
+                                  setStatusError(
+                                    getApiErrorMessage(
+                                      err,
+                                      "Could not update this user's status.",
+                                    ),
+                                  ),
+                              },
+                            )
                           }
                         />
                       </span>
@@ -181,6 +195,22 @@ export function UsersTable({ users }: { users: UserDto[] }) {
         onClose={() => setResettingUser(null)}
       />
 
+      <Snackbar
+        open={!!statusError}
+        autoHideDuration={6000}
+        onClose={() => setStatusError(null)}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert
+          severity="error"
+          variant="filled"
+          onClose={() => setStatusError(null)}
+          sx={{ width: "100%" }}
+        >
+          {statusError}
+        </Alert>
+      </Snackbar>
+
       <Dialog
         open={!!deletingUser}
         onClose={() => setDeletingUser(null)}
@@ -197,7 +227,10 @@ export function UsersTable({ users }: { users: UserDto[] }) {
           </DialogContentText>
           {deleteUser.isError && (
             <Alert severity="error" sx={{ mt: 2 }}>
-              Could not delete this user. Please try again.
+              {getApiErrorMessage(
+                deleteUser.error,
+                "Could not delete this user. Please try again.",
+              )}
             </Alert>
           )}
         </DialogContent>

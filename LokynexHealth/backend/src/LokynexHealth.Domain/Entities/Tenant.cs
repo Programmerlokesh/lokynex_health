@@ -17,6 +17,7 @@ public class Tenant : BaseEntity
     public string AdminName { get; set; } = default!;
     public string AdminPhone { get; set; } = default!;
     public string? AdminAddress { get; set; }
+    public string? AdminProfilePictureUrl { get; set; }
     public string AdminEmail { get; set; } = default!;
     public string AdminUsername { get; set; } = default!;
     public string AdminPasswordHash { get; set; } = default!;

@@ -1,4 +1,5 @@
 using LokynexHealth.Application.Common.Interfaces;
+using LokynexHealth.Application.Users.Commands.ChangeOwnPassword;
 using LokynexHealth.Application.Users.Commands.CreateUser;
 using LokynexHealth.Application.Users.Commands.DeleteUser;
 using LokynexHealth.Application.Users.Commands.ResetUserPassword;
@@ -28,6 +29,14 @@ public class UsersController : ControllerBase
         _mediator = mediator;
         _currentUser = currentUser;
     }
+
+    // Id to stamp into users.created_by / users.updated_by. Those columns are
+    // a FOREIGN KEY to users(id), but the Tenant Admin (lab owner) has NO row
+    // in `users` — their id is a platform.tenants id. Writing it there made
+    // Postgres throw an FK violation (surfacing as a generic 500), which is why
+    // deactivate / edit / reset-password failed for the Lab Admin. So for a
+    // Tenant Admin we store NULL instead.
+    private Guid? ActorUserId => _currentUser.IsTenantAdmin ? null : _currentUser.UserId;
 
     // ---------- LabAdmin-only account management ----------
     // Every write here (create, edit-any-user, reset-password, delete,
@@ -72,7 +81,7 @@ public class UsersController : ControllerBase
         CancellationToken cancellationToken)
     {
         command.Id = id;
-        command.UpdatedBy = _currentUser.UserId;
+        command.UpdatedBy = ActorUserId;
         await _mediator.Send(command, cancellationToken);
         return NoContent();
     }
@@ -85,7 +94,7 @@ public class UsersController : ControllerBase
         CancellationToken cancellationToken)
     {
         command.Id = id;
-        command.UpdatedBy = _currentUser.UserId;
+        command.UpdatedBy = ActorUserId;
         await _mediator.Send(command, cancellationToken);
         return NoContent();
     }
@@ -95,13 +104,12 @@ public class UsersController : ControllerBase
     public async Task<IActionResult> DeleteUser(Guid id, CancellationToken cancellationToken)
     {
         await _mediator.Send(
-            new DeleteUserCommand { Id = id, PerformedBy = _currentUser.UserId },
+            new DeleteUserCommand { Id = id, PerformedBy = ActorUserId },
             cancellationToken);
         return NoContent();
     }
 
-    // Only a LabAdmin can set a NEW password for someone — there is no
-    // self-service "change my password" anywhere in this API.
+    // A LabAdmin can set a NEW password for someone else.
     [HttpPost("{id}/reset-password")]
     [Authorize(Roles = "LabAdmin")]
     public async Task<IActionResult> ResetPassword(
@@ -110,7 +118,7 @@ public class UsersController : ControllerBase
         CancellationToken cancellationToken)
     {
         command.TargetUserId = id;
-        command.PerformedBy = _currentUser.UserId;
+        command.PerformedBy = ActorUserId;
         await _mediator.Send(command, cancellationToken);
         return NoContent();
     }
@@ -138,7 +146,7 @@ public class UsersController : ControllerBase
         CancellationToken cancellationToken)
     {
         command.UserId = id;
-        command.UpdatedBy = _currentUser.UserId;
+        command.UpdatedBy = ActorUserId;
         await _mediator.Send(command, cancellationToken);
         return NoContent();
     }
@@ -166,6 +174,25 @@ public class UsersController : ControllerBase
     [HttpPut("me")]
     public async Task<IActionResult> UpdateMyProfile(
         [FromBody] UpdateOwnProfileCommand command,
+        CancellationToken cancellationToken)
+    {
+        if (_currentUser.UserId is null)
+            return Unauthorized();
+
+        command.UserId = _currentUser.UserId.Value;
+        command.IsTenantAdmin = _currentUser.IsTenantAdmin;
+        await _mediator.Send(command, cancellationToken);
+        return NoContent();
+    }
+
+    // LabAdmin changing THEIR OWN password (needs the current password).
+    // Works for both the Tenant Admin (lab owner, lives in platform.tenants)
+    // and a `users` row that has the LabAdmin role. Other roles still have to
+    // ask their LabAdmin (reset-password above).
+    [HttpPost("me/change-password")]
+    [Authorize(Roles = "LabAdmin")]
+    public async Task<IActionResult> ChangeMyPassword(
+        [FromBody] ChangeOwnPasswordCommand command,
         CancellationToken cancellationToken)
     {
         if (_currentUser.UserId is null)

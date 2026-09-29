@@ -39,7 +39,7 @@ public class GetMyProfileQueryHandler : IRequestHandler<GetMyProfileQuery, MyPro
                 Phone = tenant.AdminPhone,
                 Address = tenant.AdminAddress,
                 Pincode = tenant.PrimaryBranchPincode,
-                ProfilePictureUrl = null,
+                ProfilePictureUrl = tenant.AdminProfilePictureUrl,
                 RoleName = "Lab Admin",
                 BranchName = tenant.PrimaryBranchName
             };

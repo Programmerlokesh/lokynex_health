@@ -1,5 +1,6 @@
 import { apiClient } from "@/lib/api-client";
 import {
+  ChangeOwnPasswordRequest,
   CreateUserRequest,
   MyProfileDto,
   PagedResult,
@@ -87,4 +88,11 @@ export async function updateMyProfileApi(
   data: UpdateOwnProfileRequest,
 ): Promise<void> {
   await apiClient.put("/Users/me", data);
+}
+
+// LabAdmin-only — change your OWN password (current password required).
+export async function changeMyPasswordApi(
+  data: ChangeOwnPasswordRequest,
+): Promise<void> {
+  await apiClient.post("/Users/me/change-password", data);
 }
