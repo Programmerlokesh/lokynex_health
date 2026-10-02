@@ -24,10 +24,23 @@ public class CreateSubscriptionCommandHandler : IRequestHandler<CreateSubscripti
         var planExists = await _db.Plans.AnyAsync(p => p.Id == request.PlanId, cancellationToken);
         if (!planExists) throw new NotFoundException(nameof(Plan), request.PlanId);
 
+        if (request.BranchId.HasValue)
+        {
+            // A branch subscription can only be billed under the branch's own
+            // lab — this is the same "route id wins" guard as the branch
+            // commands, just enforced at the subscription boundary.
+            var branchBelongsToTenant = await _db.TenantBranches.AnyAsync(
+                b => b.Id == request.BranchId.Value && b.TenantId == request.TenantId,
+                cancellationToken);
+            if (!branchBelongsToTenant)
+                throw new NotFoundException("Branch", request.BranchId.Value);
+        }
+
         var subscription = new Subscription
         {
             Id = Guid.NewGuid(),
             TenantId = request.TenantId,
+            BranchId = request.BranchId,
             PlanId = request.PlanId,
             StartDate = request.StartDate,
             EndDate = request.EndDate,

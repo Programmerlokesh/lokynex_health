@@ -40,21 +40,29 @@ public static class LabSubscriptionCalculator
     public const int ExpiringSoonThresholdDays = 15;
 
     /// <summary>
-    /// Picks the subscription that actually governs the lab right now: the one
-    /// with the latest EndDate, NOT the most recently created. A back-dated
-    /// correction entered after a renewal must not be allowed to override the
-    /// renewal itself.
+    /// Picks the subscription that actually governs the lab (or one branch of
+    /// it) right now: the one with the latest EndDate, NOT the most recently
+    /// created. A back-dated correction entered after a renewal must not be
+    /// allowed to override the renewal itself.
     /// </summary>
+    /// <param name="branchId">
+    /// Null (default) = the lab's main subscription only (BranchId IS NULL).
+    /// A branch Id = that branch's own independent subscription only.
+    /// Pass the full unfiltered list; filtering by branch happens in here.
+    /// </param>
     public static LabSubscriptionSummary? Build(
         IEnumerable<Subscription> subscriptions,
         IReadOnlyDictionary<Guid, string> planNamesById,
-        DateOnly today)
+        DateOnly today,
+        Guid? branchId = null)
     {
-        var current = subscriptions
+        var scoped = subscriptions.Where(s => s.BranchId == branchId);
+
+        var current = scoped
             .Where(s => s.Status != SubscriptionStatusType.Cancelled)
             .OrderByDescending(s => s.EndDate)
             .FirstOrDefault()
-            ?? subscriptions.OrderByDescending(s => s.EndDate).FirstOrDefault();
+            ?? scoped.OrderByDescending(s => s.EndDate).FirstOrDefault();
 
         if (current is null)
             return null;

@@ -11,7 +11,9 @@ import {
   useLab,
   useSendRenewalReminder,
   useUpdateLab,
+  useUpdateLabBranch,
 } from "@/hooks/use-super-admin";
+import type { BranchDto } from "@/types/super-admin";
 import { getApiErrorMessage } from "@/lib/api-error";
 import AddIcon from "@mui/icons-material/Add";
 import BusinessIcon from "@mui/icons-material/Business";
@@ -92,6 +94,24 @@ const EMPTY_BRANCH: BranchForm = {
   branchPhone: "",
 };
 
+type EditBranchForm = {
+  branchName: string;
+  branchAddress: string;
+  branchPincode: string;
+  branchPhone: string;
+  status: string;
+};
+
+function editFormFromBranch(b: BranchDto): EditBranchForm {
+  return {
+    branchName: b.branchName,
+    branchAddress: b.branchAddress ?? "",
+    branchPincode: b.branchPincode ?? "",
+    branchPhone: b.branchPhone ?? "",
+    status: b.status ?? "Active",
+  };
+}
+
 function initials(name: string) {
   return name
     .split(" ")
@@ -143,6 +163,7 @@ export function LabDetailDialog({
   const { data: lab, isLoading } = useLab(labId);
   const updateLab = useUpdateLab(labId);
   const addBranch = useAddLabBranch(labId);
+  const updateBranch = useUpdateLabBranch(labId);
   const deleteBranch = useDeleteLabBranch(labId);
   const sendReminder = useSendRenewalReminder(labId);
 
@@ -150,6 +171,10 @@ export function LabDetailDialog({
   const [form, setForm] = useState<EditForm | null>(null);
   const [branchFormOpen, setBranchFormOpen] = useState(false);
   const [branchForm, setBranchForm] = useState<BranchForm>(EMPTY_BRANCH);
+  const [editingBranchId, setEditingBranchId] = useState<string | null>(null);
+  const [editBranchForm, setEditBranchForm] = useState<EditBranchForm | null>(
+    null,
+  );
 
   useEffect(() => {
     if (lab) {
@@ -174,8 +199,11 @@ export function LabDetailDialog({
       setEditMode(false);
       setBranchFormOpen(false);
       setBranchForm(EMPTY_BRANCH);
+      setEditingBranchId(null);
+      setEditBranchForm(null);
       updateLab.reset();
       addBranch.reset();
+      updateBranch.reset();
       deleteBranch.reset();
       sendReminder.reset();
     }
@@ -225,9 +253,47 @@ export function LabDetailDialog({
     );
   }
 
+  function handleStartEditBranch(b: BranchDto) {
+    setEditingBranchId(b.id);
+    setEditBranchForm(editFormFromBranch(b));
+    setBranchFormOpen(false); // only one branch form open at a time
+  }
+
+  function handleCancelEditBranch() {
+    setEditingBranchId(null);
+    setEditBranchForm(null);
+    updateBranch.reset();
+  }
+
+  function handleSaveEditBranch() {
+    if (!editingBranchId || !editBranchForm) return;
+    if (!editBranchForm.branchName.trim()) return;
+
+    updateBranch.mutate(
+      {
+        branchId: editingBranchId,
+        data: {
+          branchName: editBranchForm.branchName.trim(),
+          branchAddress: editBranchForm.branchAddress.trim() || undefined,
+          branchPincode: editBranchForm.branchPincode.trim() || undefined,
+          branchPhone: editBranchForm.branchPhone.trim() || undefined,
+          status: editBranchForm.status,
+        },
+      },
+      {
+        onSuccess: () => {
+          setEditingBranchId(null);
+          setEditBranchForm(null);
+        },
+      },
+    );
+  }
+
   function handleClose() {
     setEditMode(false);
     setBranchFormOpen(false);
+    setEditingBranchId(null);
+    setEditBranchForm(null);
     onClose();
   }
 
@@ -298,6 +364,14 @@ export function LabDetailDialog({
         {addBranch.isError && (
           <Alert severity="error">
             {getApiErrorMessage(addBranch.error, "Could not add the branch.")}
+          </Alert>
+        )}
+        {updateBranch.isError && (
+          <Alert severity="error">
+            {getApiErrorMessage(
+              updateBranch.error,
+              "Could not update the branch.",
+            )}
           </Alert>
         )}
         {deleteBranch.isError && (
@@ -624,26 +698,245 @@ export function LabDetailDialog({
                   No additional branches yet.
                 </Typography>
               ) : (
-                <Stack direction="row" sx={{ flexWrap: "wrap", gap: 1 }}>
-                  {lab.extendBranches.map((b) => (
-                    <Tooltip
-                      key={b.id}
-                      title={
-                        [b.branchAddress, b.branchPincode, b.branchPhone]
-                          .filter(Boolean)
-                          .join(" · ") || "No contact details"
-                      }
-                    >
-                      <Chip
-                        label={`${b.branchName} (${b.branchCode})`}
+                <Stack spacing={1}>
+                  {lab.extendBranches.map((b) =>
+                    editingBranchId === b.id && editBranchForm ? (
+                      <Paper
+                        key={b.id}
                         variant="outlined"
-                        size="small"
-                        deleteIcon={<DeleteOutlineIcon />}
-                        disabled={deleteBranch.isPending}
-                        onDelete={() => deleteBranch.mutate(b.id)}
-                      />
-                    </Tooltip>
-                  ))}
+                        sx={{ p: 2, borderRadius: 2 }}
+                      >
+                        <Stack spacing={2}>
+                          <Stack
+                            direction={{ xs: "column", sm: "row" }}
+                            spacing={2}
+                          >
+                            <TextField
+                              label="Branch Name"
+                              size="small"
+                              fullWidth
+                              required
+                              value={editBranchForm.branchName}
+                              onChange={(e) =>
+                                setEditBranchForm((f) =>
+                                  f
+                                    ? { ...f, branchName: e.target.value }
+                                    : f,
+                                )
+                              }
+                            />
+                            <TextField
+                              label="Branch Code"
+                              size="small"
+                              fullWidth
+                              disabled
+                              value={b.branchCode}
+                              helperText="Code can't be changed after creation"
+                            />
+                          </Stack>
+                          <TextField
+                            label="Branch Address"
+                            size="small"
+                            fullWidth
+                            value={editBranchForm.branchAddress}
+                            onChange={(e) =>
+                              setEditBranchForm((f) =>
+                                f
+                                  ? { ...f, branchAddress: e.target.value }
+                                  : f,
+                              )
+                            }
+                          />
+                          <Stack
+                            direction={{ xs: "column", sm: "row" }}
+                            spacing={2}
+                          >
+                            <TextField
+                              label="Branch Phone"
+                              size="small"
+                              fullWidth
+                              slotProps={{ htmlInput: { maxLength: 20 } }}
+                              value={editBranchForm.branchPhone}
+                              onChange={(e) =>
+                                setEditBranchForm((f) =>
+                                  f
+                                    ? { ...f, branchPhone: e.target.value }
+                                    : f,
+                                )
+                              }
+                            />
+                            <TextField
+                              label="Branch Pincode"
+                              size="small"
+                              fullWidth
+                              slotProps={{ htmlInput: { maxLength: 10 } }}
+                              value={editBranchForm.branchPincode}
+                              onChange={(e) =>
+                                setEditBranchForm((f) =>
+                                  f
+                                    ? { ...f, branchPincode: e.target.value }
+                                    : f,
+                                )
+                              }
+                            />
+                            <TextField
+                              select
+                              label="Status"
+                              size="small"
+                              fullWidth
+                              value={editBranchForm.status}
+                              onChange={(e) =>
+                                setEditBranchForm((f) =>
+                                  f ? { ...f, status: e.target.value } : f,
+                                )
+                              }
+                            >
+                              {STATUS_OPTIONS.filter(
+                                (s) => s !== "Suspended",
+                              ).map((s) => (
+                                <MenuItem key={s} value={s}>
+                                  {s}
+                                </MenuItem>
+                              ))}
+                            </TextField>
+                          </Stack>
+                          <Stack
+                            direction="row"
+                            spacing={1}
+                            sx={{ justifyContent: "flex-end" }}
+                          >
+                            <Button
+                              size="small"
+                              color="inherit"
+                              disabled={updateBranch.isPending}
+                              onClick={handleCancelEditBranch}
+                            >
+                              Cancel
+                            </Button>
+                            <Button
+                              size="small"
+                              variant="contained"
+                              disabled={
+                                updateBranch.isPending ||
+                                !editBranchForm.branchName.trim()
+                              }
+                              startIcon={
+                                updateBranch.isPending ? (
+                                  <CircularProgress
+                                    size={14}
+                                    color="inherit"
+                                  />
+                                ) : (
+                                  <SaveIcon fontSize="small" />
+                                )
+                              }
+                              onClick={handleSaveEditBranch}
+                            >
+                              {updateBranch.isPending
+                                ? "Saving..."
+                                : "Save"}
+                            </Button>
+                          </Stack>
+                        </Stack>
+                      </Paper>
+                    ) : (
+                      <Paper
+                        key={b.id}
+                        variant="outlined"
+                        sx={{
+                          p: 1.5,
+                          borderRadius: 2,
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 1,
+                          flexWrap: "wrap",
+                        }}
+                      >
+                        <Tooltip
+                          title={
+                            [b.branchAddress, b.branchPincode, b.branchPhone]
+                              .filter(Boolean)
+                              .join(" · ") || "No contact details"
+                          }
+                        >
+                          <Typography
+                            variant="body2"
+                            sx={{ fontWeight: 600 }}
+                          >
+                            {b.branchName}{" "}
+                            <Typography
+                              component="span"
+                              variant="caption"
+                              color="text.secondary"
+                            >
+                              ({b.branchCode})
+                            </Typography>
+                          </Typography>
+                        </Tooltip>
+
+                        <Chip
+                          label={b.status ?? "Active"}
+                          size="small"
+                          color={
+                            (b.status ?? "Active") === "Active"
+                              ? "success"
+                              : "default"
+                          }
+                          variant="outlined"
+                        />
+
+                        {b.subscription ? (
+                          <Tooltip
+                            title={`${b.subscription.planName} · expires ${formatDate(
+                              b.subscription.endDate,
+                            )}`}
+                          >
+                            <Chip
+                              icon={
+                                <WorkspacePremiumOutlinedIcon fontSize="small" />
+                              }
+                              label={`Own plan: ${b.subscription.planName}`}
+                              size="small"
+                              color={
+                                b.subscription.isExpired
+                                  ? "error"
+                                  : b.subscription.isExpiringSoon
+                                    ? "warning"
+                                    : "success"
+                              }
+                              variant="outlined"
+                            />
+                          </Tooltip>
+                        ) : (
+                          <Chip
+                            label="Covered by lab's main plan"
+                            size="small"
+                            variant="outlined"
+                          />
+                        )}
+
+                        <Box sx={{ flex: 1 }} />
+
+                        <Tooltip title="Edit branch">
+                          <IconButton
+                            size="small"
+                            onClick={() => handleStartEditBranch(b)}
+                          >
+                            <EditIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Delete branch">
+                          <IconButton
+                            size="small"
+                            disabled={deleteBranch.isPending}
+                            onClick={() => deleteBranch.mutate(b.id)}
+                          >
+                            <DeleteOutlineIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      </Paper>
+                    ),
+                  )}
                 </Stack>
               )}
             </Box>

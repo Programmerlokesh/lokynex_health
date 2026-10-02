@@ -2,6 +2,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using LokynexHealth.Application.Common.Exceptions;
 using LokynexHealth.Application.Common.Interfaces;
+using LokynexHealth.Application.Labs.Common;
 using LokynexHealth.Domain.Entities;
 using LokynexHealth.Domain.Enums;
 using MediatR;
@@ -14,15 +15,18 @@ public class CreateLabCommandHandler : IRequestHandler<CreateLabCommand, Guid>
     private readonly IApplicationDbContext _db;
     private readonly IPasswordHasher _passwordHasher;
     private readonly ITenantProvisioningService _provisioningService;
+    private readonly ICurrentUserService _currentUser;
 
     public CreateLabCommandHandler(
         IApplicationDbContext db,
         IPasswordHasher passwordHasher,
-        ITenantProvisioningService provisioningService)
+        ITenantProvisioningService provisioningService,
+        ICurrentUserService currentUser)
     {
         _db = db;
         _passwordHasher = passwordHasher;
         _provisioningService = provisioningService;
+        _currentUser = currentUser;
     }
 
     public async Task<Guid> Handle(CreateLabCommand request, CancellationToken cancellationToken)
@@ -75,17 +79,19 @@ public class CreateLabCommandHandler : IRequestHandler<CreateLabCommand, Guid>
 
         foreach (var branchInput in request.ExtendBranches)
         {
-            _db.TenantBranches.Add(new TenantBranch
-            {
-                Id = Guid.NewGuid(),
-                TenantId = tenant.Id,
-                BranchName = branchInput.BranchName,
-                BranchCode = branchInput.BranchCode,
-                BranchAddress = branchInput.BranchAddress,
-                BranchPincode = branchInput.BranchPincode,
-                BranchPhone = branchInput.BranchPhone,
-                CreatedAt = DateTimeOffset.UtcNow
-            });
+            var code = branchInput.BranchCode.Trim().ToUpperInvariant();
+            var branchId = Guid.NewGuid();
+            var now = DateTimeOffset.UtcNow;
+
+            // Same Id on both rows — see BranchMirror for why.
+            _db.TenantBranches.Add(BranchMirror.BuildTenantBranch(
+                branchId, tenant.Id, branchInput.BranchName.Trim(), code,
+                branchInput.BranchAddress, branchInput.BranchPincode, branchInput.BranchPhone, now));
+
+            _db.Branches.Add(BranchMirror.BuildOperationalBranch(
+                branchId, branchInput.BranchName.Trim(), code,
+                branchInput.BranchAddress, branchInput.BranchPincode, branchInput.BranchPhone,
+                _currentUser.UserId, now));
         }
 
         await _db.SaveChangesAsync(cancellationToken);

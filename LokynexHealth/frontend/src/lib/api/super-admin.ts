@@ -11,6 +11,7 @@ import {
   SendNotificationRequest,
   SendRenewalReminderRequest,
   SubscriptionDto,
+  UpdateLabBranchRequest,
   UpdateLabRequest,
   UpdatePlanRequest,
   UpdateSubscriptionRequest,
@@ -55,6 +56,14 @@ export async function addLabBranchApi(
     data,
   );
   return res.data;
+}
+
+export async function updateLabBranchApi(
+  labId: string,
+  branchId: string,
+  data: UpdateLabBranchRequest,
+): Promise<void> {
+  await apiClient.put(`/Labs/${labId}/branches/${branchId}`, data);
 }
 
 export async function deleteLabBranchApi(
@@ -102,6 +111,7 @@ export async function deletePlanApi(id: string): Promise<void> {
 // ---- Subscriptions ----
 export async function getSubscriptionsApi(params: {
   tenantId?: string;
+  branchId?: string;
 }): Promise<SubscriptionDto[]> {
   const res = await apiClient.get<SubscriptionDto[]>("/Subscriptions", {
     params,

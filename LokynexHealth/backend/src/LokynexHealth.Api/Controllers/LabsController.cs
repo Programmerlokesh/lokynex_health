@@ -3,6 +3,7 @@ using LokynexHealth.Application.Labs.Commands.CreateLab;
 using LokynexHealth.Application.Labs.Commands.DeleteLabBranch;
 using LokynexHealth.Application.Labs.Commands.SendRenewalReminder;
 using LokynexHealth.Application.Labs.Commands.UpdateLab;
+using LokynexHealth.Application.Labs.Commands.UpdateLabBranch;
 using LokynexHealth.Application.Labs.Queries.GetLabById;
 using LokynexHealth.Application.Labs.Queries.GetLabs;
 using MediatR;
@@ -62,6 +63,17 @@ public class LabsController : ControllerBase
         command.LabId = id;
         var branchId = await _mediator.Send(command, ct);
         return CreatedAtAction(nameof(GetById), new { id }, new { id = branchId });
+    }
+
+    [HttpPut("{id:guid}/branches/{branchId:guid}")]
+    public async Task<IActionResult> UpdateBranch(
+        Guid id, Guid branchId, [FromBody] UpdateLabBranchCommand command, CancellationToken ct)
+    {
+        // Route ids always win over anything in the body.
+        command.LabId = id;
+        command.BranchId = branchId;
+        await _mediator.Send(command, ct);
+        return NoContent();
     }
 
     [HttpDelete("{id:guid}/branches/{branchId:guid}")]

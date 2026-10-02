@@ -13,6 +13,7 @@ import {
   sendNotificationApi,
   sendRenewalReminderApi,
   updateLabApi,
+  updateLabBranchApi,
   updatePlanApi,
   updateSubscriptionApi,
 } from "@/lib/api/super-admin";
@@ -23,6 +24,7 @@ import {
   CreateSubscriptionRequest,
   SendNotificationRequest,
   SendRenewalReminderRequest,
+  UpdateLabBranchRequest,
   UpdateLabRequest,
   UpdatePlanRequest,
   UpdateSubscriptionRequest,
@@ -68,10 +70,33 @@ export function useAddLabBranch(labId: string | null) {
   return useMutation({
     mutationFn: (data: AddLabBranchRequest) => addLabBranchApi(labId!, data),
     // Invalidating ["labs"] alone would not refresh the open detail dialog,
-    // whose key is ["labs", labId] — so refetch that explicitly.
+    // whose key is ["labs", labId] — so refetch that explicitly. Also
+    // refresh ["branches"] — the new branch now exists there too (mirrored
+    // on the backend), so the Lab Admin's own tab should pick it up live.
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["labs"] });
       qc.invalidateQueries({ queryKey: ["labs", labId] });
+      qc.invalidateQueries({ queryKey: ["branches"] });
+    },
+  });
+}
+
+export function useUpdateLabBranch(labId: string | null) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      branchId,
+      data,
+    }: {
+      branchId: string;
+      data: UpdateLabBranchRequest;
+    }) => updateLabBranchApi(labId!, branchId, data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["labs"] });
+      qc.invalidateQueries({ queryKey: ["labs", labId] });
+      // The Lab Admin's own Branches tab reads this list — refresh it too
+      // so an edit made here shows up there without a manual reload.
+      qc.invalidateQueries({ queryKey: ["branches"] });
     },
   });
 }
@@ -83,6 +108,7 @@ export function useDeleteLabBranch(labId: string | null) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["labs"] });
       qc.invalidateQueries({ queryKey: ["labs", labId] });
+      qc.invalidateQueries({ queryKey: ["branches"] });
     },
   });
 }

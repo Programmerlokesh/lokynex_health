@@ -18,15 +18,37 @@ public class DeleteLabBranchCommandHandler : IRequestHandler<DeleteLabBranchComm
     {
         // Matching on BOTH ids so a branch can never be deleted through a
         // different lab's URL by guessing the branch guid.
-        var branch = await _db.TenantBranches
+        var tenantBranch = await _db.TenantBranches
             .FirstOrDefaultAsync(
                 b => b.Id == request.BranchId && b.TenantId == request.LabId,
                 cancellationToken);
 
-        if (branch is null)
+        if (tenantBranch is null)
             throw new NotFoundException("Branch", request.BranchId);
 
-        _db.TenantBranches.Remove(branch);
+        // O(1) indexed existence check, not a full staff list — we only need
+        // to know whether any row points at this branch.
+        var hasStaff = await _db.Users
+            .AnyAsync(u => u.BranchId == request.BranchId, cancellationToken);
+
+        if (hasStaff)
+            throw new ConflictException(
+                "This branch has staff assigned to it. Reassign or remove them, " +
+                "or set the branch to Inactive instead of deleting it.");
+
+        // Any branch-specific subscription goes with it — a subscription
+        // can't meaningfully outlive the branch it was billed for.
+        var branchSubscriptions = await _db.Subscriptions
+            .Where(s => s.BranchId == request.BranchId)
+            .ToListAsync(cancellationToken);
+        _db.Subscriptions.RemoveRange(branchSubscriptions);
+
+        var operationalBranch = await _db.Branches
+            .FirstOrDefaultAsync(b => b.Id == request.BranchId, cancellationToken);
+        if (operationalBranch is not null)
+            _db.Branches.Remove(operationalBranch);
+
+        _db.TenantBranches.Remove(tenantBranch);
         await _db.SaveChangesAsync(cancellationToken);
     }
 }

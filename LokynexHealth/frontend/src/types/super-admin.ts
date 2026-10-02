@@ -34,6 +34,18 @@ export interface BranchDto {
   branchAddress?: string | null;
   branchPincode?: string | null;
   branchPhone?: string | null;
+  /** "Active" / "Inactive" — null only for a not-yet-synced legacy row. */
+  status?: string | null;
+  /** This branch's OWN subscription, independent of the lab's main one. */
+  subscription?: LabSubscriptionSummary | null;
+}
+
+export interface UpdateLabBranchRequest {
+  branchName: string;
+  branchAddress?: string;
+  branchPincode?: string;
+  branchPhone?: string;
+  status: string;
 }
 
 export interface LabDetailDto {
@@ -147,6 +159,9 @@ export interface SubscriptionDto {
   id: string;
   tenantId: string;
   tenantName: string;
+  /** Null = the lab's main subscription. Set = this one branch's own. */
+  branchId?: string | null;
+  branchName?: string | null;
   planId: string;
   planName: string;
   startDate: string;
@@ -158,6 +173,8 @@ export interface SubscriptionDto {
 
 export interface CreateSubscriptionRequest {
   tenantId: string;
+  /** Omit for the lab's main subscription; set to bill one branch separately. */
+  branchId?: string;
   planId: string;
   startDate: string;
   endDate: string;

@@ -15,13 +15,19 @@ public class GetSubscriptionsQueryHandler : IRequestHandler<GetSubscriptionsQuer
 
     public async Task<List<SubscriptionDto>> Handle(GetSubscriptionsQuery request, CancellationToken cancellationToken)
     {
-        var query = _db.Subscriptions
-            .Join(_db.Plans, s => s.PlanId, p => p.Id, (s, p) => new { s, PlanName = p.Name })
-            .Join(_db.Tenants, x => x.s.TenantId, t => t.Id, (x, t) => new { x.s, x.PlanName, TenantName = t.PrimaryBranchName })
-            .AsQueryable();
+        var query =
+            from s in _db.Subscriptions
+            join p in _db.Plans on s.PlanId equals p.Id
+            join t in _db.Tenants on s.TenantId equals t.Id
+            join b in _db.TenantBranches on s.BranchId equals (Guid?)b.Id into branchJoin
+            from b in branchJoin.DefaultIfEmpty()
+            select new { s, PlanName = p.Name, TenantName = t.PrimaryBranchName, BranchName = (string?)b.BranchName };
 
         if (request.TenantId.HasValue)
             query = query.Where(x => x.s.TenantId == request.TenantId.Value);
+
+        if (request.BranchId.HasValue)
+            query = query.Where(x => x.s.BranchId == request.BranchId.Value);
 
         // Materialize FIRST — then map Status.ToString() in memory. The .ToString()
         // inside a .Select() that runs before .ToListAsync() gets translated to SQL
@@ -35,6 +41,8 @@ public class GetSubscriptionsQueryHandler : IRequestHandler<GetSubscriptionsQuer
             Id = x.s.Id,
             TenantId = x.s.TenantId,
             TenantName = x.TenantName,
+            BranchId = x.s.BranchId,
+            BranchName = x.BranchName,
             PlanId = x.s.PlanId,
             PlanName = x.PlanName,
             StartDate = x.s.StartDate,

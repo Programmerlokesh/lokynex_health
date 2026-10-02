@@ -37,6 +37,19 @@ public class GetLabByIdQueryHandler : IRequestHandler<GetLabByIdQuery, LabDetail
 
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
 
+        // One indexed lookup for every branch's mirrored Status, instead of
+        // N+1 queries inside the Select below. Materialize FIRST, then map
+        // Status.ToString() in memory — doing .ToString() inside a Select()
+        // that runs before ToListAsync breaks native Postgres enums (same
+        // recurring bug fixed elsewhere in GetSubscriptionsQueryHandler).
+        var branchIds = tenant.ExtendBranches.Select(b => b.Id).ToList();
+        var branchStatusRows = await _db.Branches
+            .Where(b => branchIds.Contains(b.Id))
+            .Select(b => new { b.Id, b.Status })
+            .ToListAsync(cancellationToken);
+        var statusByBranchId = branchStatusRows
+            .ToDictionary(x => x.Id, x => x.Status.ToString());
+
         return new LabDetailDto
         {
             Id = tenant.Id,
@@ -65,7 +78,9 @@ public class GetLabByIdQueryHandler : IRequestHandler<GetLabByIdQuery, LabDetail
                 BranchCode = b.BranchCode,
                 BranchAddress = b.BranchAddress,
                 BranchPincode = b.BranchPincode,
-                BranchPhone = b.BranchPhone
+                BranchPhone = b.BranchPhone,
+                Status = statusByBranchId.TryGetValue(b.Id, out var s) ? s : null,
+                Subscription = LabSubscriptionCalculator.Build(subscriptions, planNames, today, b.Id)
             }).ToList()
         };
     }

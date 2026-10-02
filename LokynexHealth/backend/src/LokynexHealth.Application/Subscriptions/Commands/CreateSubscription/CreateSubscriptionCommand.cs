@@ -5,6 +5,11 @@ namespace LokynexHealth.Application.Subscriptions.Commands.CreateSubscription;
 public class CreateSubscriptionCommand : IRequest<Guid>
 {
     public Guid TenantId { get; set; }
+
+    /// <summary>Null = this is the lab's main subscription. Set = this
+    /// subscription belongs to one specific branch only, billed and renewed
+    /// independently of the lab's main plan.</summary>
+    public Guid? BranchId { get; set; }
     public Guid PlanId { get; set; }
     public DateOnly StartDate { get; set; }
     public DateOnly EndDate { get; set; }

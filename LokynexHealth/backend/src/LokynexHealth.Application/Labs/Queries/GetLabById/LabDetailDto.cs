@@ -40,4 +40,13 @@ public class BranchDto
     public string? BranchAddress { get; set; }
     public string? BranchPincode { get; set; }
     public string? BranchPhone { get; set; }
+
+    /// <summary>"Active"/"Inactive", read from the mirrored lab_demo.branches
+    /// row. Null only for pre-sync legacy rows that haven't been edited yet.</summary>
+    public string? Status { get; set; }
+
+    /// <summary>This branch's OWN subscription — independent of the lab's
+    /// main Subscription above. Null if this branch has never been billed
+    /// separately (it's still covered by the lab's main plan).</summary>
+    public LabSubscriptionSummary? Subscription { get; set; }
 }

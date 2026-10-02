@@ -15,5 +15,15 @@ public class SubscriptionConfiguration : IEntityTypeConfiguration<Subscription>
         builder.Property(s => s.Status).HasColumnType("platform.subscription_status").HasDefaultValue(Domain.Enums.SubscriptionStatusType.Active);
 
         builder.HasIndex(s => s.TenantId);
+
+        // Composite index: this is how a branch's own subscription list and
+        // the lab's main-subscription lookup (BranchId IS NULL) both stay
+        // index-backed lookups instead of a table scan.
+        builder.HasIndex(s => new { s.TenantId, s.BranchId });
+
+        builder.HasOne<TenantBranch>()
+            .WithMany()
+            .HasForeignKey(s => s.BranchId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }
