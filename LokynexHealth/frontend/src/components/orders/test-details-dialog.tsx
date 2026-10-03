@@ -1,5 +1,6 @@
 "use client";
 
+import { useEntityOverrides } from "@/hooks/use-commissions";
 import { formatMoney } from "@/lib/format";
 import { commissionAmount } from "@/lib/order-math";
 import { LookupDto } from "@/types/lookup";
@@ -62,13 +63,19 @@ export function TestDetailsDialog({
 }) {
   const theme = useTheme();
   const fullScreen = useMediaQuery(theme.breakpoints.down("sm"));
+
+  // A commission set for THIS referral on this test beats the test default —
+  // the same rule the server applies when the order is saved.
+  const { data: overrides } = useEntityOverrides(
+    "Referral",
+    referral?.id ?? null,
+  );
   if (!item) return null;
 
-  const referralAmount = commissionAmount(
-    item.referralCommissionType,
-    item.referralCommissionValue,
-    item.price,
-  );
+  const custom = overrides?.items.find((o) => o.testId === item.testId);
+  const ruleType = custom?.commissionType ?? item.referralCommissionType;
+  const ruleValue = custom?.commissionValue ?? item.referralCommissionValue;
+  const referralAmount = commissionAmount(ruleType, ruleValue, item.price);
 
   return (
     <Dialog
@@ -102,9 +109,9 @@ export function TestDetailsDialog({
         <Row
           label="Commission rule"
           value={
-            item.referralCommissionType === "Percentage"
-              ? `${item.referralCommissionValue}% of price`
-              : `Flat ${formatMoney(item.referralCommissionValue)}`
+            ruleType === "Percentage"
+              ? `${ruleValue}% of price`
+              : `Flat ${formatMoney(ruleValue)}`
           }
         />
         <Row

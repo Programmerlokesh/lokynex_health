@@ -1,6 +1,7 @@
 "use client";
 
 import { CommissionOverridesTable } from "@/components/commissions/commission-overrides-table";
+import { DepartmentCommissionEditor } from "@/components/commissions/department-commission-editor";
 import { SetCommissionOverrideDialog } from "@/components/commissions/set-commission-override-dialog";
 import { CommissionIcon } from "@/components/icons/lab-icons";
 import { brand } from "@/components/providers/mui-theme-provider";
@@ -49,6 +50,12 @@ export default function CommissionSetupPage() {
       <Typography variant="body2" color="text.secondary" sx={{ mt: -1.5 }}>
         Per-test commission overrides for a specific doctor, referral, or
         technician — takes precedence over the test&apos;s default commission.
+      </Typography>
+
+      <DepartmentCommissionEditor />
+
+      <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
+        All custom commissions
       </Typography>
 
       <Tabs value={tab} onChange={(_, v) => setTab(v)}>

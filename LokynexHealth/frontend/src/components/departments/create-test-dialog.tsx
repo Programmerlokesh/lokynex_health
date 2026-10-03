@@ -1,210 +1,101 @@
 "use client";
 
-import { useCreateTest } from "@/hooks/use-departments";
+import { useCreateTest, useDepartments } from "@/hooks/use-departments";
+import { getApiErrorMessage } from "@/lib/api-error";
 import AddIcon from "@mui/icons-material/Add";
 import {
+  Alert,
   Box,
   Button,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
-  Divider,
-  Grid,
-  MenuItem,
-  TextField,
-  Typography,
 } from "@mui/material";
-import { useState } from "react";
-
-const commissionTypes = ["Flat", "Percentage"];
+import { useMemo, useState } from "react";
+import { emptyTestForm, TestForm, TestFormState, toCommissionInputs } from "./test-form";
 
 export function CreateTestDialog({
   departmentId,
 }: {
+  /** Department currently selected on the page — pre-selected in the dialog. */
   departmentId: string | null;
 }) {
   const [open, setOpen] = useState(false);
+  const [form, setForm] = useState<TestFormState>(emptyTestForm());
+  const [error, setError] = useState<string | null>(null);
   const createTest = useCreateTest();
 
-  const [form, setForm] = useState({
-    name: "",
-    price: "",
-    doctorCommissionType: "Flat",
-    doctorCommissionValue: "0",
-    referralCommissionType: "Flat",
-    referralCommissionValue: "0",
-    technicianCommissionType: "Flat",
-    technicianCommissionValue: "0",
-  });
+  const { data: departments } = useDepartments();
+  const activeDepartments = useMemo(
+    () => (departments ?? []).filter((d) => d.status === "Active"),
+    [departments],
+  );
+
+  function openDialog() {
+    setForm(emptyTestForm(departmentId ?? ""));
+    setError(null);
+    setOpen(true);
+  }
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!departmentId) return;
+    setError(null);
+    if (!form.departmentId) {
+      setError("Select a department.");
+      return;
+    }
+
+    let commissions;
+    try {
+      commissions = toCommissionInputs(form.commissions);
+    } catch (err) {
+      setError((err as Error).message);
+      return;
+    }
 
     createTest.mutate(
       {
-        departmentId,
-        name: form.name,
+        departmentId: form.departmentId,
+        name: form.name.trim(),
         price: Number(form.price),
         doctorCommissionType: form.doctorCommissionType,
-        doctorCommissionValue: Number(form.doctorCommissionValue),
+        doctorCommissionValue: Number(form.doctorCommissionValue) || 0,
         referralCommissionType: form.referralCommissionType,
-        referralCommissionValue: Number(form.referralCommissionValue),
+        referralCommissionValue: Number(form.referralCommissionValue) || 0,
         technicianCommissionType: form.technicianCommissionType,
-        technicianCommissionValue: Number(form.technicianCommissionValue),
+        technicianCommissionValue: Number(form.technicianCommissionValue) || 0,
+        commissions,
       },
       {
-        onSuccess: () => {
-          setOpen(false);
-          setForm({
-            name: "",
-            price: "",
-            doctorCommissionType: "Flat",
-            doctorCommissionValue: "0",
-            referralCommissionType: "Flat",
-            referralCommissionValue: "0",
-            technicianCommissionType: "Flat",
-            technicianCommissionValue: "0",
-          });
-        },
+        onSuccess: () => setOpen(false),
+        onError: (err) => setError(getApiErrorMessage(err, "Could not create the test.")),
       },
     );
   }
 
-  const commissionRow = (
-    label: string,
-    typeKey:
-      | "doctorCommissionType"
-      | "referralCommissionType"
-      | "technicianCommissionType",
-    valueKey:
-      | "doctorCommissionValue"
-      | "referralCommissionValue"
-      | "technicianCommissionValue",
-  ) => (
-    <Box sx={{ display: "flex", gap: 1.5 }}>
-      <TextField
-        select
-        label={`${label} Type`}
-        size="small"
-        value={form[typeKey]}
-        onChange={(e) => setForm({ ...form, [typeKey]: e.target.value })}
-        sx={{ flex: 1 }}
-      >
-        {commissionTypes.map((t) => (
-          <MenuItem key={t} value={t}>
-            {t}
-          </MenuItem>
-        ))}
-      </TextField>
-      <TextField
-        label={`${label} Value`}
-        type="number"
-        size="small"
-        value={form[valueKey]}
-        onChange={(e) => setForm({ ...form, [valueKey]: e.target.value })}
-        sx={{ flex: 1 }}
-      />
-    </Box>
-  );
-
   return (
     <>
-      <Button
-        variant="contained"
-        startIcon={<AddIcon />}
-        onClick={() => setOpen(true)}
-        disabled={!departmentId}
-      >
+      <Button variant="contained" startIcon={<AddIcon />} onClick={openDialog}>
         New Test
       </Button>
 
-      <Dialog
-        open={open}
-        onClose={() => setOpen(false)}
-        fullWidth
-        maxWidth="sm"
-      >
+      <Dialog open={open} onClose={() => setOpen(false)} fullWidth maxWidth="md">
         <DialogTitle sx={{ fontWeight: 700 }}>Create Test</DialogTitle>
         <Box component="form" onSubmit={handleSubmit}>
-          <DialogContent
-            sx={{ display: "flex", flexDirection: "column", gap: 2 }}
-          >
-            <Grid container spacing={2}>
-              <Grid size={{ xs: 12, sm: 8 }}>
-                <TextField
-                  label="Test Name"
-                  size="small"
-                  value={form.name}
-                  onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  required
-                  fullWidth
-                />
-              </Grid>
-              <Grid size={{ xs: 12, sm: 4 }}>
-                <TextField
-                  label="Price"
-                  type="number"
-                  size="small"
-                  value={form.price}
-                  onChange={(e) => setForm({ ...form, price: e.target.value })}
-                  required
-                  fullWidth
-                />
-              </Grid>
-            </Grid>
-
-            <Divider />
-            <Typography
-              variant="caption"
-              color="text.secondary"
-              sx={{ fontWeight: 600 }}
-            >
-              DOCTOR COMMISSION
-            </Typography>
-            {commissionRow(
-              "Doctor",
-              "doctorCommissionType",
-              "doctorCommissionValue",
-            )}
-
-            <Typography
-              variant="caption"
-              color="text.secondary"
-              sx={{ fontWeight: 600 }}
-            >
-              REFERRAL COMMISSION
-            </Typography>
-            {commissionRow(
-              "Referral",
-              "referralCommissionType",
-              "referralCommissionValue",
-            )}
-
-            <Typography
-              variant="caption"
-              color="text.secondary"
-              sx={{ fontWeight: 600 }}
-            >
-              TECHNICIAN COMMISSION
-            </Typography>
-            {commissionRow(
-              "Technician",
-              "technicianCommissionType",
-              "technicianCommissionValue",
-            )}
+          <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+            {error && <Alert severity="error">{error}</Alert>}
+            <TestForm
+              form={form}
+              onChange={setForm}
+              departments={activeDepartments}
+            />
           </DialogContent>
-
           <DialogActions sx={{ px: 3, pb: 3 }}>
             <Button onClick={() => setOpen(false)} color="inherit">
               Cancel
             </Button>
-            <Button
-              type="submit"
-              variant="contained"
-              disabled={createTest.isPending}
-            >
+            <Button type="submit" variant="contained" disabled={createTest.isPending}>
               {createTest.isPending ? "Creating..." : "Create Test"}
             </Button>
           </DialogActions>

@@ -26,3 +26,12 @@ export function useTechnicians(branchId: string | null) {
     enabled: !!branchId, // don't fetch until a branch is chosen — avoids a wasted request
   });
 }
+
+/** Every technician of the lab (all branches) — for commission setup screens. */
+export function useAllTechnicians(enabled = true) {
+  return useQuery({
+    queryKey: ["technicians", "all"],
+    queryFn: () => getTechniciansApi(undefined),
+    enabled,
+  });
+}

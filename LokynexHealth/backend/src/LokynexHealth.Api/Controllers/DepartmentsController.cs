@@ -1,4 +1,5 @@
 using LokynexHealth.Application.Departments.Commands.CreateDepartment;
+using LokynexHealth.Application.Departments.Commands.DeleteDepartment;
 using LokynexHealth.Application.Departments.Commands.UpdateDepartmentStatus;
 using LokynexHealth.Application.Departments.Queries.GetDepartments;
 using MediatR;
@@ -23,7 +24,7 @@ public class DepartmentsController : ControllerBase
     public async Task<IActionResult> Create([FromBody] CreateDepartmentCommand command, CancellationToken ct)
     {
         var id = await _mediator.Send(command, ct);
-        return CreatedAtAction(nameof(Create), new { id }, new { id });
+        return StatusCode(StatusCodes.Status201Created, new { id });
     }
 
     [HttpGet]
@@ -38,6 +39,13 @@ public class DepartmentsController : ControllerBase
     {
         command.Id = id;
         await _mediator.Send(command, ct);
+        return NoContent();
+    }
+
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> Delete(Guid id, CancellationToken ct)
+    {
+        await _mediator.Send(new DeleteDepartmentCommand { Id = id }, ct);
         return NoContent();
     }
 }

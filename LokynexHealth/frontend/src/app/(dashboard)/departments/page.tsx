@@ -2,10 +2,12 @@
 
 import { CreateTestDialog } from "@/components/departments/create-test-dialog";
 import { DepartmentList } from "@/components/departments/department-list";
+import { EditTestDialog } from "@/components/departments/edit-test-dialog";
 import { TestsTable } from "@/components/departments/tests-table";
 import { TestTubeIcon } from "@/components/icons/lab-icons";
 import { brand } from "@/components/providers/mui-theme-provider";
 import { useTests } from "@/hooks/use-departments";
+import { TestDto } from "@/types/department";
 import {
   Alert,
   Box,
@@ -17,6 +19,7 @@ import { useState } from "react";
 
 export default function DepartmentsPage() {
   const [selectedDeptId, setSelectedDeptId] = useState<string | null>(null);
+  const [editingTest, setEditingTest] = useState<TestDto | null>(null);
 
   const { data, isLoading, isError } = useTests({
     departmentId: selectedDeptId ?? undefined,
@@ -53,6 +56,9 @@ export default function DepartmentsPage() {
         <DepartmentList
           selectedId={selectedDeptId}
           onSelect={setSelectedDeptId}
+          onDeleted={(id) => {
+            if (id === selectedDeptId) setSelectedDeptId(null);
+          }}
         />
 
         <Divider
@@ -93,9 +99,13 @@ export default function DepartmentsPage() {
           {selectedDeptId && isError && (
             <Alert severity="error">Failed to load tests.</Alert>
           )}
-          {selectedDeptId && data && <TestsTable tests={data.items} />}
+          {selectedDeptId && data && (
+            <TestsTable tests={data.items} onEdit={setEditingTest} />
+          )}
         </Box>
       </Box>
+
+      <EditTestDialog test={editingTest} onClose={() => setEditingTest(null)} />
     </Box>
   );
 }

@@ -1,4 +1,6 @@
+using LokynexHealth.Application.CommissionOverrides.Commands.BulkSetCommissionOverrides;
 using LokynexHealth.Application.CommissionOverrides.Commands.SetCommissionOverride;
+using LokynexHealth.Application.CommissionOverrides.Queries.GetEffectiveCommissions;
 using LokynexHealth.Application.CommissionOverrides.Queries.GetCommissionOverrides;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -30,5 +32,21 @@ public class CommissionOverridesController : ControllerBase
     {
         var result = await _mediator.Send(query, ct);
         return Ok(result);
+    }
+
+    /// <summary>Commission Setup: every test of a department with this person's effective commission.</summary>
+    [HttpGet("effective")]
+    public async Task<IActionResult> GetEffective([FromQuery] GetEffectiveCommissionsQuery query, CancellationToken ct)
+    {
+        var result = await _mediator.Send(query, ct);
+        return Ok(result);
+    }
+
+    /// <summary>Commission Setup: save many tests of one department for one person.</summary>
+    [HttpPut("bulk")]
+    public async Task<IActionResult> Bulk([FromBody] BulkSetCommissionOverridesCommand command, CancellationToken ct)
+    {
+        var changed = await _mediator.Send(command, ct);
+        return Ok(new { changed });
     }
 }

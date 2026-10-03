@@ -1,11 +1,14 @@
 import {
   createDepartmentApi,
   createTestApi,
+  deleteDepartmentApi,
   getDepartmentsApi,
+  getTestCommissionsApi,
   getTestsApi,
   updateDepartmentStatusApi,
+  updateTestApi,
 } from "@/lib/api/departments";
-import { CreateTestRequest } from "@/types/department";
+import { CreateTestRequest, UpdateTestRequest } from "@/types/department";
 import {
   keepPreviousData,
   useMutation,
@@ -67,6 +70,45 @@ export function useCreateTest() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tests"] });
       queryClient.invalidateQueries({ queryKey: ["departments"] }); // testCount changes too
+      queryClient.invalidateQueries({ queryKey: ["commission-overrides"] });
+      queryClient.invalidateQueries({ queryKey: ["effective-commissions"] });
     },
+  });
+}
+
+export function useDeleteDepartment() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => deleteDepartmentApi(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["departments"] });
+      queryClient.invalidateQueries({ queryKey: ["tests"] });
+      queryClient.invalidateQueries({ queryKey: ["commission-overrides"] });
+    },
+  });
+}
+
+export function useUpdateTest() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: UpdateTestRequest }) =>
+      updateTestApi(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["tests"] });
+      queryClient.invalidateQueries({ queryKey: ["test-commissions"] });
+      queryClient.invalidateQueries({ queryKey: ["commission-overrides"] });
+      queryClient.invalidateQueries({ queryKey: ["effective-commissions"] });
+    },
+  });
+}
+
+export function useTestCommissions(testId: string | null) {
+  return useQuery({
+    queryKey: ["test-commissions", testId],
+    queryFn: () => getTestCommissionsApi(testId as string),
+    enabled: !!testId,
+    // always read fresh data when the edit dialog opens
+    staleTime: 0,
+    gcTime: 0,
   });
 }

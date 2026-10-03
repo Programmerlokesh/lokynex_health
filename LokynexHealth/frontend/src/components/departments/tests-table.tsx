@@ -1,8 +1,10 @@
 "use client";
 
 import { TestDto } from "@/types/department";
+import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import {
   Chip,
+  IconButton,
   Paper,
   Table,
   TableBody,
@@ -10,11 +12,18 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  Tooltip,
   Typography,
 } from "@mui/material";
 import { motion } from "framer-motion";
 
-export function TestsTable({ tests }: { tests: TestDto[] }) {
+export function TestsTable({
+  tests,
+  onEdit,
+}: {
+  tests: TestDto[];
+  onEdit: (test: TestDto) => void;
+}) {
   if (tests.length === 0) {
     return (
       <Typography variant="body2" color="text.secondary">
@@ -37,6 +46,9 @@ export function TestsTable({ tests }: { tests: TestDto[] }) {
             <TableCell sx={{ fontWeight: 600 }}>Referral Comm.</TableCell>
             <TableCell sx={{ fontWeight: 600 }}>Technician Comm.</TableCell>
             <TableCell sx={{ fontWeight: 600 }}>Status</TableCell>
+            <TableCell sx={{ fontWeight: 600 }} align="right">
+              Edit
+            </TableCell>
           </TableRow>
         </TableHead>
         <TableBody>
@@ -67,6 +79,17 @@ export function TestsTable({ tests }: { tests: TestDto[] }) {
                   color={test.status === "Active" ? "success" : "default"}
                   variant="outlined"
                 />
+              </TableCell>
+              <TableCell align="right">
+                <Tooltip title="Edit test">
+                  <IconButton
+                    size="small"
+                    aria-label={`Edit ${test.name}`}
+                    onClick={() => onEdit(test)}
+                  >
+                    <EditOutlinedIcon fontSize="small" />
+                  </IconButton>
+                </Tooltip>
               </TableCell>
             </motion.tr>
           ))}

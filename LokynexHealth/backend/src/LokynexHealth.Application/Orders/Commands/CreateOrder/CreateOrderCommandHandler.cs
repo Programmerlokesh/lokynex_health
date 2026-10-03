@@ -140,6 +140,38 @@ public class CreateOrderCommandHandler : IRequestHandler<CreateOrderCommand, Gui
             if (missing != Guid.Empty) throw new NotFoundException(nameof(Technician), missing);
         }
 
+        // ---------- Person-specific commissions (Commission Setup / per-test list) ----------
+        // A commission set for THIS doctor / referral / technician on a test beats the
+        // test's own default. One query per kind, then O(1) dictionary lookups per line.
+        var doctorOverrides = new Dictionary<Guid, CommissionOverride>();
+        if (request.DoctorId.HasValue)
+        {
+            var doctorId = request.DoctorId.Value;
+            doctorOverrides = (await _db.CommissionOverrides
+                    .Where(c => c.DoctorId == doctorId && testIds.Contains(c.TestId))
+                    .ToListAsync(cancellationToken))
+                .ToDictionary(c => c.TestId);
+        }
+
+        var referralOverrides = new Dictionary<Guid, CommissionOverride>();
+        if (request.ReferralId.HasValue)
+        {
+            var referralId = request.ReferralId.Value;
+            referralOverrides = (await _db.CommissionOverrides
+                    .Where(c => c.ReferralId == referralId && testIds.Contains(c.TestId))
+                    .ToListAsync(cancellationToken))
+                .ToDictionary(c => c.TestId);
+        }
+
+        var technicianOverrides = new Dictionary<(Guid TechnicianId, Guid TestId), CommissionOverride>();
+        if (technicianIds.Count > 0)
+        {
+            technicianOverrides = (await _db.CommissionOverrides
+                    .Where(c => c.TechnicianId != null && technicianIds.Contains(c.TechnicianId.Value) && testIds.Contains(c.TestId))
+                    .ToListAsync(cancellationToken))
+                .ToDictionary(c => (c.TechnicianId!.Value, c.TestId));
+        }
+
         // ---------- Order + lines ----------
         var order = new Order
         {
@@ -174,11 +206,26 @@ public class CreateOrderCommandHandler : IRequestHandler<CreateOrderCommand, Gui
             if (!request.IsComplimentary)
             {
                 if (doctorEnabled)
-                    doctorAmount = CalculateCommission(test.DoctorCommissionType, test.DoctorCommissionValue, test.Price);
+                {
+                    doctorAmount = doctorOverrides.TryGetValue(test.Id, out var dOv)
+                        ? CommissionCalculator.Calculate(dOv.CommissionType, dOv.CommissionValue, test.Price)
+                        : CommissionCalculator.Calculate(test.DoctorCommissionType, test.DoctorCommissionValue, test.Price);
+                }
+
                 if (referralEnabled)
-                    referralAmount = CalculateCommission(test.ReferralCommissionType, test.ReferralCommissionValue, test.Price);
+                {
+                    referralAmount = referralOverrides.TryGetValue(test.Id, out var rOv)
+                        ? CommissionCalculator.Calculate(rOv.CommissionType, rOv.CommissionValue, test.Price)
+                        : CommissionCalculator.Calculate(test.ReferralCommissionType, test.ReferralCommissionValue, test.Price);
+                }
+
+                // Technician is OPTIONAL: no technician picked on the line => no technician commission.
                 if (input.TechnicianId.HasValue)
-                    technicianAmount = CalculateCommission(test.TechnicianCommissionType, test.TechnicianCommissionValue, test.Price);
+                {
+                    technicianAmount = technicianOverrides.TryGetValue((input.TechnicianId.Value, test.Id), out var tOv)
+                        ? CommissionCalculator.Calculate(tOv.CommissionType, tOv.CommissionValue, test.Price)
+                        : CommissionCalculator.Calculate(test.TechnicianCommissionType, test.TechnicianCommissionValue, test.Price);
+                }
             }
 
             orderItems.Add(new OrderItem
@@ -264,9 +311,6 @@ public class CreateOrderCommandHandler : IRequestHandler<CreateOrderCommand, Gui
         await _db.SaveChangesAsync(cancellationToken);
         return order.Id;
     }
-
-    private static decimal CalculateCommission(CommissionType type, decimal value, decimal testPrice) =>
-        type == CommissionType.Percentage ? testPrice * (value / 100m) : value;
 
     private static TEnum? ParseNullableEnum<TEnum>(string? value) where TEnum : struct, Enum =>
         !string.IsNullOrWhiteSpace(value) && Enum.TryParse<TEnum>(value, true, out var result) ? result : null;

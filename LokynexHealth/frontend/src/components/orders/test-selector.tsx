@@ -250,7 +250,7 @@ export function TestSelector({
                 updateItem(item.testId, { technicianId: tech?.id })
               }
               renderInput={(params) => (
-                <TextField {...params} placeholder="Technician" />
+                <TextField {...params} placeholder="Technician (optional)" />
               )}
             />
 

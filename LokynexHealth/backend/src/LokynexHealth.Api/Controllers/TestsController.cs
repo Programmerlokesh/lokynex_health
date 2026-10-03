@@ -1,4 +1,6 @@
 using LokynexHealth.Application.Tests.Commands.CreateTest;
+using LokynexHealth.Application.Tests.Commands.UpdateTest;
+using LokynexHealth.Application.Tests.Queries.GetTestCommissions;
 using LokynexHealth.Application.Tests.Queries.GetTests;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -22,7 +24,7 @@ public class TestsController : ControllerBase
     public async Task<IActionResult> Create([FromBody] CreateTestCommand command, CancellationToken ct)
     {
         var id = await _mediator.Send(command, ct);
-        return CreatedAtAction(nameof(Create), new { id }, new { id });
+        return StatusCode(StatusCodes.Status201Created, new { id });
     }
 
     [HttpGet]
@@ -41,6 +43,22 @@ public class TestsController : ControllerBase
             PageSize = pageSize
         };
         var result = await _mediator.Send(query, ct);
+        return Ok(result);
+    }
+
+    [HttpPut("{id}")]
+    public async Task<IActionResult> Update(Guid id, [FromBody] UpdateTestCommand command, CancellationToken ct)
+    {
+        command.Id = id;
+        await _mediator.Send(command, ct);
+        return NoContent();
+    }
+
+    /// <summary>Person-specific (doctor / referral / technician) commissions of one test.</summary>
+    [HttpGet("{id}/commissions")]
+    public async Task<IActionResult> GetCommissions(Guid id, CancellationToken ct)
+    {
+        var result = await _mediator.Send(new GetTestCommissionsQuery { TestId = id }, ct);
         return Ok(result);
     }
 }
