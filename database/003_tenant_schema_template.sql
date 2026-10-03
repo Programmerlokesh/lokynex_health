@@ -41,6 +41,7 @@ CREATE TABLE branches (
     branch_phone            VARCHAR(20),
     branch_email            CITEXT,
     created_by_super_admin  BOOLEAN NOT NULL DEFAULT false, -- true = provisioned at onboarding (locked from Lab Admin edit)
+    is_main                 BOOLEAN NOT NULL DEFAULT false, -- true = the lab's main branch (id = platform.tenants.id); listed in New Order "Branch" dropdown
     status                  record_status NOT NULL DEFAULT 'Active',
     created_at              TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at              TIMESTAMPTZ
@@ -77,19 +78,22 @@ INSERT INTO modules (id, name) VALUES
 
 -- ---------- USERS ----------
 CREATE TABLE users (
-    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    name            VARCHAR(150) NOT NULL,
-    username        VARCHAR(100) UNIQUE NOT NULL,
-    email           CITEXT UNIQUE NOT NULL,
-    phone           VARCHAR(20) NOT NULL,
-    branch_id       UUID REFERENCES branches(id),
-    role_id         UUID REFERENCES roles(id),
-    password_hash   VARCHAR(255) NOT NULL,
-    status          record_status NOT NULL DEFAULT 'Active',
-    created_by      UUID REFERENCES users(id),
-    created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_by      UUID REFERENCES users(id),
-    updated_at      TIMESTAMPTZ
+    id                   UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name                 VARCHAR(150) NOT NULL,
+    username             VARCHAR(100) UNIQUE NOT NULL,
+    email                CITEXT UNIQUE NOT NULL,
+    phone                VARCHAR(20) NOT NULL,
+    address              TEXT,
+    pincode              VARCHAR(10),
+    profile_picture_url  TEXT,
+    branch_id            UUID REFERENCES branches(id),
+    role_id              UUID REFERENCES roles(id),
+    password_hash        VARCHAR(255) NOT NULL,
+    status               record_status NOT NULL DEFAULT 'Active',
+    created_by           UUID REFERENCES users(id),
+    created_at           TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_by           UUID REFERENCES users(id),
+    updated_at           TIMESTAMPTZ
 );
 
 CREATE INDEX idx_users_name_trgm ON users USING gin (name gin_trgm_ops);
@@ -173,6 +177,7 @@ CREATE TRIGGER trg_technicians_updated_at BEFORE UPDATE ON technicians FOR EACH 
 CREATE TABLE patients (
     id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     patient_code        VARCHAR(30) UNIQUE NOT NULL,   -- generated Patient ID
+    full_name           VARCHAR(150) NOT NULL DEFAULT '',  -- family GUARDIAN's name (first person entered under a phone number)
     phone               VARCHAR(20) NOT NULL,
     age                 INT,
     gender              gender_type,
@@ -182,7 +187,9 @@ CREATE TABLE patients (
     created_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at          TIMESTAMPTZ
 );
-CREATE INDEX idx_patients_phone ON patients (phone);
+CREATE INDEX idx_patients_phone        ON patients (phone);
+-- Prefix search ("phone starts with ...") stays an index scan.
+CREATE INDEX idx_patients_phone_prefix ON patients (phone varchar_pattern_ops);
 CREATE TRIGGER trg_patients_updated_at BEFORE UPDATE ON patients FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
 -- "Add patient" — family members registered under a primary patient

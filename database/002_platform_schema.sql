@@ -59,12 +59,15 @@ CREATE TABLE platform.tenants (
     primary_branch_email    CITEXT NOT NULL,
     primary_branch_pincode  VARCHAR(10)  NOT NULL,
 
+    company_type            VARCHAR(50)  NOT NULL DEFAULT 'Diagnostic Laboratory',  -- printed on the invoice
+
     admin_name              VARCHAR(150) NOT NULL,
     admin_phone             VARCHAR(20)  NOT NULL,
     admin_address           TEXT,
     admin_email             CITEXT NOT NULL,
     admin_username          VARCHAR(100) UNIQUE NOT NULL,
     admin_password_hash     VARCHAR(255) NOT NULL,  -- staged credential; provisioned into tenant.users on schema creation
+    admin_profile_picture_url TEXT,                 -- Lab Admin (tenant owner) photo; owner has no row in tenant `users`
 
     user_limit              INT NOT NULL DEFAULT 5,
     status                  platform.record_status NOT NULL DEFAULT 'Active',
@@ -98,9 +101,12 @@ CREATE TABLE platform.tenant_branches (
 );
 
 -- ---------- SUBSCRIPTIONS ----------
+-- branch_id NULL     = the lab's main subscription
+-- branch_id NOT NULL = that one SuperAdmin-created branch's own subscription
 CREATE TABLE platform.subscriptions (
     id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     tenant_id       UUID NOT NULL REFERENCES platform.tenants(id) ON DELETE CASCADE,
+    branch_id       UUID REFERENCES platform.tenant_branches(id) ON DELETE CASCADE,
     plan_id         UUID NOT NULL REFERENCES platform.plans(id),
     start_date      DATE NOT NULL DEFAULT CURRENT_DATE,
     end_date        DATE NOT NULL,
@@ -111,7 +117,8 @@ CREATE TABLE platform.subscriptions (
     updated_at      TIMESTAMPTZ
 );
 
-CREATE INDEX idx_subscriptions_tenant ON platform.subscriptions (tenant_id);
+CREATE INDEX idx_subscriptions_tenant        ON platform.subscriptions (tenant_id);
+CREATE INDEX idx_subscriptions_tenant_branch ON platform.subscriptions (tenant_id, branch_id);
 
 CREATE TRIGGER trg_subscriptions_updated_at
 BEFORE UPDATE ON platform.subscriptions
