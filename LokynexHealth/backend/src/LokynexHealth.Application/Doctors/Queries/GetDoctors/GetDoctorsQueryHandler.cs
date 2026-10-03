@@ -1,3 +1,4 @@
+using LokynexHealth.Application.Common;
 using LokynexHealth.Application.Common.Interfaces;
 using LokynexHealth.Application.Common.Models;
 using MediatR;
@@ -21,10 +22,14 @@ public class GetDoctorsQueryHandler : IRequestHandler<GetDoctorsQuery, PagedResu
         if (!string.IsNullOrWhiteSpace(request.Search))
         {
             var term = $"%{request.Search}%";
+            // Format-insensitive phone match (null when the search has < 6 digits).
+            var phonePattern = PhoneNormalizer.FormatInsensitiveLikePattern(request.Search);
+
             query = query.Where(d =>
                 EF.Functions.ILike(d.FullName, term) ||
                 (d.Email != null && EF.Functions.ILike(d.Email, term)) ||
-                EF.Functions.ILike(d.Phone, term));
+                EF.Functions.ILike(d.Phone, term) ||
+                (phonePattern != null && EF.Functions.Like(d.Phone, phonePattern)));
         }
 
         var totalCount = await query.CountAsync(cancellationToken);
