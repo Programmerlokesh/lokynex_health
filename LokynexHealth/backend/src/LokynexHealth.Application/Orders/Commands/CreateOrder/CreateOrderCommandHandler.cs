@@ -1,3 +1,4 @@
+using LokynexHealth.Application.Common;
 using LokynexHealth.Application.Common.Exceptions;
 using LokynexHealth.Application.Common.Interfaces;
 using LokynexHealth.Domain.Entities;
@@ -10,93 +11,136 @@ namespace LokynexHealth.Application.Orders.Commands.CreateOrder;
 public class CreateOrderCommandHandler : IRequestHandler<CreateOrderCommand, Guid>
 {
     private readonly IApplicationDbContext _db;
+    private readonly ICurrentUserService _currentUser;
 
-    public CreateOrderCommandHandler(IApplicationDbContext db)
+    public CreateOrderCommandHandler(IApplicationDbContext db, ICurrentUserService currentUser)
     {
         _db = db;
+        _currentUser = currentUser;
     }
 
     public async Task<Guid> Handle(CreateOrderCommand request, CancellationToken cancellationToken)
     {
+        var now = DateTimeOffset.UtcNow;
+        var phone = PhoneNormalizer.Normalize(request.PatientPhone);
+        var rawPhone = request.PatientPhone.Trim(); // older rows may hold the number as typed
+
+        // ---------- Branch ----------
+        var branchOk = await _db.Branches.AnyAsync(b => b.Id == request.BranchId, cancellationToken);
+        if (!branchOk) throw new NotFoundException(nameof(Branch), request.BranchId);
+
+        // ---------- Patient (guardian) : indexed lookup by phone ----------
         var patient = await _db.Patients
-            .FirstOrDefaultAsync(p => p.Phone == request.PatientPhone, cancellationToken);
+            .Include(p => p.Relatives)
+            .FirstOrDefaultAsync(p => p.Phone == phone || p.Phone == rawPhone, cancellationToken);
 
         if (patient is null)
         {
+            if (string.IsNullOrWhiteSpace(request.PatientName))
+                throw new ConflictException("Patient name is required for a new patient.");
+
             patient = new Patient
             {
                 Id = Guid.NewGuid(),
                 PatientCode = "PT" + Guid.NewGuid().ToString("N")[..8].ToUpper(),
-                Phone = request.PatientPhone,
+                FullName = request.PatientName.Trim(),
+                Phone = phone,
                 Age = request.PatientAge,
                 Gender = ParseNullableEnum<GenderType>(request.PatientGender),
-                Address = request.PatientAddress,
+                Address = request.PatientAddress?.Trim(),
                 Email = request.PatientEmail,
-                WhatsappNumber = request.PatientWhatsapp ?? request.PatientPhone,
-                CreatedAt = DateTimeOffset.UtcNow
+                WhatsappNumber = request.PatientWhatsapp ?? phone,
+                CreatedAt = now
             };
             _db.Patients.Add(patient);
         }
+        else
+        {
+            // Never overwrite a known guardian — only fill gaps (legacy rows have no name/address).
+            if (string.IsNullOrWhiteSpace(patient.FullName) && !string.IsNullOrWhiteSpace(request.PatientName))
+                patient.FullName = request.PatientName.Trim();
+            if (string.IsNullOrWhiteSpace(patient.Address) && !string.IsNullOrWhiteSpace(request.PatientAddress))
+                patient.Address = request.PatientAddress.Trim();
+            patient.Age ??= request.PatientAge;
+            patient.Gender ??= ParseNullableEnum<GenderType>(request.PatientGender);
+        }
 
+        // ---------- Relative (family member) ----------
         PatientRelative? relative = null;
-        if (!string.IsNullOrWhiteSpace(request.RelativeName))
+
+        if (request.RelativeId.HasValue)
         {
-            relative = new PatientRelative
+            relative = patient.Relatives.FirstOrDefault(r => r.Id == request.RelativeId.Value)
+                       ?? throw new NotFoundException(nameof(PatientRelative), request.RelativeId.Value);
+        }
+        else if (!string.IsNullOrWhiteSpace(request.RelativeName))
+        {
+            var name = request.RelativeName.Trim();
+            var relation = request.RelativeRelationship?.Trim();
+
+            // De-duplicate on (name, relation) so re-adding "Rina / Wife" reuses the same person.
+            relative = patient.Relatives.FirstOrDefault(r =>
+                string.Equals(r.Name, name, StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(r.Relationship ?? string.Empty, relation ?? string.Empty, StringComparison.OrdinalIgnoreCase));
+
+            if (relative is null)
             {
-                Id = Guid.NewGuid(),
-                PatientId = patient.Id,
-                Name = request.RelativeName,
-                Age = request.RelativeAge,
-                Relationship = request.RelativeRelationship,
-                Gender = ParseNullableEnum<GenderType>(request.RelativeGender),
-                CreatedAt = DateTimeOffset.UtcNow
-            };
-            _db.PatientRelatives.Add(relative);
+                relative = new PatientRelative
+                {
+                    Id = Guid.NewGuid(),
+                    PatientId = patient.Id,
+                    Name = name,
+                    Age = request.RelativeAge,
+                    Relationship = relation,
+                    Gender = ParseNullableEnum<GenderType>(request.RelativeGender),
+                    CreatedAt = now
+                };
+                _db.PatientRelatives.Add(relative);
+            }
         }
 
-        if (request.DoctorId.HasValue)
-        {
-            var doctorExists = await _db.Doctors.AnyAsync(d => d.Id == request.DoctorId.Value, cancellationToken);
-            if (!doctorExists) throw new NotFoundException(nameof(Doctor), request.DoctorId.Value);
-        }
-        if (request.ReferralId.HasValue)
-        {
-            var referralExists = await _db.Referrals.AnyAsync(r => r.Id == request.ReferralId.Value, cancellationToken);
-            if (!referralExists) throw new NotFoundException(nameof(Referral), request.ReferralId.Value);
-        }
+        // ---------- Doctor / Referral ----------
+        if (request.DoctorId.HasValue &&
+            !await _db.Doctors.AnyAsync(d => d.Id == request.DoctorId.Value, cancellationToken))
+            throw new NotFoundException(nameof(Doctor), request.DoctorId.Value);
 
+        if (request.ReferralId.HasValue &&
+            !await _db.Referrals.AnyAsync(r => r.Id == request.ReferralId.Value, cancellationToken))
+            throw new NotFoundException(nameof(Referral), request.ReferralId.Value);
+
+        // ---------- Tests (one query -> Dictionary, O(1) per line) ----------
         var testIds = request.Items.Select(i => i.TestId).Distinct().ToList();
-
         var tests = await _db.Tests
             .Where(t => testIds.Contains(t.Id))
             .ToDictionaryAsync(t => t.Id, cancellationToken);
 
         if (tests.Count != testIds.Count)
-        {
-            var missingId = testIds.First(id => !tests.ContainsKey(id));
-            throw new NotFoundException(nameof(Test), missingId);
-        }
+            throw new NotFoundException(nameof(Test), testIds.First(id => !tests.ContainsKey(id)));
 
+        var inactive = tests.Values.FirstOrDefault(t => t.Status != RecordStatus.Active);
+        if (inactive is not null)
+            throw new ConflictException($"Test '{inactive.Name}' is inactive and cannot be ordered.");
+
+        // ---------- Technicians ----------
         var technicianIds = request.Items
             .Where(i => i.TechnicianId.HasValue)
             .Select(i => i.TechnicianId!.Value)
             .Distinct()
             .ToList();
 
-        var validTechnicianIds = technicianIds.Count == 0
-            ? new HashSet<Guid>()
-            : (await _db.Technicians
-                .Where(t => technicianIds.Contains(t.Id))
-                .Select(t => t.Id)
-                .ToListAsync(cancellationToken))
-              .ToHashSet();
-
-        if (validTechnicianIds.Count != technicianIds.Count)
+        if (technicianIds.Count > 0)
         {
-            var missingId = technicianIds.First(id => !validTechnicianIds.Contains(id));
-            throw new NotFoundException(nameof(Technician), missingId);
+            var valid = (await _db.Technicians
+                    .Where(t => technicianIds.Contains(t.Id))
+                    .Select(t => t.Id)
+                    .ToListAsync(cancellationToken))
+                .ToHashSet();
+
+            var missing = technicianIds.FirstOrDefault(id => !valid.Contains(id));
+            if (missing != Guid.Empty) throw new NotFoundException(nameof(Technician), missing);
         }
 
+        // ---------- Order + lines ----------
         var order = new Order
         {
             Id = Guid.NewGuid(),
@@ -106,37 +150,34 @@ public class CreateOrderCommandHandler : IRequestHandler<CreateOrderCommand, Gui
             BranchId = request.BranchId,
             DoctorId = request.DoctorId,
             ReferralId = request.ReferralId,
-            DiscountType = Enum.Parse<DiscountType>(request.DiscountType),
+            DiscountType = Enum.Parse<DiscountType>(request.DiscountType, ignoreCase: true),
             DiscountValue = request.DiscountValue,
             IsComplimentary = request.IsComplimentary,
-            PaymentMethod = ParseNullableEnum<PaymentMethodType>(request.PaymentMethod),
-            PaidAmount = request.PaidAmount,
             CreatedBy = Guid.Empty,
-            CreatedAt = DateTimeOffset.UtcNow
+            CreatedAt = now
         };
 
-        decimal grossAmount = 0;
+        decimal gross = 0;
         var orderItems = new List<OrderItem>(request.Items.Count);
 
-        foreach (var itemInput in request.Items)
+        foreach (var input in request.Items)
         {
-            var test = tests[itemInput.TestId];
-            grossAmount += test.Price;
+            var test = tests[input.TestId];
+            gross += test.Price;
 
-            var doctorEnabled = itemInput.DoctorCommissionEnabled && request.DoctorId.HasValue;
-            var referralEnabled = itemInput.ReferralCommissionEnabled && request.ReferralId.HasValue;
+            // A referral REPLACES the doctor commission: with a referral on the
+            // order the doctor is never paid, whatever the client sent.
+            var referralEnabled = input.ReferralCommissionEnabled && request.ReferralId.HasValue;
+            var doctorEnabled = input.DoctorCommissionEnabled && request.DoctorId.HasValue && !request.ReferralId.HasValue;
 
             decimal doctorAmount = 0, referralAmount = 0, technicianAmount = 0;
-
             if (!request.IsComplimentary)
             {
                 if (doctorEnabled)
                     doctorAmount = CalculateCommission(test.DoctorCommissionType, test.DoctorCommissionValue, test.Price);
-
                 if (referralEnabled)
                     referralAmount = CalculateCommission(test.ReferralCommissionType, test.ReferralCommissionValue, test.Price);
-
-                if (itemInput.TechnicianId.HasValue)
+                if (input.TechnicianId.HasValue)
                     technicianAmount = CalculateCommission(test.TechnicianCommissionType, test.TechnicianCommissionValue, test.Price);
             }
 
@@ -146,44 +187,81 @@ public class CreateOrderCommandHandler : IRequestHandler<CreateOrderCommand, Gui
                 OrderId = order.Id,
                 TestId = test.Id,
                 Price = test.Price,
-                TechnicianId = itemInput.TechnicianId,
+                TechnicianId = input.TechnicianId,
                 DoctorCommissionEnabled = doctorEnabled,
                 DoctorCommissionAmount = doctorAmount,
                 ReferralCommissionEnabled = referralEnabled,
                 ReferralCommissionAmount = referralAmount,
                 TechnicianCommissionAmount = technicianAmount,
-                CreatedAt = DateTimeOffset.UtcNow
+                CreatedAt = now
             });
         }
 
-        order.GrossAmount = grossAmount;
+        order.GrossAmount = gross;
 
         if (request.IsComplimentary)
         {
             order.FinalAmount = 0;
-            order.PaidAmount = 0;
         }
         else
         {
-            var discountAmount = order.DiscountType == DiscountType.Percentage
-                ? grossAmount * (request.DiscountValue / 100m)
+            var discount = order.DiscountType == DiscountType.Percentage
+                ? Math.Round(gross * (request.DiscountValue / 100m), 2, MidpointRounding.AwayFromZero)
                 : request.DiscountValue;
 
-            order.FinalAmount = Math.Max(0, grossAmount - discountAmount);
+            order.FinalAmount = Math.Max(0, gross - discount);
         }
+
+        // ---------- Payments: merge by method (Dictionary) ----------
+        var payments = new List<OrderPayment>();
+        if (!request.IsComplimentary)
+        {
+            var byMethod = new Dictionary<PaymentMethodType, decimal>();
+
+            if (request.Payments.Count > 0)
+            {
+                foreach (var p in request.Payments)
+                {
+                    var method = Enum.Parse<PaymentMethodType>(p.Method, ignoreCase: true);
+                    byMethod[method] = byMethod.GetValueOrDefault(method) + p.Amount;
+                }
+            }
+            else if (request.PaidAmount > 0)
+            {
+                var method = ParseNullableEnum<PaymentMethodType>(request.PaymentMethod) ?? PaymentMethodType.Cash;
+                byMethod[method] = request.PaidAmount;
+            }
+
+            foreach (var (method, amount) in byMethod)
+            {
+                payments.Add(new OrderPayment
+                {
+                    Id = Guid.NewGuid(),
+                    OrderId = order.Id,
+                    Amount = amount,
+                    PaymentMethod = method,
+                    PaidAt = now
+                });
+            }
+        }
+
+        order.PaidAmount = payments.Sum(p => p.Amount);
+        if (order.PaidAmount > order.FinalAmount)
+            throw new ConflictException("Paid amount cannot be more than the payable total.");
+
+        order.PaymentMethod = payments.Count == 0
+            ? null
+            : payments.OrderByDescending(p => p.Amount).First().PaymentMethod;
 
         order.PaymentStatus = order.IsComplimentary || order.PaidAmount >= order.FinalAmount
             ? PaymentStatusType.Paid
-            : order.PaidAmount > 0
-                ? PaymentStatusType.Partial
-                : PaymentStatusType.Open;
+            : order.PaidAmount > 0 ? PaymentStatusType.Partial : PaymentStatusType.Open;
 
         _db.Orders.Add(order);
-        foreach (var item in orderItems)
-            _db.OrderItems.Add(item);
+        _db.OrderItems.AddRange(orderItems);
+        _db.OrderPayments.AddRange(payments);
 
         await _db.SaveChangesAsync(cancellationToken);
-
         return order.Id;
     }
 
@@ -191,5 +269,5 @@ public class CreateOrderCommandHandler : IRequestHandler<CreateOrderCommand, Gui
         type == CommissionType.Percentage ? testPrice * (value / 100m) : value;
 
     private static TEnum? ParseNullableEnum<TEnum>(string? value) where TEnum : struct, Enum =>
-        !string.IsNullOrWhiteSpace(value) && Enum.TryParse<TEnum>(value, out var result) ? result : null;
+        !string.IsNullOrWhiteSpace(value) && Enum.TryParse<TEnum>(value, true, out var result) ? result : null;
 }

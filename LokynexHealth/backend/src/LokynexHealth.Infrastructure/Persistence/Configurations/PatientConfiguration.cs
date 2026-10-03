@@ -15,6 +15,8 @@ public class PatientConfiguration : IEntityTypeConfiguration<Patient>
         builder.Property(p => p.PatientCode).HasMaxLength(30).IsRequired();
         builder.HasIndex(p => p.PatientCode).IsUnique();
 
+        builder.Property(p => p.FullName).HasMaxLength(150).IsRequired().HasDefaultValue(string.Empty);
+
         builder.Property(p => p.Phone).HasMaxLength(20).IsRequired();
         builder.HasIndex(p => p.Phone);   // schema er idx_patients_phone, dhonno search-by-phone
 

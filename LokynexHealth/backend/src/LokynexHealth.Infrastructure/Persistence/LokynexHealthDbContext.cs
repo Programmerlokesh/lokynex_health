@@ -26,6 +26,7 @@ public class LokynexHealthDbContext : DbContext, IApplicationDbContext
     public DbSet<PatientRelative> PatientRelatives => Set<PatientRelative>();
     public DbSet<Order> Orders => Set<Order>();
     public DbSet<OrderItem> OrderItems => Set<OrderItem>();
+    public DbSet<OrderPayment> OrderPayments => Set<OrderPayment>();
     public DbSet<CommissionOverride> CommissionOverrides => Set<CommissionOverride>();
     public DbSet<CommissionPayout> CommissionPayouts => Set<CommissionPayout>();
     public DbSet<LedgerEntry> LedgerEntries => Set<LedgerEntry>();

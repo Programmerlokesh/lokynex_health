@@ -18,6 +18,8 @@ public class TenantConfiguration : IEntityTypeConfiguration<Tenant>
         builder.Property(t => t.SchemaName).HasMaxLength(63).IsRequired();
         builder.HasIndex(t => t.SchemaName).IsUnique();
 
+        builder.Property(t => t.CompanyType).HasMaxLength(50).IsRequired().HasDefaultValue("Diagnostic Laboratory");
+
         builder.Property(t => t.Subdomain).HasMaxLength(100).IsRequired();
         builder.HasIndex(t => t.Subdomain).IsUnique();
 

@@ -46,8 +46,11 @@ public class GetOrdersQueryHandler : IRequestHandler<GetOrdersQuery, PagedResult
         if (!string.IsNullOrWhiteSpace(request.PatientNameContains))
         {
             var term = $"%{request.PatientNameContains}%";
-            // Patient itself has no Name column — search matches the relative's name when present.
-            query = query.Where(o => o.Relative != null && EF.Functions.ILike(o.Relative.Name, term));
+            // Matches the person the order is for: the family member if there is one,
+            // otherwise the guardian.
+            query = query.Where(o =>
+                (o.Relative != null && EF.Functions.ILike(o.Relative.Name, term)) ||
+                EF.Functions.ILike(o.Patient.FullName, term));
         }
 
         if (!string.IsNullOrWhiteSpace(request.PaymentStatus) && request.PaymentStatus != "Any")
@@ -92,7 +95,7 @@ public class GetOrdersQueryHandler : IRequestHandler<GetOrdersQuery, PagedResult
             {
                 Id = o.Id,
                 OrderNumber = o.OrderNumber,
-                PatientName = o.Relative != null ? o.Relative.Name : o.Patient.Phone,
+                PatientName = o.Relative != null ? o.Relative.Name : (o.Patient.FullName != "" ? o.Patient.FullName : o.Patient.Phone),
                 PatientPhone = o.Patient.Phone,
                 BranchId = o.BranchId,
                 BranchName = o.Branch.BranchName,

@@ -10,6 +10,7 @@ public class BranchDto
     public string? BranchPhone { get; set; }
     public string? BranchEmail { get; set; }
     public bool CreatedBySuperAdmin { get; set; }
+    public bool IsMain { get; set; }
     public string Status { get; set; } = default!;
     public DateTimeOffset CreatedAt { get; set; }
 }

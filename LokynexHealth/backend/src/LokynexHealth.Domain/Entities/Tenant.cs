@@ -8,6 +8,9 @@ public class Tenant : BaseEntity
     public string SchemaName { get; set; } = default!;
     public string Subdomain { get; set; } = default!;
 
+    /// <summary>Printed on invoices, e.g. "Diagnostic Laboratory", "Pathology Lab", "Clinic".</summary>
+    public string CompanyType { get; set; } = "Diagnostic Laboratory";
+
     public string PrimaryBranchName { get; set; } = default!;
     public string PrimaryBranchAddress { get; set; } = default!;
     public string PrimaryBranchPhone { get; set; } = default!;

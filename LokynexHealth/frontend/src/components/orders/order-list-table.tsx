@@ -18,6 +18,7 @@ import {
   Typography,
 } from "@mui/material";
 import { motion } from "framer-motion";
+import Link from "next/link";
 
 const statusColor: Record<string, "success" | "warning" | "default"> = {
   Paid: "success",
@@ -66,7 +67,12 @@ export function OrderListTable({ orders }: { orders: OrderListItemDto[] }) {
               style={{ display: "table-row" }}
             >
               <TableCell sx={{ fontWeight: 500 }}>
-                {order.orderNumber}
+                <Link
+                  href={`/orders/${order.id}`}
+                  style={{ color: "inherit", textDecoration: "underline" }}
+                >
+                  {order.orderNumber}
+                </Link>
               </TableCell>
               <TableCell>
                 {order.patientName}

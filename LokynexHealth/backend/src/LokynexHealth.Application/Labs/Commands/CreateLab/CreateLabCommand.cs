@@ -17,6 +17,9 @@ public class CreateLabCommand : IRequest<Guid>
     public string AdminUsername { get; set; } = default!;
     public string AdminPassword { get; set; } = default!;
 
+    /// <summary>Printed on invoices. Defaults to "Diagnostic Laboratory".</summary>
+    public string? CompanyType { get; set; }
+
     public int UserLimit { get; set; } = 5;
 
     public List<ExtendBranchInput> ExtendBranches { get; set; } = new();

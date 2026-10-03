@@ -1,6 +1,7 @@
 using LokynexHealth.Application.Common.Interfaces;
 using LokynexHealth.Application.Orders.Commands.CreateOrder;
 using LokynexHealth.Application.Orders.Commands.DeleteOrder;
+using LokynexHealth.Application.Orders.Queries.GetOrderById;
 using LokynexHealth.Application.Orders.Queries.GetOrders;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -33,6 +34,14 @@ public class OrdersController : ControllerBase
     public async Task<IActionResult> GetOrders([FromQuery] GetOrdersQuery query, CancellationToken ct)
     {
         var result = await _mediator.Send(query, ct);
+        return Ok(result);
+    }
+
+    /// <summary>Order details + invoice payload (company, patient, lines, payments).</summary>
+    [HttpGet("{id:guid}")]
+    public async Task<IActionResult> GetOrderById(Guid id, CancellationToken ct)
+    {
+        var result = await _mediator.Send(new GetOrderByIdQuery { Id = id }, ct);
         return Ok(result);
     }
 

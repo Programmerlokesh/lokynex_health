@@ -26,6 +26,7 @@ public interface IApplicationDbContext
     DbSet<PatientRelative> PatientRelatives { get; }
     DbSet<Order> Orders { get; }
     DbSet<OrderItem> OrderItems { get; }
+    DbSet<OrderPayment> OrderPayments { get; }
     DbSet<CommissionOverride> CommissionOverrides { get; }
     DbSet<CommissionPayout> CommissionPayouts { get; }
     DbSet<LedgerEntry> LedgerEntries { get; }

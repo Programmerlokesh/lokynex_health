@@ -17,6 +17,9 @@ public class BranchConfiguration : IEntityTypeConfiguration<Branch>
         builder.Property(b => b.BranchCode).HasMaxLength(20).IsRequired();
         builder.HasIndex(b => b.BranchCode).IsUnique();
 
+        builder.Property(b => b.IsMain).HasDefaultValue(false);
+        builder.HasIndex(b => b.IsMain);
+
         builder.Property(b => b.BranchAddress);
         builder.Property(b => b.BranchPincode).HasMaxLength(10);
         builder.Property(b => b.BranchPhone).HasMaxLength(20);

@@ -39,7 +39,8 @@ public class GetBranchesQueryHandler : IRequestHandler<GetBranchesQuery, PagedRe
         var totalCount = await query.CountAsync(cancellationToken);
 
         var branches = await query
-            .OrderByDescending(b => b.CreatedAt)
+            .OrderByDescending(b => b.IsMain)
+            .ThenByDescending(b => b.CreatedAt)
             .Skip((request.PageNumber - 1) * request.PageSize)
             .Take(request.PageSize)
             .Select(b => new BranchDto
@@ -52,6 +53,7 @@ public class GetBranchesQueryHandler : IRequestHandler<GetBranchesQuery, PagedRe
                 BranchPhone = b.BranchPhone,
                 BranchEmail = b.BranchEmail,
                 CreatedBySuperAdmin = b.CreatedBySuperAdmin,
+                IsMain = b.IsMain,
                 Status = b.Status.ToString(),
                 CreatedAt = b.CreatedAt
             })

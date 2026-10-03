@@ -2,6 +2,7 @@
 
 import {
   useCreateSubscription,
+  useLab,
   useLabs,
   usePlans,
 } from "@/hooks/use-super-admin";
@@ -17,11 +18,13 @@ import {
   MenuItem,
   TextField,
 } from "@mui/material";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 export function CreateSubscriptionDialog() {
   const [open, setOpen] = useState(false);
   const [tenantId, setTenantId] = useState("");
+  // "" = the lab's main subscription; otherwise one branch's own subscription.
+  const [branchId, setBranchId] = useState("");
   const [planId, setPlanId] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
@@ -29,10 +32,17 @@ export function CreateSubscriptionDialog() {
 
   const { data: labs } = useLabs({});
   const { data: plans } = usePlans();
+  // Branches belong to the selected lab, so they are loaded only once a
+  // lab is chosen (useLab is disabled while tenantId is empty).
+  const { data: labDetail, isFetching: branchesLoading } = useLab(
+    tenantId || null,
+  );
+  const branches = useMemo(() => labDetail?.extendBranches ?? [], [labDetail]);
   const createSubscription = useCreateSubscription();
 
   function resetForm() {
     setTenantId("");
+    setBranchId("");
     setPlanId("");
     setStartDate("");
     setEndDate("");
@@ -46,6 +56,8 @@ export function CreateSubscriptionDialog() {
     createSubscription.mutate(
       {
         tenantId,
+        // Omitted entirely for the lab's main subscription.
+        ...(branchId ? { branchId } : {}),
         planId,
         startDate,
         endDate,
@@ -93,11 +105,40 @@ export function CreateSubscriptionDialog() {
               fullWidth
               required
               value={tenantId}
-              onChange={(e) => setTenantId(e.target.value)}
+              onChange={(e) => {
+                setTenantId(e.target.value);
+                // A branch from the previous lab must never carry over.
+                setBranchId("");
+              }}
             >
               {labs?.items.map((lab) => (
                 <MenuItem key={lab.id} value={lab.id}>
                   {lab.primaryBranchName} ({lab.labCode})
+                </MenuItem>
+              ))}
+            </TextField>
+
+            <TextField
+              select
+              label="Subscription For"
+              size="small"
+              fullWidth
+              disabled={!tenantId || branchesLoading}
+              value={branchId}
+              onChange={(e) => setBranchId(e.target.value)}
+              helperText={
+                !tenantId
+                  ? "Select a lab first"
+                  : branchId
+                    ? "Billed and renewed separately from the lab's main plan"
+                    : "The lab's main subscription"
+              }
+              slotProps={{ select: { displayEmpty: true } }}
+            >
+              <MenuItem value="">Main lab subscription</MenuItem>
+              {branches.map((b) => (
+                <MenuItem key={b.id} value={b.id}>
+                  {b.branchName} ({b.branchCode})
                 </MenuItem>
               ))}
             </TextField>
@@ -118,7 +159,13 @@ export function CreateSubscriptionDialog() {
               ))}
             </TextField>
 
-           <Box sx={{ display: "flex", flexDirection: { xs: "column", sm: "row" }, gap: 2 }}>
+            <Box
+              sx={{
+                display: "flex",
+                flexDirection: { xs: "column", sm: "row" },
+                gap: 2,
+              }}
+            >
               <TextField
                 label="Start Date"
                 type="date"

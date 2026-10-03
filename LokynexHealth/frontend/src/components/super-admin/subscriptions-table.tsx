@@ -4,6 +4,7 @@ import { EditSubscriptionDialog } from "@/components/super-admin/edit-subscripti
 import { SubscriptionDto } from "@/types/super-admin";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import {
+  Box,
   Chip,
   IconButton,
   Paper,
@@ -51,10 +52,11 @@ export function SubscriptionsTable({ rows }: { rows: SubscriptionDto[] }) {
           overflowX: "auto",
         }}
       >
-        <Table size="small" sx={{ minWidth: 720 }}>
+        <Table size="small" sx={{ minWidth: 820 }}>
           <TableHead>
             <TableRow sx={{ bgcolor: "action.hover" }}>
               <TableCell sx={{ fontWeight: 600 }}>Lab / Tenant</TableCell>
+              <TableCell sx={{ fontWeight: 600 }}>Scope</TableCell>
               <TableCell sx={{ fontWeight: 600 }}>Plan</TableCell>
               <TableCell sx={{ fontWeight: 600 }}>Start</TableCell>
               <TableCell sx={{ fontWeight: 600 }}>End</TableCell>
@@ -75,6 +77,25 @@ export function SubscriptionsTable({ rows }: { rows: SubscriptionDto[] }) {
                 style={{ display: "table-row" }}
               >
                 <TableCell sx={{ fontWeight: 500 }}>{row.tenantName}</TableCell>
+                <TableCell>
+                  {row.branchId ? (
+                    <Box
+                      sx={{ display: "flex", alignItems: "center", gap: 0.75 }}
+                    >
+                      <Chip
+                        label="Branch"
+                        size="small"
+                        color="info"
+                        variant="outlined"
+                      />
+                      <Typography variant="body2" noWrap>
+                        {row.branchName ?? "—"}
+                      </Typography>
+                    </Box>
+                  ) : (
+                    <Chip label="Main lab" size="small" variant="outlined" />
+                  )}
+                </TableCell>
                 <TableCell>{row.planName}</TableCell>
                 <TableCell>
                   {new Date(row.startDate).toLocaleDateString()}

@@ -31,4 +31,5 @@ public class Order : BaseEntity
     public Guid? UpdatedBy { get; set; }
 
     public ICollection<OrderItem> Items { get; set; } = new List<OrderItem>();
+    public ICollection<OrderPayment> Payments { get; set; } = new List<OrderPayment>();
 }

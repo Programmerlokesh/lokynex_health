@@ -122,6 +122,8 @@ export interface CreateLabRequest {
   adminEmail: string;
   adminUsername: string;
   adminPassword: string;
+  /** Printed on invoices, e.g. "Diagnostic Laboratory". */
+  companyType?: string;
   userLimit: number;
   extendBranches: ExtendBranchInput[];
 }

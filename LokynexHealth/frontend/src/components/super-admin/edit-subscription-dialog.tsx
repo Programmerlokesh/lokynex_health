@@ -74,6 +74,7 @@ export function EditSubscriptionDialog({
     <Dialog open={!!subscription} onClose={onClose} fullWidth maxWidth="xs">
       <DialogTitle sx={{ fontWeight: 700 }}>
         Edit Subscription — {subscription?.tenantName}
+        {subscription?.branchName ? ` · ${subscription.branchName}` : ""}
       </DialogTitle>
       <Box component="form" onSubmit={handleSubmit}>
         <DialogContent

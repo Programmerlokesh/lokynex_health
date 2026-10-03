@@ -1,5 +1,6 @@
 using LokynexHealth.Application.Common.Exceptions;
 using LokynexHealth.Application.Common.Interfaces;
+using LokynexHealth.Application.Labs.Common;
 using LokynexHealth.Domain.Enums;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -31,6 +32,29 @@ public class UpdateLabCommandHandler : IRequestHandler<UpdateLabCommand, Unit>
         tenant.AdminPhone = request.AdminPhone;
         tenant.AdminAddress = request.AdminAddress;
         tenant.AdminEmail = request.AdminEmail;
+
+        if (!string.IsNullOrWhiteSpace(request.CompanyType))
+            tenant.CompanyType = request.CompanyType.Trim();
+
+        // Keep the operational "Main" branch row in lockstep with the tenant's
+        // primary-branch fields (self-heals labs created before this row existed).
+        var mainBranch = await _db.Branches.FirstOrDefaultAsync(b => b.Id == tenant.Id, cancellationToken);
+        if (mainBranch is null)
+        {
+            var exists = await _db.Branches.AnyAsync(b => b.BranchCode == tenant.LabCode, cancellationToken);
+            if (!exists)
+                _db.Branches.Add(BranchMirror.BuildMainBranch(tenant));
+        }
+        else
+        {
+            mainBranch.BranchName = request.PrimaryBranchName;
+            mainBranch.BranchAddress = request.PrimaryBranchAddress;
+            mainBranch.BranchPhone = request.PrimaryBranchPhone;
+            mainBranch.BranchEmail = request.PrimaryBranchEmail;
+            mainBranch.BranchPincode = request.PrimaryBranchPincode;
+            mainBranch.IsMain = true;
+            mainBranch.UpdatedAt = DateTimeOffset.UtcNow;
+        }
 
         tenant.UserLimit = request.UserLimit;
         tenant.Status = Enum.Parse<PlatformRecordStatus>(request.Status);

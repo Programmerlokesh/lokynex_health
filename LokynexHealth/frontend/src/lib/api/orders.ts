@@ -1,5 +1,5 @@
 import { apiClient } from "@/lib/api-client";
-import { CreateOrderRequest } from "@/types/order";
+import { CreateOrderRequest, OrderInvoiceDto } from "@/types/order";
 import { OrderListFilters, OrderListItemDto } from "@/types/order-list";
 import { PagedResult } from "@/types/user";
 
@@ -7,6 +7,11 @@ export async function createOrderApi(
   data: CreateOrderRequest,
 ): Promise<{ id: string }> {
   const response = await apiClient.post<{ id: string }>("/Orders", data);
+  return response.data;
+}
+
+export async function getOrderByIdApi(id: string): Promise<OrderInvoiceDto> {
+  const response = await apiClient.get<OrderInvoiceDto>(`/Orders/${id}`);
   return response.data;
 }
 

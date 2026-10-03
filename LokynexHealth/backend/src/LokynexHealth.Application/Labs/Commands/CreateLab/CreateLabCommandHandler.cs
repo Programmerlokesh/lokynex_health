@@ -70,12 +70,19 @@ public class CreateLabCommandHandler : IRequestHandler<CreateLabCommand, Guid>
             AdminEmail = request.AdminEmail,
             AdminUsername = request.AdminUsername,
             AdminPasswordHash = _passwordHasher.HashPassword(request.AdminPassword),
+            CompanyType = string.IsNullOrWhiteSpace(request.CompanyType)
+                ? "Diagnostic Laboratory"
+                : request.CompanyType.Trim(),
             UserLimit = request.UserLimit,
             Status = PlatformRecordStatus.Active,
             CreatedAt = DateTimeOffset.UtcNow
         };
 
         _db.Tenants.Add(tenant);
+
+        // The primary branch also gets an operational row (Id == tenant.Id) so
+        // it is selectable as "Main" when creating orders.
+        _db.Branches.Add(BranchMirror.BuildMainBranch(tenant));
 
         foreach (var branchInput in request.ExtendBranches)
         {

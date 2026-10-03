@@ -11,6 +11,11 @@ public class Branch : BaseEntity
     public string? BranchPhone { get; set; }
     public string? BranchEmail { get; set; }
     public bool CreatedBySuperAdmin { get; set; }
+
+    /// <summary>True for the lab's primary ("Main") branch. It is mirrored from
+    /// platform.tenants into this table with Id == Tenant.Id so orders can
+    /// reference it through the normal orders.branch_id foreign key.</summary>
+    public bool IsMain { get; set; }
     public RecordStatus Status { get; set; } = RecordStatus.Active;
     public Guid? CreatedBy { get; set; }
 

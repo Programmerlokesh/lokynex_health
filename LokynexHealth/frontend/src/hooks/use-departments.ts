@@ -6,7 +6,12 @@ import {
   updateDepartmentStatusApi,
 } from "@/lib/api/departments";
 import { CreateTestRequest } from "@/types/department";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 
 export function useDepartments() {
   return useQuery({
@@ -38,15 +43,20 @@ export function useUpdateDepartmentStatus() {
   });
 }
 
-export function useTests(params: {
-  departmentId?: string;
-  search?: string;
-  pageNumber?: number;
-  pageSize?: number;
-}) {
+export function useTests(
+  params: {
+    departmentId?: string;
+    search?: string;
+    pageNumber?: number;
+    pageSize?: number;
+  },
+  options: { enabled?: boolean } = {},
+) {
   return useQuery({
     queryKey: ["tests", params],
     queryFn: () => getTestsApi(params),
+    enabled: options.enabled ?? true,
+    placeholderData: keepPreviousData,
   });
 }
 

@@ -41,6 +41,29 @@ public static class BranchMirror
             CreatedAt = createdAt
         };
 
+    /// <summary>
+    /// The lab's primary ("Main") branch as an operational row. Its Id is the
+    /// tenant's own Id, so the SuperAdmin registry and the lab's `branches`
+    /// table stay joinable without a separate mapping column. Without this row
+    /// the Main branch could never appear in the New Order branch dropdown
+    /// (orders.branch_id has a foreign key to `branches`).
+    /// </summary>
+    public static Branch BuildMainBranch(Tenant tenant) => new()
+    {
+        Id = tenant.Id,
+        BranchName = tenant.PrimaryBranchName,
+        BranchCode = tenant.LabCode,
+        BranchAddress = tenant.PrimaryBranchAddress,
+        BranchPincode = tenant.PrimaryBranchPincode,
+        BranchPhone = tenant.PrimaryBranchPhone,
+        BranchEmail = tenant.PrimaryBranchEmail,
+        CreatedBySuperAdmin = true,
+        IsMain = true,
+        Status = RecordStatus.Active,
+        CreatedBy = null,
+        CreatedAt = tenant.CreatedAt
+    };
+
     public static Branch BuildOperationalBranch(
         Guid id,
         string branchName,

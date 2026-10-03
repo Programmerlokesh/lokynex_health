@@ -7,6 +7,8 @@ export interface BranchDto {
   branchPhone: string | null;
   branchEmail: string | null;
   createdBySuperAdmin: boolean;
+  /** The lab's primary ("Main") branch. */
+  isMain?: boolean;
   status: string;
   createdAt: string;
 }
