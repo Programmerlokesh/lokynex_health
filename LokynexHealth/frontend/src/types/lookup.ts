@@ -10,4 +10,5 @@ export interface LookupDto {
 
 export interface TechnicianDto extends LookupDto {
   branchId: string;
+  branchName?: string;
 }

@@ -23,16 +23,18 @@ public class CreateTestCommandHandler : IRequestHandler<CreateTestCommand, Guid>
         if (!departmentExists)
             throw new NotFoundException(nameof(Department), request.DepartmentId);
 
+        var name = request.Name.Trim();
+
         var duplicateExists = await _db.Tests
-            .AnyAsync(t => t.DepartmentId == request.DepartmentId && t.Name == request.Name, cancellationToken);
+            .AnyAsync(t => t.DepartmentId == request.DepartmentId && t.Name == name, cancellationToken);
         if (duplicateExists)
-            throw new ConflictException($"Test '{request.Name}' already exists in this department.");
+            throw new ConflictException($"Test '{name}' already exists in this department.");
 
         var test = new Test
         {
             Id = Guid.NewGuid(),
             DepartmentId = request.DepartmentId,
-            Name = request.Name,
+            Name = name,
             Price = request.Price,
             DoctorCommissionType = Enum.Parse<CommissionType>(request.DoctorCommissionType),
             DoctorCommissionValue = request.DoctorCommissionValue,
@@ -44,6 +46,7 @@ public class CreateTestCommandHandler : IRequestHandler<CreateTestCommand, Guid>
         };
 
         _db.Tests.Add(test);
+        await TestCommissionSync.SyncAsync(_db, test, request.Commissions, cancellationToken);
         await _db.SaveChangesAsync(cancellationToken);
 
         return test.Id;

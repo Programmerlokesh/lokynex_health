@@ -35,8 +35,11 @@ public class SetCommissionOverrideCommandHandler : IRequestHandler<SetCommission
         if (!entityExists)
             throw new NotFoundException(request.EntityType, request.EntityId);
 
-        var testExists = await _db.Tests.AnyAsync(t => t.Id == request.TestId, cancellationToken);
-        if (!testExists)
+        var testDepartmentId = await _db.Tests
+            .Where(t => t.Id == request.TestId)
+            .Select(t => (Guid?)t.DepartmentId)
+            .FirstOrDefaultAsync(cancellationToken);
+        if (testDepartmentId is null)
             throw new NotFoundException(nameof(Test), request.TestId);
 
         // ---------- 2. Upsert pattern — find existing override first, avoid duplicate rows ----------
@@ -60,6 +63,7 @@ public class SetCommissionOverrideCommandHandler : IRequestHandler<SetCommission
         {
             existing.CommissionType = commissionType;
             existing.CommissionValue = request.CommissionValue;
+            existing.DepartmentId = testDepartmentId;
             await _db.SaveChangesAsync(cancellationToken);
             return existing.Id;
         }
@@ -70,6 +74,7 @@ public class SetCommissionOverrideCommandHandler : IRequestHandler<SetCommission
             Id = Guid.NewGuid(),
             EntityType = entityType,
             TestId = request.TestId,
+            DepartmentId = testDepartmentId,
             CommissionType = commissionType,
             CommissionValue = request.CommissionValue,
             CreatedAt = DateTimeOffset.UtcNow,

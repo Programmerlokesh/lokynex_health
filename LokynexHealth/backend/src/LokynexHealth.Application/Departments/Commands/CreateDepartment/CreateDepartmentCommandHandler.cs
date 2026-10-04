@@ -1,6 +1,7 @@
 using LokynexHealth.Application.Common.Exceptions;
 using LokynexHealth.Application.Common.Interfaces;
 using LokynexHealth.Domain.Entities;
+using LokynexHealth.Domain.Enums;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
@@ -17,14 +18,19 @@ public class CreateDepartmentCommandHandler : IRequestHandler<CreateDepartmentCo
 
     public async Task<Guid> Handle(CreateDepartmentCommand request, CancellationToken cancellationToken)
     {
-        var exists = await _db.Departments.AnyAsync(d => d.Name == request.Name, cancellationToken);
+        var name = request.Name.Trim();
+
+        // Case-insensitive so "Pathology" and "pathology" are not two departments.
+        var lower = name.ToLower();
+        var exists = await _db.Departments.AnyAsync(d => d.Name.ToLower() == lower, cancellationToken);
         if (exists)
-            throw new ConflictException($"Department '{request.Name}' already exists.");
+            throw new ConflictException($"Department '{name}' already exists.");
 
         var department = new Department
         {
             Id = Guid.NewGuid(),
-            Name = request.Name,
+            Name = name,
+            Status = RecordStatus.Active,
             CreatedAt = DateTimeOffset.UtcNow
         };
 

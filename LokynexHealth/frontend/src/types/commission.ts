@@ -16,3 +16,31 @@ export interface SetCommissionOverrideRequest {
   commissionType: string;
   commissionValue: number;
 }
+
+/** One test of a department with the commission a given person gets on it. */
+export interface EffectiveCommissionDto {
+  testId: string;
+  testName: string;
+  price: number;
+  testStatus: string;
+  defaultCommissionType: string;
+  defaultCommissionValue: number;
+  hasOverride: boolean;
+  commissionType: string;
+  commissionValue: number;
+}
+
+export interface BulkCommissionItem {
+  testId: string;
+  commissionType: string;
+  commissionValue: number;
+  /** Delete the person-specific row so the test default applies again. */
+  reset?: boolean;
+}
+
+export interface BulkSetCommissionRequest {
+  entityType: string;
+  entityId: string;
+  departmentId: string;
+  items: BulkCommissionItem[];
+}

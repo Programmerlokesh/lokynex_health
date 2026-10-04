@@ -1,14 +1,15 @@
 using FluentValidation;
 
-namespace LokynexHealth.Application.Tests.Commands.CreateTest;
+namespace LokynexHealth.Application.Tests.Commands.UpdateTest;
 
-public class CreateTestCommandValidator : AbstractValidator<CreateTestCommand>
+public class UpdateTestCommandValidator : AbstractValidator<UpdateTestCommand>
 {
-    public CreateTestCommandValidator()
+    public UpdateTestCommandValidator()
     {
-        RuleFor(x => x.DepartmentId).NotEmpty();
+        RuleFor(x => x.Id).NotEmpty();
         RuleFor(x => x.Name).NotEmpty().MaximumLength(200);
         RuleFor(x => x.Price).GreaterThanOrEqualTo(0);
+        RuleFor(x => x.Status).Must(s => s is "Active" or "Inactive");
 
         RuleFor(x => x.DoctorCommissionType).Must(BeValidCommissionType);
         RuleFor(x => x.ReferralCommissionType).Must(BeValidCommissionType);
@@ -21,6 +22,5 @@ public class CreateTestCommandValidator : AbstractValidator<CreateTestCommand>
         RuleFor(x => x.Commissions).MustBeValidCommissions();
     }
 
-    private static bool BeValidCommissionType(string type) =>
-        type == "Flat" || type == "Percentage";
+    private static bool BeValidCommissionType(string type) => type is "Flat" or "Percentage";
 }
