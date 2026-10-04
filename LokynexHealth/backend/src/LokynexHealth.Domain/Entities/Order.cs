@@ -27,7 +27,7 @@ public class Order : BaseEntity
     public bool IsDeleted { get; set; }
     public DateTimeOffset? DeletedAt { get; set; }
     public Guid? DeletedBy { get; set; }
-    public Guid CreatedBy { get; set; }
+    public Guid? CreatedBy { get; set; }
     public Guid? UpdatedBy { get; set; }
 
     public ICollection<OrderItem> Items { get; set; } = new List<OrderItem>();

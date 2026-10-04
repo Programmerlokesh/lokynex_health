@@ -185,7 +185,8 @@ public class CreateOrderCommandHandler : IRequestHandler<CreateOrderCommand, Gui
             DiscountType = Enum.Parse<DiscountType>(request.DiscountType, ignoreCase: true),
             DiscountValue = request.DiscountValue,
             IsComplimentary = request.IsComplimentary,
-            CreatedBy = Guid.Empty,
+            // Lab Admin (tenant owner) has no row in `users`, so storing their id would break the FK.
+            CreatedBy = _currentUser.IsTenantAdmin ? null : _currentUser.UserId,
             CreatedAt = now
         };
 
