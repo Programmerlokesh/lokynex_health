@@ -7,7 +7,7 @@ export interface LookupDto {
   /** Doctors only. */
   specialization?: string | null;
   /** Technicians only. */
-  branchName?: string | null;
+  branchName?: string;
 }
 
 export interface TechnicianDto extends LookupDto {
