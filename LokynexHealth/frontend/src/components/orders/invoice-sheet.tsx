@@ -4,47 +4,70 @@ import { formatDateTime, formatMoney } from "@/lib/format";
 import { OrderInvoiceDto } from "@/types/order";
 import { forwardRef } from "react";
 
-export type PaperSize = "A4" | "A5";
+/** The bill is printed on A5 only. */
+export type PaperSize = "A5";
 
 /** Millimetres. Portrait. */
 export const PAPER_MM: Record<PaperSize, { w: number; h: number }> = {
-  A4: { w: 210, h: 297 },
   A5: { w: 148, h: 210 },
 };
 
 /**
  * Plain, self-contained CSS (no MUI / Tailwind) so the exact same stylesheet
  * is used by the on-screen preview and by the print iframe — what you see is
- * what the printer gets.
+ * what the printer gets. Laid out for one A5 page (148 x 210 mm).
  */
 export const INVOICE_CSS = `
 .inv-sheet{box-sizing:border-box;background:#fff;color:#111;font-family:Arial,Helvetica,sans-serif;
-  line-height:1.35;display:flex;flex-direction:column}
+  line-height:1.3;display:flex;flex-direction:column}
 .inv-sheet *{box-sizing:border-box}
-.inv-A4{width:210mm;min-height:297mm;padding:12mm;font-size:12px}
-.inv-A5{width:148mm;min-height:210mm;padding:8mm;font-size:10px}
-.inv-head{text-align:center;border-bottom:2px solid #111;padding-bottom:6px;margin-bottom:8px}
-.inv-company{font-size:1.7em;font-weight:700;letter-spacing:.3px}
-.inv-type{font-size:1.05em;color:#444}
-.inv-branch{margin-top:2px;font-weight:600}
+.inv-A5{width:148mm;min-height:209mm;padding:7mm 7mm 6mm;font-size:10px}
+
+.inv-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;
+  padding-bottom:6px;border-bottom:2px solid #111}
+.inv-brand{min-width:0}
+.inv-company{font-size:1.9em;font-weight:800;letter-spacing:.2px;line-height:1.1;word-break:break-word}
+.inv-type{font-size:1em;color:#444;margin-top:1px}
+.inv-branch{margin-top:3px;font-weight:600}
 .inv-muted{color:#555}
-.inv-invno{margin-top:4px;font-weight:700;font-size:1.1em}
-.inv-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
-.inv-box{border:1px solid #bbb;border-radius:4px;padding:6px 8px}
-.inv-box h4{margin:0 0 4px;font-size:1em;text-transform:uppercase;letter-spacing:.5px;color:#333;border-bottom:1px solid #ddd;padding-bottom:2px}
-.inv-kv{display:flex;justify-content:space-between;gap:8px;padding:1.5px 0}
-.inv-kv span:first-child{color:#555;flex-shrink:0}
-.inv-kv span:last-child{font-weight:600;text-align:right;word-break:break-word}
-.inv-table{width:100%;border-collapse:collapse;margin:4px 0 8px}
-.inv-table th,.inv-table td{border:1px solid #bbb;padding:4px 6px;text-align:left;vertical-align:top}
-.inv-table th{background:#f0f0f0;font-size:.95em}
+.inv-title{text-align:right;flex-shrink:0}
+.inv-title b{display:block;font-size:1.5em;letter-spacing:1.5px}
+.inv-title span{display:block;margin-top:2px;font-weight:700}
+
+.inv-info{display:grid;grid-template-columns:1.15fr 1fr;gap:0;margin-top:6px;
+  border:1px solid #999;border-radius:3px}
+.inv-info > div{padding:5px 7px}
+.inv-info > div + div{border-left:1px solid #999}
+.inv-kv{display:flex;gap:6px;padding:1px 0}
+.inv-kv span:first-child{color:#555;flex:0 0 auto;min-width:62px}
+.inv-kv span:last-child{font-weight:600;word-break:break-word}
+
+.inv-table{width:100%;border-collapse:collapse;margin-top:7px}
+.inv-table th{background:#eee;border-top:1px solid #111;border-bottom:1px solid #111;
+  padding:4px 5px;text-align:left;font-size:.95em;text-transform:uppercase;letter-spacing:.3px}
+.inv-table td{border-bottom:1px solid #ddd;padding:4px 5px;vertical-align:top}
+.inv-table tr{break-inside:avoid;page-break-inside:avoid}
+.inv-table .n{width:20px;text-align:center;color:#555}
 .inv-table .r{text-align:right;white-space:nowrap}
-.inv-bottom{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
-.inv-total .inv-kv span:last-child{font-weight:700}
-.inv-grand{border-top:1px solid #111;margin-top:3px;padding-top:3px;font-size:1.1em}
-.inv-note{font-size:.95em;margin-top:auto;padding-top:10px}
-.inv-foot{display:flex;justify-content:space-between;align-items:flex-end;margin-top:26px;gap:12px}
-.inv-sign{border-top:1px solid #111;min-width:42%;text-align:center;padding-top:3px;font-size:.95em}
+
+.inv-summary{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px;
+  break-inside:avoid;page-break-inside:avoid}
+.inv-summary h4{margin:0 0 3px;font-size:.95em;text-transform:uppercase;letter-spacing:.4px;
+  color:#333;border-bottom:1px solid #ccc;padding-bottom:2px}
+.inv-pay .inv-kv span:first-child{min-width:0;flex:1}
+.inv-pay .inv-kv span:last-child{text-align:right}
+.inv-amt .inv-kv{justify-content:space-between}
+.inv-amt .inv-kv span:first-child{min-width:0}
+.inv-grand{border-top:1px solid #111;border-bottom:1px solid #111;margin:3px 0;padding:3px 0;
+  font-size:1.15em}
+.inv-grand span{font-weight:800!important}
+.inv-due span:last-child{font-weight:800}
+
+.inv-note{margin-top:auto;padding-top:10px;font-size:.92em;color:#333}
+.inv-foot{display:flex;justify-content:space-between;align-items:flex-end;margin-top:22px;gap:12px;
+  break-inside:avoid;page-break-inside:avoid}
+.inv-printed{font-size:.9em;color:#555}
+.inv-sign{border-top:1px solid #111;min-width:40%;text-align:center;padding-top:3px;font-size:.95em}
 @media print{.inv-sheet{box-shadow:none!important;margin:0!important}}
 `;
 
@@ -65,23 +88,27 @@ export const InvoiceSheet = forwardRef<
   return (
     <div ref={ref} className={`inv-sheet inv-${paper}`}>
       <div className="inv-head">
-        <div className="inv-company">{data.companyName}</div>
-        <div className="inv-type">{data.companyType}</div>
-        <div className="inv-branch">
-          Branch: {data.branchName}
-          {data.branchPhone ? ` · ${data.branchPhone}` : ""}
+        <div className="inv-brand">
+          <div className="inv-company">{data.companyName}</div>
+          <div className="inv-type">{data.companyType}</div>
+          <div className="inv-branch">
+            {data.branchName}
+            {data.branchPhone ? ` · ${data.branchPhone}` : ""}
+          </div>
+          {data.branchAddress && (
+            <div className="inv-muted">{data.branchAddress}</div>
+          )}
         </div>
-        {data.branchAddress && (
-          <div className="inv-muted">{data.branchAddress}</div>
-        )}
-        <div className="inv-invno">Invoice No: {data.invoiceNo}</div>
+        <div className="inv-title">
+          <b>BILL</b>
+          <span>{data.invoiceNo}</span>
+        </div>
       </div>
 
-      <div className="inv-grid">
-        <div className="inv-box">
-          <h4>Patient Details</h4>
+      <div className="inv-info">
+        <div>
           <div className="inv-kv">
-            <span>Name</span>
+            <span>Patient</span>
             <span>{data.patientName}</span>
           </div>
           <div className="inv-kv">
@@ -101,22 +128,21 @@ export const InvoiceSheet = forwardRef<
             <span>{data.referral?.name ?? "—"}</span>
           </div>
         </div>
-        <div className="inv-box">
-          <h4>Invoice</h4>
+        <div>
           <div className="inv-kv">
             <span>Bill No</span>
             <span>{data.billNo}</span>
           </div>
           <div className="inv-kv">
-            <span>Bill Date/Time</span>
+            <span>Date</span>
             <span>{formatDateTime(data.billDate)}</span>
           </div>
           <div className="inv-kv">
-            <span>Payment Mode</span>
+            <span>Payment</span>
             <span>{data.paymentMode}</span>
           </div>
           <div className="inv-kv">
-            <span>Profile Guardian</span>
+            <span>Guardian</span>
             <span>{data.guardianName || "—"}</span>
           </div>
         </div>
@@ -125,7 +151,7 @@ export const InvoiceSheet = forwardRef<
       <table className="inv-table">
         <thead>
           <tr>
-            <th>Invoice No</th>
+            <th className="n">#</th>
             <th>Test Description</th>
             <th className="r">Rate</th>
             <th className="r">Less</th>
@@ -133,9 +159,9 @@ export const InvoiceSheet = forwardRef<
           </tr>
         </thead>
         <tbody>
-          {data.lines.map((l) => (
+          {data.lines.map((l, i) => (
             <tr key={l.testId}>
-              <td>{data.invoiceNo}</td>
+              <td className="n">{i + 1}</td>
               <td>{l.description}</td>
               <td className="r">{amount(l.rate)}</td>
               <td className="r">{amount(l.less)}</td>
@@ -145,8 +171,8 @@ export const InvoiceSheet = forwardRef<
         </tbody>
       </table>
 
-      <div className="inv-bottom">
-        <div className="inv-box">
+      <div className="inv-summary">
+        <div className="inv-pay">
           <h4>Payments</h4>
           {data.payments.length === 0 ? (
             <div className="inv-muted">No payment received</div>
@@ -159,7 +185,7 @@ export const InvoiceSheet = forwardRef<
             ))
           )}
         </div>
-        <div className="inv-box inv-total">
+        <div className="inv-amt">
           <h4>Amount</h4>
           <div className="inv-kv">
             <span>Subtotal</span>
@@ -177,7 +203,7 @@ export const InvoiceSheet = forwardRef<
             <span>Paid</span>
             <span>{amount(data.paid)}</span>
           </div>
-          <div className="inv-kv">
+          <div className="inv-kv inv-due">
             <span>Due</span>
             <span>{amount(data.due)}</span>
           </div>
@@ -185,17 +211,14 @@ export const InvoiceSheet = forwardRef<
       </div>
 
       <div className="inv-note">
-        <div>
-          Note: Please bring receipt while collecting reports. This is a
-          computer generated bill
-        </div>
-        <div className="inv-muted" style={{ marginTop: 3 }}>
-          Printed on: {formatDateTime(printedOn)}
-        </div>
+        Note: Please bring this receipt while collecting reports. This is a
+        computer generated bill.
       </div>
 
       <div className="inv-foot">
-        <span />
+        <span className="inv-printed">
+          Printed on: {formatDateTime(printedOn)}
+        </span>
         <div className="inv-sign">Signature</div>
       </div>
     </div>
