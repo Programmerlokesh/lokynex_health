@@ -1,11 +1,21 @@
 import {
   createOrderApi,
   deleteOrderApi,
+  exportOrdersApi,
   getOrderByIdApi,
+  getOrderForEditApi,
   getOrdersApi,
+  restoreOrderApi,
+  updateOrderApi,
 } from "@/lib/api/orders";
+import { CreateOrderRequest } from "@/types/order";
 import { OrderListFilters } from "@/types/order-list";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 
 export function useCreateOrder() {
   const queryClient = useQueryClient();
@@ -19,6 +29,19 @@ export function useCreateOrder() {
   });
 }
 
+export function useUpdateOrder() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: CreateOrderRequest }) =>
+      updateOrderApi(id, data),
+    onSuccess: () => {
+      // Covers the list, the details page and the edit form (all keyed "orders").
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
+      queryClient.invalidateQueries({ queryKey: ["patients"] });
+    },
+  });
+}
+
 export function useOrder(id: string | null) {
   return useQuery({
     queryKey: ["orders", "detail", id],
@@ -27,17 +50,40 @@ export function useOrder(id: string | null) {
   });
 }
 
+export function useOrderForEdit(id: string | null) {
+  return useQuery({
+    queryKey: ["orders", "edit", id],
+    queryFn: () => getOrderForEditApi(id!),
+    enabled: !!id,
+    gcTime: 0, // always open the form with fresh data
+  });
+}
+
 export function useOrders(filters: OrderListFilters) {
   return useQuery({
-    queryKey: ["orders", filters],
+    queryKey: ["orders", "list", filters],
     queryFn: () => getOrdersApi(filters),
+    // Keep the old rows on screen while the next page / filter loads: no flicker.
+    placeholderData: keepPreviousData,
   });
+}
+
+export function useExportOrders() {
+  return useMutation({ mutationFn: exportOrdersApi });
 }
 
 export function useDeleteOrder() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: deleteOrderApi,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["orders"] }),
+  });
+}
+
+export function useRestoreOrder() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: restoreOrderApi,
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["orders"] }),
   });
 }

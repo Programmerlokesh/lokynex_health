@@ -30,8 +30,13 @@ public class OrderConfiguration : IEntityTypeConfiguration<Order>
 
         builder.HasMany(o => o.Items).WithOne(i => i.Order).HasForeignKey(i => i.OrderId);
 
+        builder.Property(o => o.CreatedByName).HasMaxLength(150);
+        builder.Property(o => o.UpdatedByName).HasMaxLength(150);
+        builder.Property(o => o.DeletedByName).HasMaxLength(150);
+
         builder.HasIndex(o => o.BranchId);
         builder.HasIndex(o => o.PaymentStatus);
         builder.HasIndex(o => o.IsDeleted);
+        builder.HasIndex(o => o.CreatedAt);
     }
 }

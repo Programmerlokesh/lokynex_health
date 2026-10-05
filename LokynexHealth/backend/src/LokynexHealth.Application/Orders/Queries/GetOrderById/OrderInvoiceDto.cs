@@ -43,6 +43,26 @@ public class OrderInvoiceDto
 
     public List<OrderInvoiceLineDto> Lines { get; set; } = new();
     public List<OrderInvoicePaymentDto> Payments { get; set; } = new();
+
+    // ---- Who / when ----
+    public string? CreatedByName { get; set; }
+    public DateTimeOffset CreatedAt { get; set; }
+    public string? UpdatedByName { get; set; }
+    public DateTimeOffset? UpdatedAt { get; set; }
+    public bool IsDeleted { get; set; }
+    public string? DeletedByName { get; set; }
+    public DateTimeOffset? DeletedAt { get; set; }
+
+    /// <summary>Newest first: every edit / delete / restore with the user's name and time.</summary>
+    public List<OrderAuditEntryDto> History { get; set; } = new();
+}
+
+public class OrderAuditEntryDto
+{
+    public string Action { get; set; } = default!;
+    public string? ChangedByName { get; set; }
+    public DateTimeOffset ChangedAt { get; set; }
+    public string? Summary { get; set; }
 }
 
 public class OrderPartyDto

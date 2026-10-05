@@ -103,4 +103,79 @@ export interface OrderInvoiceDto {
 
   lines: OrderInvoiceLineDto[];
   payments: OrderInvoicePaymentDto[];
+
+  createdByName?: string | null;
+  createdAt: string;
+  updatedByName?: string | null;
+  updatedAt?: string | null;
+  isDeleted: boolean;
+  deletedByName?: string | null;
+  deletedAt?: string | null;
+  /** Newest first. */
+  history: OrderAuditEntryDto[];
+}
+
+export interface OrderAuditEntryDto {
+  action: "Edit" | "Delete" | "Restore" | string;
+  changedByName?: string | null;
+  changedAt: string;
+  summary?: string | null;
+}
+
+/* ---------- GET /Orders/{id}/edit : the order in the shape of the form ---------- */
+
+export interface OrderEditDto {
+  id: string;
+  orderNumber: string;
+  isDeleted: boolean;
+  patient: {
+    id: string;
+    patientCode: string;
+    fullName: string;
+    phone: string;
+    age?: number | null;
+    gender?: string | null;
+    address?: string | null;
+    email?: string | null;
+    relatives: {
+      id: string;
+      name: string;
+      age?: number | null;
+      gender?: string | null;
+      relationship?: string | null;
+    }[];
+  };
+  relativeId?: string | null;
+  branchId: string;
+  doctor?: {
+    id: string;
+    fullName: string;
+    phone: string;
+    address?: string | null;
+    email?: string | null;
+    specialization?: string | null;
+  } | null;
+  referral?: {
+    id: string;
+    fullName: string;
+    phone: string;
+    address?: string | null;
+    email?: string | null;
+  } | null;
+  discountType: string;
+  discountValue: number;
+  isComplimentary: boolean;
+  items: {
+    testId: string;
+    testName: string;
+    departmentId: string;
+    departmentName: string;
+    price: number;
+    referralCommissionType: string;
+    referralCommissionValue: number;
+    technicianId?: string | null;
+    doctorCommissionEnabled: boolean;
+    referralCommissionEnabled: boolean;
+  }[];
+  payments: OrderPaymentInput[];
 }

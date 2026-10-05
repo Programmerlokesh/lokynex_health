@@ -228,9 +228,13 @@ CREATE TABLE orders (
     deleted_at          TIMESTAMPTZ,
     deleted_by          UUID REFERENCES users(id),
 
-    created_by          UUID NOT NULL REFERENCES users(id),
+    deleted_by_name     VARCHAR(150),                       -- Lab Admin has no users row, so keep the name
+
+    created_by          UUID REFERENCES users(id),          -- NULL when the Lab Admin created it
+    created_by_name     VARCHAR(150),
     created_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_by          UUID REFERENCES users(id),
+    updated_by_name     VARCHAR(150),
     updated_at          TIMESTAMPTZ
 );
 
@@ -344,7 +348,9 @@ CREATE INDEX idx_order_payments_order ON order_payments (order_id);
 CREATE TABLE order_audit_logs (
     id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     order_id        UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
-    changed_by      UUID NOT NULL REFERENCES users(id),
+    changed_by      UUID REFERENCES users(id),          -- NULL when the Lab Admin made the change
+    changed_by_name VARCHAR(150),
+    action          VARCHAR(20) NOT NULL DEFAULT 'Edit', -- Edit | Delete | Restore
     changed_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
     change_summary  TEXT,
     old_values      JSONB,

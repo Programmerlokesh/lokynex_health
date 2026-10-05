@@ -27,6 +27,7 @@ public interface IApplicationDbContext
     DbSet<Order> Orders { get; }
     DbSet<OrderItem> OrderItems { get; }
     DbSet<OrderPayment> OrderPayments { get; }
+    DbSet<OrderAuditLog> OrderAuditLogs { get; }
     DbSet<CommissionOverride> CommissionOverrides { get; }
     DbSet<CommissionPayout> CommissionPayouts { get; }
     DbSet<LedgerEntry> LedgerEntries { get; }

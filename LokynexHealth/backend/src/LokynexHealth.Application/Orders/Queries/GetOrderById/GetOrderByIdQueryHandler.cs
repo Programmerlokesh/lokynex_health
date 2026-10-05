@@ -90,6 +90,18 @@ public class GetOrderByIdQueryHandler : IRequestHandler<GetOrderByIdQuery, Order
             ? string.Join(" + ", payments.Select(p => p.Method).Distinct())
             : order.IsComplimentary ? "Complimentary" : "Unpaid";
 
+        var history = await _db.OrderAuditLogs.AsNoTracking()
+            .Where(a => a.OrderId == order.Id)
+            .OrderByDescending(a => a.ChangedAt)
+            .Select(a => new OrderAuditEntryDto
+            {
+                Action = a.Action,
+                ChangedByName = a.ChangedByName,
+                ChangedAt = a.ChangedAt,
+                Summary = a.ChangeSummary
+            })
+            .ToListAsync(cancellationToken);
+
         var person = order.Relative;
         var digits = new string(order.OrderNumber.Where(char.IsDigit).ToArray());
         var invoiceNo = digits.Length > 0 ? $"INV-{digits.PadLeft(6, '0')}" : order.OrderNumber;
@@ -123,7 +135,15 @@ public class GetOrderByIdQueryHandler : IRequestHandler<GetOrderByIdQuery, Order
             PaymentStatus = order.PaymentStatus.ToString(),
             IsComplimentary = order.IsComplimentary,
             Lines = lines,
-            Payments = payments
+            Payments = payments,
+            CreatedByName = order.CreatedByName,
+            CreatedAt = order.CreatedAt,
+            UpdatedByName = order.UpdatedByName,
+            UpdatedAt = order.UpdatedAt,
+            IsDeleted = order.IsDeleted,
+            DeletedByName = order.DeletedByName,
+            DeletedAt = order.DeletedAt,
+            History = history
         };
     }
 }

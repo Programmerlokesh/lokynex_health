@@ -1,78 +1,121 @@
 "use client";
 
 import { useBranches } from "@/hooks/use-branches";
+import FilterListIcon from "@mui/icons-material/FilterList";
+import RestartAltIcon from "@mui/icons-material/RestartAlt";
 import SearchIcon from "@mui/icons-material/Search";
 import {
   Box,
-  FormControlLabel,
+  Button,
   Grid,
   InputAdornment,
   MenuItem,
-  Switch,
   TextField,
 } from "@mui/material";
+import { useState } from "react";
 
 export interface FilterState {
   dateFrom: string;
   dateTo: string;
   branchId: string;
+  paymentMethod: string;
   paymentStatus: string;
+  /** Patient name or phone. */
   search: string;
   orderNumber: string;
-  showDeleted: boolean;
 }
 
+export const initialFilters: FilterState = {
+  dateFrom: "",
+  dateTo: "",
+  branchId: "",
+  paymentMethod: "Any",
+  paymentStatus: "Any",
+  search: "",
+  orderNumber: "",
+};
+
+/**
+ * Nothing is searched while typing. The values live in a local DRAFT; only
+ * "Apply Filter" (or Enter) pushes them to the page. "Reset" clears every field
+ * back to its starting value and applies that straight away.
+ */
 export function OrderFilters({
-  filters,
-  onChange,
+  onApply,
 }: {
-  filters: FilterState;
-  onChange: (patch: Partial<FilterState>) => void;
+  onApply: (filters: FilterState) => void;
 }) {
   const { data: branches } = useBranches({ pageSize: 100 });
+  const [draft, setDraft] = useState<FilterState>(initialFilters);
+
+  const patch = (p: Partial<FilterState>) => setDraft((d) => ({ ...d, ...p }));
+  const badRange =
+    !!draft.dateFrom && !!draft.dateTo && draft.dateFrom > draft.dateTo;
+
+  function apply() {
+    if (badRange) return;
+    onApply({
+      ...draft,
+      search: draft.search.trim(),
+      orderNumber: draft.orderNumber.trim(),
+    });
+  }
+
+  function reset() {
+    setDraft(initialFilters);
+    onApply(initialFilters);
+  }
 
   return (
     <Box
+      component="form"
+      noValidate
+      onSubmit={(e) => {
+        e.preventDefault();
+        apply();
+      }}
       sx={{
         bgcolor: "background.paper",
         border: 1,
         borderColor: "divider",
         borderRadius: 3,
-        p: 2.5,
+        p: { xs: 1.5, sm: 2.5 },
         mb: 2.5,
       }}
     >
-      <Grid container spacing={2}>
-        <Grid size={{ xs: 12, sm: 6, md: 4, lg: 2.4 }}>
+      <Grid container spacing={{ xs: 1.5, sm: 2 }}>
+        <Grid size={{ xs: 6, md: 3, lg: 2 }}>
           <TextField
             label="Date From"
             type="date"
             size="small"
             fullWidth
             slotProps={{ inputLabel: { shrink: true } }}
-            value={filters.dateFrom}
-            onChange={(e) => onChange({ dateFrom: e.target.value })}
+            value={draft.dateFrom}
+            onChange={(e) => patch({ dateFrom: e.target.value })}
           />
         </Grid>
-        <Grid size={{ xs: 12, sm: 6, md: 4, lg: 2.4 }}>
+        <Grid size={{ xs: 6, md: 3, lg: 2 }}>
           <TextField
             label="Date To"
             type="date"
             size="small"
             fullWidth
+            error={badRange}
+            helperText={badRange ? "Before start date" : undefined}
             slotProps={{ inputLabel: { shrink: true } }}
-            value={filters.dateTo}
-            onChange={(e) => onChange({ dateTo: e.target.value })}
+            value={draft.dateTo}
+            onChange={(e) => patch({ dateTo: e.target.value })}
           />
         </Grid>
-        <Grid size={{ xs: 12, sm: 6, md: 4, lg: 2.4 }}>
+        <Grid size={{ xs: 12, sm: 6, md: 3, lg: 2 }}>
           <TextField
             select
             label="Branch"
             size="small"
             fullWidth
-            value={filters.branchId}
-            onChange={(e) => onChange({ branchId: e.target.value })}
+            value={draft.branchId}
+            onChange={(e) => patch({ branchId: e.target.value })}
           >
             <MenuItem value="">All Branches</MenuItem>
             {branches?.items.map((b) => (
@@ -82,14 +125,29 @@ export function OrderFilters({
             ))}
           </TextField>
         </Grid>
-        <Grid size={{ xs: 12, sm: 6, md: 4, lg: 2.4 }}>
+        <Grid size={{ xs: 6, sm: 3, md: 3, lg: 2 }}>
+          <TextField
+            select
+            label="Payment Method"
+            size="small"
+            fullWidth
+            value={draft.paymentMethod}
+            onChange={(e) => patch({ paymentMethod: e.target.value })}
+          >
+            <MenuItem value="Any">Any</MenuItem>
+            <MenuItem value="Cash">Cash</MenuItem>
+            <MenuItem value="Card">Card</MenuItem>
+            <MenuItem value="UPI">UPI</MenuItem>
+          </TextField>
+        </Grid>
+        <Grid size={{ xs: 6, sm: 3, md: 3, lg: 2 }}>
           <TextField
             select
             label="Payment Status"
             size="small"
             fullWidth
-            value={filters.paymentStatus}
-            onChange={(e) => onChange({ paymentStatus: e.target.value })}
+            value={draft.paymentStatus}
+            onChange={(e) => patch({ paymentStatus: e.target.value })}
           >
             <MenuItem value="Any">Any</MenuItem>
             <MenuItem value="Open">Open</MenuItem>
@@ -97,24 +155,25 @@ export function OrderFilters({
             <MenuItem value="Paid">Paid</MenuItem>
           </TextField>
         </Grid>
-        <Grid size={{ xs: 12, sm: 6, md: 4, lg: 2.4 }}>
+        <Grid size={{ xs: 12, sm: 6, md: 3, lg: 2 }}>
           <TextField
             label="Order ID"
             size="small"
             fullWidth
-            value={filters.orderNumber}
-            onChange={(e) => onChange({ orderNumber: e.target.value })}
+            placeholder="e.g. ORD-105"
+            value={draft.orderNumber}
+            onChange={(e) => patch({ orderNumber: e.target.value })}
           />
         </Grid>
 
-       <Grid size={{ xs: 12, sm: 6 }}>
+        <Grid size={{ xs: 12, md: 6 }}>
           <TextField
             label="Patient Name / Phone"
             size="small"
             fullWidth
             placeholder="Search..."
-            value={filters.search}
-            onChange={(e) => onChange({ search: e.target.value })}
+            value={draft.search}
+            onChange={(e) => patch({ search: e.target.value })}
             slotProps={{
               input: {
                 startAdornment: (
@@ -126,19 +185,33 @@ export function OrderFilters({
             }}
           />
         </Grid>
-<Grid
-  size={{ xs: 12, sm: 6 }}
-  sx={{ display: "flex", alignItems: "center", justifyContent: { xs: "flex-start", sm: "flex-end" } }}
->
-          <FormControlLabel
-            control={
-              <Switch
-                checked={filters.showDeleted}
-                onChange={(e) => onChange({ showDeleted: e.target.checked })}
-              />
-            }
-            label="Show Deleted List"
-          />
+
+        <Grid
+          size={{ xs: 12, md: 6 }}
+          sx={{
+            display: "flex",
+            gap: 1,
+            justifyContent: { xs: "stretch", md: "flex-end" },
+          }}
+        >
+          <Button
+            type="button"
+            variant="outlined"
+            startIcon={<RestartAltIcon />}
+            onClick={reset}
+            sx={{ flex: { xs: 1, md: "0 0 auto" } }}
+          >
+            Reset
+          </Button>
+          <Button
+            type="submit"
+            variant="contained"
+            startIcon={<FilterListIcon />}
+            disabled={badRange}
+            sx={{ flex: { xs: 1, md: "0 0 auto" } }}
+          >
+            Apply Filter
+          </Button>
         </Grid>
       </Grid>
     </Box>

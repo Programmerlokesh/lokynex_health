@@ -3,26 +3,35 @@
 import { OrderFlowIcon } from "@/components/icons/lab-icons";
 import { BillDialog } from "@/components/orders/bill-dialog";
 import { brand } from "@/components/providers/mui-theme-provider";
-import { useOrder } from "@/hooks/use-orders";
+import { useOrderPermissions } from "@/hooks/use-order-permissions";
+import { useDeleteOrder, useOrder, useRestoreOrder } from "@/hooks/use-orders";
 import { getApiErrorMessage } from "@/lib/api-error";
 import { formatDateTime, formatMoney } from "@/lib/format";
 import { OrderInvoiceDto } from "@/types/order";
 import AddIcon from "@mui/icons-material/Add";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import DeleteOutlinedIcon from "@mui/icons-material/DeleteOutlined";
+import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import ReceiptLongOutlinedIcon from "@mui/icons-material/ReceiptLongOutlined";
+import RestoreIcon from "@mui/icons-material/RestoreOutlined";
 import {
   Alert,
   Box,
   Button,
   Chip,
   CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
   Divider,
   Grid,
   Paper,
   Typography,
 } from "@mui/material";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
 
 const STATUS_COLOR: Record<string, "success" | "warning" | "default"> = {
@@ -98,6 +107,13 @@ function Details({
   billOpen: boolean;
   setBillOpen: (v: boolean) => void;
 }) {
+  const router = useRouter();
+  const { canEdit, canDelete } = useOrderPermissions();
+  const deleteOrder = useDeleteOrder();
+  const restoreOrder = useRestoreOrder();
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const actionError = deleteOrder.error ?? restoreOrder.error;
+
   const ageGender = [
     data.patientAge != null ? `${data.patientAge} yrs` : null,
     data.patientGender,
@@ -107,6 +123,20 @@ function Details({
 
   return (
     <Box>
+      {data.isDeleted && (
+        <Alert severity="warning" sx={{ mb: 2 }}>
+          This order was deleted
+          {data.deletedByName ? ` by ${data.deletedByName}` : ""}
+          {data.deletedAt ? ` on ${formatDateTime(data.deletedAt)}` : ""}. It
+          does not count in reports, ledger or commissions until restored.
+        </Alert>
+      )}
+      {actionError && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {getApiErrorMessage(actionError, "Action failed.")}
+        </Alert>
+      )}
+
       {/* Header + actions (wraps on phones) */}
       <Box
         sx={{
@@ -154,6 +184,36 @@ function Details({
         >
           Generate Bill
         </Button>
+        {!data.isDeleted && canEdit && (
+          <Button
+            component={Link}
+            href={`/orders/${data.id}/edit`}
+            variant="outlined"
+            startIcon={<EditOutlinedIcon />}
+          >
+            Edit
+          </Button>
+        )}
+        {!data.isDeleted && canDelete && (
+          <Button
+            color="error"
+            variant="outlined"
+            startIcon={<DeleteOutlinedIcon />}
+            onClick={() => setConfirmDelete(true)}
+          >
+            Delete
+          </Button>
+        )}
+        {data.isDeleted && canDelete && (
+          <Button
+            variant="outlined"
+            startIcon={<RestoreIcon />}
+            disabled={restoreOrder.isPending}
+            onClick={() => restoreOrder.mutate(data.id)}
+          >
+            Restore
+          </Button>
+        )}
         <Button
           component={Link}
           href="/orders/new"
@@ -182,6 +242,16 @@ function Details({
             <KV label="Bill Date/Time" value={formatDateTime(data.billDate)} />
             <KV label="Payment Mode" value={data.paymentMode} />
             <KV label="Profile Guardian" value={data.guardianName || "—"} />
+            <KV
+              label="Created by"
+              value={`${data.createdByName ?? "—"} · ${formatDateTime(data.createdAt)}`}
+            />
+            {data.updatedAt && (
+              <KV
+                label="Last edited by"
+                value={`${data.updatedByName ?? "—"} · ${formatDateTime(data.updatedAt)}`}
+              />
+            )}
           </Card>
         </Grid>
 
@@ -310,7 +380,88 @@ function Details({
             )}
           </Card>
         </Grid>
+
+        <Grid size={{ xs: 12 }}>
+          <Card title="History">
+            {data.history.length === 0 ? (
+              <Typography variant="body2" color="text.secondary">
+                Created by {data.createdByName ?? "—"} on{" "}
+                {formatDateTime(data.createdAt)}. No edits yet.
+              </Typography>
+            ) : (
+              data.history.map((h, i) => (
+                <Box key={`${h.changedAt}-${i}`}>
+                  {i > 0 && <Divider />}
+                  <Box sx={{ py: 1 }}>
+                    <Box
+                      sx={{
+                        display: "flex",
+                        flexWrap: "wrap",
+                        alignItems: "center",
+                        gap: 1,
+                      }}
+                    >
+                      <Chip
+                        size="small"
+                        label={h.action}
+                        color={
+                          h.action === "Delete"
+                            ? "error"
+                            : h.action === "Restore"
+                              ? "success"
+                              : "default"
+                        }
+                        variant="outlined"
+                      />
+                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                        {h.changedByName ?? "Unknown"}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {formatDateTime(h.changedAt)}
+                      </Typography>
+                    </Box>
+                    {h.summary && (
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{ mt: 0.5, wordBreak: "break-word" }}
+                      >
+                        {h.summary}
+                      </Typography>
+                    )}
+                  </Box>
+                </Box>
+              ))
+            )}
+          </Card>
+        </Grid>
       </Grid>
+
+      <Dialog open={confirmDelete} onClose={() => setConfirmDelete(false)}>
+        <DialogTitle>Delete order {data.billNo}?</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            It moves to the Deleted List with your name and the time. You can
+            restore it from there.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setConfirmDelete(false)}>Cancel</Button>
+          <Button
+            color="error"
+            variant="contained"
+            disabled={deleteOrder.isPending}
+            onClick={() =>
+              deleteOrder.mutate(data.id, {
+                onSuccess: () => router.push("/orders"),
+                onSettled: () => setConfirmDelete(false),
+              })
+            }
+          >
+            {deleteOrder.isPending ? "Deleting..." : "Delete"}
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       <BillDialog
         open={billOpen}
