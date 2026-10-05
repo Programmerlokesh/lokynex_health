@@ -1,18 +1,15 @@
 "use client";
 
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
-import DashboardOutlinedIcon from "@mui/icons-material/DashboardOutlined";
 import DateRangeIcon from "@mui/icons-material/DateRange";
 import DeleteOutlinedIcon from "@mui/icons-material/DeleteOutlined";
 import GridViewIcon from "@mui/icons-material/GridView";
 import ListAltIcon from "@mui/icons-material/ListAlt";
-import NorthEastIcon from "@mui/icons-material/NorthEast";
 import PictureAsPdfOutlinedIcon from "@mui/icons-material/PictureAsPdfOutlined";
 import TableRowsOutlinedIcon from "@mui/icons-material/TableRowsOutlined";
 import TodayIcon from "@mui/icons-material/Today";
 import ViewModuleIcon from "@mui/icons-material/ViewModule";
 import { Box, Button, CircularProgress, Popover } from "@mui/material";
-import Link from "next/link";
 import { useState } from "react";
 
 export type OrderView = "cards" | "table";
@@ -167,19 +164,6 @@ export function OrderActionsMenu({
             sx={{ ...btnSx, gridColumn: "1 / -1" }}
           >
             Download PDF
-          </Button>
-
-          <Button
-            component={Link}
-            href="/dashboard"
-            variant="outlined"
-            color="inherit"
-            startIcon={<DashboardOutlinedIcon />}
-            endIcon={<NorthEastIcon sx={{ fontSize: 14 }} />}
-            onClick={close}
-            sx={{ ...btnSx, gridColumn: "1 / -1", borderColor: "divider" }}
-          >
-            Dashboard
           </Button>
         </Box>
       </Popover>

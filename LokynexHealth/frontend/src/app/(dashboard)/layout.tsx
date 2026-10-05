@@ -8,6 +8,12 @@ import { motion } from "framer-motion";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 
+// Home page background: light blue -> lavender -> soft pink (dark variant for dark mode)
+const HOME_GRADIENT_LIGHT =
+  "linear-gradient(135deg, #DCE8FF 0%, #EAE4FB 50%, #FBE8F4 100%)";
+const HOME_GRADIENT_DARK =
+  "linear-gradient(135deg, #0B1220 0%, #141B36 50%, #1D1533 100%)";
+
 export default function DashboardLayout({
   children,
 }: {
@@ -21,16 +27,22 @@ export default function DashboardLayout({
     return null;
   }
 
+  // The home page has its own left-side group rail + option cards, so the
+  // normal sidebar is hidden there (every other page keeps it).
+  const isHome = pathname === "/dashboard";
+
   return (
     <Box sx={{ display: "flex", minHeight: "100dvh" }}>
       <a href="#main-content" className="skip-link">
         Skip to main content
       </a>
 
-      <Sidebar
-        mobileOpen={mobileNavOpen}
-        onMobileClose={() => setMobileNavOpen(false)}
-      />
+      {!isHome && (
+        <Sidebar
+          mobileOpen={mobileNavOpen}
+          onMobileClose={() => setMobileNavOpen(false)}
+        />
+      )}
 
       {/* minWidth: 0 SOBCHEYE IMPORTANT - eta chhara wide table pura page ke pashe thele dey */}
       <Box
@@ -39,9 +51,18 @@ export default function DashboardLayout({
           minWidth: 0,
           minHeight: "100dvh",
           bgcolor: "background.default",
+          ...(isHome && {
+            background: (theme) =>
+              theme.palette.mode === "dark"
+                ? HOME_GRADIENT_DARK
+                : HOME_GRADIENT_LIGHT,
+          }),
         }}
       >
-        <Topbar onMenuClick={() => setMobileNavOpen(true)} />
+        <Topbar
+          onMenuClick={() => setMobileNavOpen(true)}
+          showMenuButton={!isHome}
+        />
         <Box
           component="main"
           id="main-content"

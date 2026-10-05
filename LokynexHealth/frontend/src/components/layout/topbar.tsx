@@ -37,7 +37,14 @@ function formatDateTime(date: Date) {
   return `${datePart}  ·  ${timePart}`;
 }
 
-export function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
+export function Topbar({
+  onMenuClick,
+  showMenuButton = true,
+}: {
+  onMenuClick: () => void;
+  // false on the home page (it has its own left-side menu)
+  showMenuButton?: boolean;
+}) {
   const user = useAuthStore((state) => state.user);
   // Same query key as the Profile page, so a new photo/name shows up here
   // instantly after saving.
@@ -87,14 +94,16 @@ export function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
         <Box
           sx={{ display: "flex", alignItems: "center", gap: 1, minWidth: 0 }}
         >
-          <IconButton
-            edge="start"
-            onClick={onMenuClick}
-            aria-label="Open navigation menu"
-            sx={{ display: { xs: "inline-flex", md: "none" } }}
-          >
-            <MenuIcon />
-          </IconButton>
+          {showMenuButton && (
+            <IconButton
+              edge="start"
+              onClick={onMenuClick}
+              aria-label="Open navigation menu"
+              sx={{ display: { xs: "inline-flex", md: "none" } }}
+            >
+              <MenuIcon />
+            </IconButton>
+          )}
           <Typography variant="subtitle1" noWrap sx={{ fontWeight: 600 }}>
             {user?.labName || "Lokynex Health"}
           </Typography>
