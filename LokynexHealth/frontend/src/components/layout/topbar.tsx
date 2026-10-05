@@ -1,12 +1,13 @@
 "use client";
 
+import { LocationChip } from "@/components/layout/location-chip";
 import { NotificationBell } from "@/components/layout/notification-bell";
 import { useMyProfile } from "@/hooks/use-users";
 import { useAuthStore } from "@/store/auth-store";
 import { useThemeStore } from "@/store/theme-store";
 import DarkModeOutlinedIcon from "@mui/icons-material/DarkModeOutlined";
+import HomeRoundedIcon from "@mui/icons-material/HomeRounded";
 import LightModeOutlinedIcon from "@mui/icons-material/LightModeOutlined";
-import MenuIcon from "@mui/icons-material/Menu";
 import {
   AppBar,
   Avatar,
@@ -38,12 +39,14 @@ function formatDateTime(date: Date) {
 }
 
 export function Topbar({
-  onMenuClick,
-  showMenuButton = true,
+  showHomeButton = false,
+  centerTitle = false,
 }: {
-  onMenuClick: () => void;
-  // false on the home page (it has its own left-side menu)
-  showMenuButton?: boolean;
+  // Phone/small tablet on inner pages: the slim rail is hidden there, so a
+  // Home button in the bar takes you back to the home page instead.
+  showHomeButton?: boolean;
+  // Home page: lab name sits in the exact middle of the bar.
+  centerTitle?: boolean;
 }) {
   const user = useAuthStore((state) => state.user);
   // Same query key as the Profile page, so a new photo/name shows up here
@@ -87,6 +90,7 @@ export function Topbar({
           display: "flex",
           justifyContent: "space-between",
           gap: 1,
+          position: "relative",
           minHeight: { xs: 56, sm: 64 },
           px: { xs: 1, sm: 2, md: 3 },
         }}
@@ -94,17 +98,27 @@ export function Topbar({
         <Box
           sx={{ display: "flex", alignItems: "center", gap: 1, minWidth: 0 }}
         >
-          {showMenuButton && (
+          {showHomeButton && (
             <IconButton
+              component={Link}
+              href="/dashboard"
               edge="start"
-              onClick={onMenuClick}
-              aria-label="Open navigation menu"
+              aria-label="Go to home"
               sx={{ display: { xs: "inline-flex", md: "none" } }}
             >
-              <MenuIcon />
+              <HomeRoundedIcon />
             </IconButton>
           )}
-          <Typography variant="subtitle1" noWrap sx={{ fontWeight: 600 }}>
+          {/* Lab name: left on inner pages. On the home page it is centred
+              from md up (below md it stays here so nothing overlaps). */}
+          <Typography
+            variant="subtitle1"
+            noWrap
+            sx={{
+              fontWeight: 600,
+              display: centerTitle ? { xs: "block", md: "none" } : "block",
+            }}
+          >
             {user?.labName || "Lokynex Health"}
           </Typography>
           {now && showClock && (
@@ -119,6 +133,24 @@ export function Topbar({
           )}
         </Box>
 
+        {centerTitle && (
+          <Typography
+            variant="h6"
+            noWrap
+            sx={{
+              display: { xs: "none", md: "block" },
+              position: "absolute",
+              left: "50%",
+              transform: "translateX(-50%)",
+              maxWidth: "30vw",
+              fontWeight: 800,
+              pointerEvents: "none",
+            }}
+          >
+            {user?.labName || "Lokynex Health"}
+          </Typography>
+        )}
+
         <Box
           sx={{
             display: "flex",
@@ -127,6 +159,7 @@ export function Topbar({
             flexShrink: 0,
           }}
         >
+          <LocationChip />
           <NotificationBell />
 
           <Tooltip

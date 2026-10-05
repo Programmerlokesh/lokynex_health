@@ -10,13 +10,18 @@ import {
   TeamIcon,
   TestTubeIcon,
 } from "@/components/icons/lab-icons";
+import {
+  glassPanelSx,
+  homeCardSx,
+  iconTileSx,
+  railItemSx,
+} from "@/lib/home-theme";
 import { useAuthStore } from "@/store/auth-store";
 import AccountBalanceWalletOutlinedIcon from "@mui/icons-material/AccountBalanceWalletOutlined";
 import AccountCircleOutlinedIcon from "@mui/icons-material/AccountCircleOutlined";
 import BarChartRoundedIcon from "@mui/icons-material/BarChartRounded";
 import GridViewRoundedIcon from "@mui/icons-material/GridViewRounded";
 import LogoutIcon from "@mui/icons-material/Logout";
-import MedicalServicesOutlinedIcon from "@mui/icons-material/MedicalServicesOutlined";
 import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
 import ShoppingCartOutlinedIcon from "@mui/icons-material/ShoppingCartOutlined";
 import { Box, Typography } from "@mui/material";
@@ -164,28 +169,6 @@ const ITEMS: {
   },
 ];
 
-// Soft light-blue -> lavender -> pink panel colours (light) with a deep
-// version for dark mode.
-const cardSx = {
-  display: "block",
-  textDecoration: "none",
-  color: "text.primary",
-  p: { xs: 2, sm: 2.25 },
-  borderRadius: { xs: "18px", sm: "20px" },
-  bgcolor: (t: { palette: { mode: string } }) =>
-    t.palette.mode === "dark" ? "rgba(17,26,46,0.85)" : "rgba(255,255,255,0.92)",
-  border: "1px solid",
-  borderColor: "divider",
-  boxShadow: "0 8px 24px rgba(79,100,200,0.08)",
-  minHeight: 88,
-  transition: "box-shadow .2s ease, border-color .2s ease",
-  "&:hover": {
-    boxShadow: "0 14px 34px rgba(79,100,200,0.18)",
-    borderColor: "#8FB0FF",
-  },
-  "&:focus-visible": { outline: "2px solid #4F8BFF", outlineOffset: 2 },
-} as const;
-
 export default function DashboardPage() {
   const router = useRouter();
   const user = useAuthStore((s) => s.user);
@@ -207,52 +190,12 @@ export default function DashboardPage() {
   );
   const shown =
     active === "all" ? visible : visible.filter((i) => i.group === active);
-  const canClinic = canView("DoctorClinic");
 
   function handleLogout() {
     logout();
     document.cookie = "lokynex-token=; path=/; max-age=0";
     router.push("/login");
   }
-
-  const railItemSx = (isActive: boolean) => ({
-    display: "flex",
-    alignItems: "center",
-    gap: 1.5,
-    flexShrink: 0,
-    cursor: "pointer",
-    border: 0,
-    font: "inherit",
-    fontWeight: 700,
-    fontSize: 14,
-    color: "text.primary",
-    textAlign: "left" as const,
-    minHeight: 44,
-    px: { xs: 1.5, md: 1.25 },
-    py: { xs: 0.75, md: 1.1 },
-    borderRadius: { xs: 999, md: "18px" },
-    bgcolor: isActive
-      ? (t: { palette: { mode: string } }) =>
-          t.palette.mode === "dark" ? "rgba(255,255,255,0.1)" : "#fff"
-      : "transparent",
-    boxShadow: isActive ? "0 8px 22px rgba(79,100,200,0.16)" : "none",
-    "&:hover": { bgcolor: isActive ? undefined : "rgba(255,255,255,0.5)" },
-    "&:focus-visible": { outline: "2px solid #4F8BFF", outlineOffset: 2 },
-  });
-
-  const iconTile = (isActive: boolean) => ({
-    width: 38,
-    height: 38,
-    borderRadius: "12px",
-    display: "grid",
-    placeItems: "center",
-    flexShrink: 0,
-    color: isActive ? "#fff" : "#4F6BDB",
-    background: isActive
-      ? "linear-gradient(135deg,#5B9BFF,#3B6FF5)"
-      : "rgba(255,255,255,0.75)",
-    boxShadow: isActive ? "0 6px 14px rgba(59,111,245,0.35)" : "none",
-  });
 
   return (
     <Box>
@@ -291,13 +234,7 @@ export default function DashboardPage() {
             overflowX: { xs: "auto", md: "visible" },
             p: { xs: 0.75, md: 2 },
             borderRadius: { xs: 999, md: "28px" },
-            bgcolor: (t) =>
-              t.palette.mode === "dark"
-                ? "rgba(17,26,46,0.55)"
-                : "rgba(255,255,255,0.55)",
-            backdropFilter: "blur(8px)",
-            border: "1px solid",
-            borderColor: "divider",
+            ...glassPanelSx,
             scrollbarWidth: "none",
             "&::-webkit-scrollbar": { display: "none" },
           }}
@@ -313,7 +250,7 @@ export default function DashboardPage() {
                 aria-pressed={isActive}
                 sx={railItemSx(isActive)}
               >
-                <Box sx={iconTile(isActive)}>
+                <Box sx={iconTileSx(isActive)}>
                   <g.icon fontSize="small" />
                 </Box>
                 {g.label}
@@ -321,7 +258,8 @@ export default function DashboardPage() {
             );
           })}
 
-          {/* Desktop only: bottom links (Doctor Clinic + Logout) */}
+          {/* Desktop only: Logout at the bottom of the rail
+              (Doctor Clinic stays available as a card under "All") */}
           <Box
             sx={{
               display: { xs: "none", md: "flex" },
@@ -331,21 +269,6 @@ export default function DashboardPage() {
               pt: 2,
             }}
           >
-            {canClinic && (
-              <Box
-                component={Link}
-                href="/doctor-clinic"
-                sx={{
-                  ...railItemSx(false),
-                  textDecoration: "none",
-                  color: "#2F5BE0",
-                  fontSize: 13.5,
-                }}
-              >
-                <MedicalServicesOutlinedIcon fontSize="small" />
-                Doctor Clinic
-              </Box>
-            )}
             <Box
               component="button"
               type="button"
@@ -365,13 +288,7 @@ export default function DashboardPage() {
             minWidth: 0,
             p: { xs: 1.25, sm: 2, md: 2.5 },
             borderRadius: { xs: "22px", md: "32px" },
-            bgcolor: (t) =>
-              t.palette.mode === "dark"
-                ? "rgba(17,26,46,0.55)"
-                : "rgba(255,255,255,0.55)",
-            backdropFilter: "blur(8px)",
-            border: "1px solid",
-            borderColor: "divider",
+            ...glassPanelSx,
           }}
         >
           <Box
@@ -394,7 +311,7 @@ export default function DashboardPage() {
                 whileHover={{ y: -3 }}
                 style={{ minWidth: 0 }}
               >
-                <Box component={Link} href={item.href} sx={cardSx}>
+                <Box component={Link} href={item.href} sx={homeCardSx}>
                   <Box
                     sx={{
                       display: "flex",
