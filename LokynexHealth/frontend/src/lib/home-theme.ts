@@ -92,3 +92,27 @@ export const iconTileSx = (isActive: boolean) => ({
   background: isActive ? HOME_ACCENT_GRADIENT : "rgba(255,255,255,0.75)",
   boxShadow: isActive ? "0 6px 14px rgba(59,111,245,0.35)" : "none",
 });
+
+// Frosted bar used by the Topbar and the slim home rail on every inner page,
+// so the page gradient shows through exactly like on the home page.
+// Blur is lighter on phones (cheaper to paint, avoids scroll jank).
+export const glassBarSx = {
+  bgcolor: (t: Theme) =>
+    t.palette.mode === "dark" ? "rgba(11,18,32,0.55)" : "rgba(255,255,255,0.5)",
+  backgroundImage: "none",
+  backdropFilter: { xs: "blur(6px)", md: "blur(14px)" },
+  WebkitBackdropFilter: { xs: "blur(6px)", md: "blur(14px)" },
+} as const;
+
+// Surface tokens reused by the MUI theme (Paper / Card / inputs / table head)
+// so every tab's cards match the home-page option cards.
+export const SURFACE = {
+  paperLight: "rgba(255,255,255,0.92)",
+  paperDark: "rgba(17,26,46,0.85)",
+  shadowLight: "0 8px 24px rgba(79,100,200,0.08)",
+  shadowDark: "0 8px 24px rgba(0,0,0,0.35)",
+  inputLight: "rgba(255,255,255,0.75)",
+  inputDark: "rgba(255,255,255,0.05)",
+  headLight: "rgba(79,107,219,0.07)",
+  headDark: "rgba(255,255,255,0.05)",
+} as const;

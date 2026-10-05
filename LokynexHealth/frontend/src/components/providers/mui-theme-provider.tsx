@@ -6,6 +6,7 @@ import {
   ThemeProvider,
 } from "@mui/material/styles";
 
+import { SURFACE } from "@/lib/home-theme";
 import { useThemeStore } from "@/store/theme-store";
 import { AppRouterCacheProvider } from "@mui/material-nextjs/v15-appRouter";
 import CssBaseline from "@mui/material/CssBaseline";
@@ -59,6 +60,7 @@ function buildTheme(mode: "light" | "dark") {
     components: {
       MuiCssBaseline: {
         styleOverrides: {
+          "html, body": { maxWidth: "100%", overflowX: "clip" },
           // touch device e: 16px input (iOS zoom bondho) + 44px tap target
           "@media (hover: none) and (pointer: coarse)": {
             ".MuiInputBase-input, .MuiSelect-select": { fontSize: 16 },
@@ -76,9 +78,51 @@ function buildTheme(mode: "light" | "dark") {
           root: { textTransform: "none", fontWeight: 600, borderRadius: 8 },
         },
       },
+      // Same frosted-card look as the home page option cards, on EVERY tab.
+      // Only plain cards (elevation 1) get it — menus, dialogs, alerts and
+      // the app bar keep their own solid surfaces so they stay readable.
       MuiPaper: {
         styleOverrides: {
-          root: { border: `1px solid ${isDark ? "#243044" : "#E2E8F0"}` },
+          // ownerState (not nested selectors) keeps specificity at one class,
+          // so a page's own `sx` on a Paper still wins over these defaults.
+          root: ({ ownerState, theme }) => {
+            const isCard =
+              ownerState.variant !== "outlined" && ownerState.elevation === 1;
+            return {
+              border: `1px solid ${isDark ? "#243044" : "#E2E8F0"}`,
+              ...(isCard && {
+                backgroundColor: isDark
+                  ? SURFACE.paperDark
+                  : SURFACE.paperLight,
+                backgroundImage: "none",
+                boxShadow: isDark ? SURFACE.shadowDark : SURFACE.shadowLight,
+                ...(!ownerState.square && {
+                  borderRadius: 20,
+                  [theme.breakpoints.down("sm")]: { borderRadius: 16 },
+                }),
+              }),
+            };
+          },
+        },
+      },
+      MuiCard: {
+        styleOverrides: { root: { overflow: "hidden" } },
+      },
+      MuiOutlinedInput: {
+        styleOverrides: {
+          root: {
+            borderRadius: 12,
+            backgroundColor: isDark ? SURFACE.inputDark : SURFACE.inputLight,
+          },
+        },
+      },
+      MuiTableHead: {
+        styleOverrides: {
+          root: {
+            "& .MuiTableCell-head": {
+              backgroundColor: isDark ? SURFACE.headDark : SURFACE.headLight,
+            },
+          },
         },
       },
 
@@ -107,7 +151,9 @@ function buildTheme(mode: "light" | "dark") {
       MuiDialog: {
         styleOverrides: {
           paper: ({ theme }) => ({
+            borderRadius: 20,
             [theme.breakpoints.down("sm")]: {
+              borderRadius: 16,
               margin: 12,
               width: "calc(100% - 24px)",
               maxWidth: "calc(100% - 24px)",

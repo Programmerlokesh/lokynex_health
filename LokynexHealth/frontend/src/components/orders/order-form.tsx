@@ -389,7 +389,7 @@ export function OrderForm({ initial }: { initial?: OrderEditDto }) {
                       sx={{
                         display: "grid",
                         gap: 2,
-                        gridTemplateColumns: "1fr 1fr",
+                        gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
                       }}
                     >
                       <TextField

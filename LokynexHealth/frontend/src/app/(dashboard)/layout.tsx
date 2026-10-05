@@ -26,7 +26,16 @@ export default function DashboardLayout({
   const isHome = pathname === "/dashboard";
 
   return (
-    <Box sx={{ display: "flex", minHeight: "100dvh" }}>
+    // Gradient lives on the OUTER wrapper now, so the home page, every inner
+    // tab and the slim rail all share ONE continuous gradient (no seams).
+    <Box
+      sx={{
+        display: "flex",
+        minHeight: "100dvh",
+        background: homeGradient,
+        backgroundAttachment: { md: "fixed" },
+      }}
+    >
       <a href="#main-content" className="skip-link">
         Skip to main content
       </a>
@@ -39,10 +48,6 @@ export default function DashboardLayout({
           flexGrow: 1,
           minWidth: 0,
           minHeight: "100dvh",
-          bgcolor: "background.default",
-          ...(isHome && {
-            background: homeGradient,
-          }),
         }}
       >
         <Topbar showHomeButton={!isHome} centerTitle={isHome} />
@@ -57,7 +62,11 @@ export default function DashboardLayout({
               sm: "max(24px, var(--safe-right))",
               lg: "max(32px, var(--safe-right))",
             },
-            pb: { xs: "max(16px, var(--safe-bottom))", sm: 3, lg: 4 },
+            pb: {
+              xs: "calc(16px + var(--safe-bottom))",
+              sm: "calc(24px + var(--safe-bottom))",
+              lg: "calc(32px + var(--safe-bottom))",
+            },
             maxWidth: 1600,
             mx: "auto",
             outline: "none",

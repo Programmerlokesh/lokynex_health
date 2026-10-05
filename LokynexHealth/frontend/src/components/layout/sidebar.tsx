@@ -4,7 +4,7 @@ import { TestTubeIcon } from "@/components/icons/lab-icons";
 import {
   HOME_ACCENT,
   HOME_ACCENT_GRADIENT,
-  homeGradient,
+  glassBarSx,
 } from "@/lib/home-theme";
 import { useAuthStore } from "@/store/auth-store";
 import HomeRoundedIcon from "@mui/icons-material/HomeRounded";
@@ -66,7 +66,7 @@ export function Sidebar() {
           pt: "calc(var(--safe-top) + 16px)",
           pb: "calc(var(--safe-bottom) + 16px)",
           pl: "var(--safe-left)",
-          background: homeGradient,
+          ...glassBarSx,
           borderRight: "1px solid",
           borderColor: "divider",
         }}

@@ -3,6 +3,7 @@
 import { LocationChip } from "@/components/layout/location-chip";
 import { NotificationBell } from "@/components/layout/notification-bell";
 import { useMyProfile } from "@/hooks/use-users";
+import { glassBarSx } from "@/lib/home-theme";
 import { useAuthStore } from "@/store/auth-store";
 import { useThemeStore } from "@/store/theme-store";
 import DarkModeOutlinedIcon from "@mui/icons-material/DarkModeOutlined";
@@ -78,6 +79,9 @@ export function Topbar({
       elevation={0}
       className="no-print"
       sx={{
+        ...glassBarSx,
+        color: "text.primary",
+        border: 0,
         borderBottom: "1px solid",
         borderColor: "divider",
         pt: "var(--safe-top)",
