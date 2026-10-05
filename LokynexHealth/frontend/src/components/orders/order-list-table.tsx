@@ -8,7 +8,7 @@ import { OrderListItemDto } from "@/types/order-list";
 import DeleteOutlinedIcon from "@mui/icons-material/DeleteOutlined";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import PaymentsOutlinedIcon from "@mui/icons-material/PaymentsOutlined";
-import PersonOutlineIcon from "@mui/icons-material/PersonOutline";
+import PersonOutlinedIcon from "@mui/icons-material/PersonOutlined";
 import RestoreIcon from "@mui/icons-material/RestoreOutlined";
 import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
 import {
@@ -471,7 +471,7 @@ export function OrderListTable({
                   bgcolor: (t) => alpha(t.palette.primary.main, 0.12),
                 }}
               >
-                <PersonOutlineIcon sx={{ fontSize: 18 }} />
+                <PersonOutlinedIcon sx={{ fontSize: 18 }} />
               </Box>
               <Box sx={{ minWidth: 0 }}>
                 <Typography noWrap sx={{ fontWeight: 700, lineHeight: 1.2 }}>

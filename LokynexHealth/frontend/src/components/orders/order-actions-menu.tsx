@@ -3,7 +3,7 @@
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 import DashboardOutlinedIcon from "@mui/icons-material/DashboardOutlined";
 import DateRangeIcon from "@mui/icons-material/DateRange";
-import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
+import DeleteOutlinedIcon from "@mui/icons-material/DeleteOutlined";
 import GridViewIcon from "@mui/icons-material/GridView";
 import ListAltIcon from "@mui/icons-material/ListAlt";
 import NorthEastIcon from "@mui/icons-material/NorthEast";
@@ -99,7 +99,7 @@ export function OrderActionsMenu({
           <Button
             variant={showDeleted ? "outlined" : "contained"}
             color={showDeleted ? "primary" : "error"}
-            startIcon={showDeleted ? <ListAltIcon /> : <DeleteOutlineIcon />}
+            startIcon={showDeleted ? <ListAltIcon /> : <DeleteOutlinedIcon />}
             onClick={run(() => onShowDeleted(!showDeleted))}
             sx={btnSx}
           >

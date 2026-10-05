@@ -20,8 +20,8 @@ import { getApiErrorMessage } from "@/lib/api-error";
 import { formatMoney, toDateInputValue } from "@/lib/format";
 import { buildOrderReportHtml } from "@/lib/order-report";
 import { OrderListFilters } from "@/types/order-list";
-import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
-import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
+import CheckCircleOutlinedIcon from "@mui/icons-material/CheckCircleOutlined";
+import ErrorOutlinedIcon from "@mui/icons-material/ErrorOutlined";
 import FormatListBulletedIcon from "@mui/icons-material/FormatListBulleted";
 import PaymentsOutlinedIcon from "@mui/icons-material/PaymentsOutlined";
 import {
@@ -278,13 +278,13 @@ export default function OrderListPage() {
               value={`₹${formatMoney(totals.total)}`}
             />
             <StatPill
-              icon={<CheckCircleOutlineIcon />}
+              icon={<CheckCircleOutlinedIcon />}
               label={`${prefix}Paid`}
               value={`₹${formatMoney(totals.paid)}`}
               tone="success"
             />
             <StatPill
-              icon={<ErrorOutlineIcon />}
+              icon={<ErrorOutlinedIcon />}
               label={`${prefix}Due`}
               value={`₹${formatMoney(totals.due)}`}
               tone={totals.due > 0 ? "error" : undefined}
