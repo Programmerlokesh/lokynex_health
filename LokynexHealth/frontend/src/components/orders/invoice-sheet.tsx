@@ -1,149 +1,172 @@
 "use client";
 
-import { formatDateTime, formatMoney } from "@/lib/format";
+import { formatMoney } from "@/lib/format";
 import { OrderInvoiceDto } from "@/types/order";
 import { forwardRef } from "react";
 
-/** The bill is printed on A5 only. */
+/** The bill is printed on A5 only — LANDSCAPE. */
 export type PaperSize = "A5";
 
-/** Millimetres. Portrait. */
+/** Millimetres. Landscape: 210 wide x 148 high. */
 export const PAPER_MM: Record<PaperSize, { w: number; h: number }> = {
-  A5: { w: 148, h: 210 },
+  A5: { w: 210, h: 148 },
 };
 
 /**
  * Plain, self-contained CSS (no MUI / Tailwind) so the exact same stylesheet
  * is used by the on-screen preview and by the print iframe — what you see is
- * what the printer gets. Laid out for one A5 page (148 x 210 mm).
+ * what the printer gets. Laid out for one A5 landscape page (210 x 148 mm).
  */
 export const INVOICE_CSS = `
 .inv-sheet{box-sizing:border-box;background:#fff;color:#111;font-family:Arial,Helvetica,sans-serif;
   line-height:1.3;display:flex;flex-direction:column}
 .inv-sheet *{box-sizing:border-box}
-.inv-A5{width:148mm;min-height:209mm;padding:7mm 7mm 6mm;font-size:10px}
+.inv-A5{width:210mm;min-height:148mm;padding:6mm 6mm 5mm;font-size:10px}
 
-.inv-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;
-  padding-bottom:6px;border-bottom:2px solid #111}
-.inv-brand{min-width:0}
-.inv-company{font-size:1.9em;font-weight:800;letter-spacing:.2px;line-height:1.1;word-break:break-word}
-.inv-type{font-size:1em;color:#444;margin-top:1px}
-.inv-branch{margin-top:3px;font-weight:600}
-.inv-muted{color:#555}
-.inv-title{text-align:right;flex-shrink:0}
-.inv-title b{display:block;font-size:1.5em;letter-spacing:1.5px}
-.inv-title span{display:block;margin-top:2px;font-weight:700}
+.inv-head{text-align:center;padding-bottom:6px;border-bottom:1px solid #999}
+.inv-company{font-size:22px;font-weight:800;line-height:1.1;text-transform:uppercase;word-break:break-word}
+.inv-branch{font-weight:700;margin-top:4px}
+.inv-addr{color:#555;margin-top:1px}
+.inv-no{font-weight:700;font-size:11px;margin-top:4px}
 
-.inv-info{display:grid;grid-template-columns:1.15fr 1fr;gap:0;margin-top:6px;
-  border:1px solid #999;border-radius:3px}
-.inv-info > div{padding:5px 7px}
-.inv-info > div + div{border-left:1px solid #999}
-.inv-kv{display:flex;gap:6px;padding:1px 0}
-.inv-kv span:first-child{color:#555;flex:0 0 auto;min-width:62px}
-.inv-kv span:last-child{font-weight:600;word-break:break-word}
+.inv-cards{display:grid;grid-template-columns:1.25fr 1.1fr 1fr;gap:8px;margin-top:7px}
+.inv-card{border:1px solid #aaa;border-radius:5px;padding:5px 7px;min-width:0}
+.inv-card h4{margin:0 0 3px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.2px}
+.inv-row{display:flex;justify-content:space-between;gap:8px;padding:2.5px 0;border-bottom:1px dotted #ccc}
+.inv-row:last-child{border-bottom:0}
+.inv-row span:first-child{color:#555;flex:0 0 auto}
+.inv-row span:last-child{font-weight:700;text-align:right;word-break:break-word}
 
 .inv-table{width:100%;border-collapse:collapse;margin-top:7px}
-.inv-table th{background:#eee;border-top:1px solid #111;border-bottom:1px solid #111;
-  padding:4px 5px;text-align:left;font-size:.95em;text-transform:uppercase;letter-spacing:.3px}
-.inv-table td{border-bottom:1px solid #ddd;padding:4px 5px;vertical-align:top}
+.inv-table th,.inv-table td{border:1px solid #888;padding:4px 6px}
+.inv-table th{background:#f3f3f3;font-size:10px;font-weight:800;text-transform:uppercase}
+.inv-table td{vertical-align:top}
 .inv-table tr{break-inside:avoid;page-break-inside:avoid}
-.inv-table .n{width:20px;text-align:center;color:#555}
-.inv-table .r{text-align:right;white-space:nowrap}
+.inv-table .n{width:26px;text-align:center}
+.inv-table .c{text-align:center}
+.inv-table .r{text-align:right;white-space:nowrap;width:70px}
 
-.inv-summary{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px;
+.inv-bottom{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;margin-top:5px;
   break-inside:avoid;page-break-inside:avoid}
-.inv-summary h4{margin:0 0 3px;font-size:.95em;text-transform:uppercase;letter-spacing:.4px;
-  color:#333;border-bottom:1px solid #ccc;padding-bottom:2px}
-.inv-pay .inv-kv span:first-child{min-width:0;flex:1}
-.inv-pay .inv-kv span:last-child{text-align:right}
-.inv-amt .inv-kv{justify-content:space-between}
-.inv-amt .inv-kv span:first-child{min-width:0}
-.inv-grand{border-top:1px solid #111;border-bottom:1px solid #111;margin:3px 0;padding:3px 0;
-  font-size:1.15em}
-.inv-grand span{font-weight:800!important}
-.inv-due span:last-child{font-weight:800}
+.inv-note{font-size:9.5px;color:#333;padding-top:1px}
+.inv-pay{width:262px;flex:0 0 auto;border-collapse:collapse}
+.inv-pay th,.inv-pay td{border:1px solid #888;padding:4px 6px}
+.inv-pay th{background:#f3f3f3;font-weight:800;text-transform:uppercase;text-align:center}
+.inv-pay .n{width:26px;text-align:center}
+.inv-pay .r{text-align:right;white-space:nowrap}
 
-.inv-note{margin-top:auto;padding-top:10px;font-size:.92em;color:#333}
-.inv-foot{display:flex;justify-content:space-between;align-items:flex-end;margin-top:22px;gap:12px;
+.inv-foot{display:flex;justify-content:space-between;align-items:flex-end;margin-top:auto;padding-top:16px;gap:14px;
   break-inside:avoid;page-break-inside:avoid}
-.inv-printed{font-size:.9em;color:#555}
-.inv-sign{border-top:1px solid #111;min-width:40%;text-align:center;padding-top:3px;font-size:.95em}
+.inv-printed{font-size:9.5px;color:#333}
+.inv-sign{width:46%;border-top:1px solid #777;text-align:right;font-weight:700;padding-top:3px}
 @media print{.inv-sheet{box-shadow:none!important;margin:0!important}}
 `;
 
-const amount = (n: number) => formatMoney(n);
+const rupee = (n: number) => `₹${formatMoney(n)}`;
+
+/** 05-10-2026 07:26 PM */
+function billDateTime(value: string | Date): string {
+  const d = typeof value === "string" ? new Date(value) : value;
+  const p = (n: number) => String(n).padStart(2, "0");
+  const h = d.getHours();
+  const h12 = h % 12 === 0 ? 12 : h % 12;
+  return `${p(d.getDate())}-${p(d.getMonth() + 1)}-${d.getFullYear()} ${p(h12)}:${p(d.getMinutes())} ${h >= 12 ? "PM" : "AM"}`;
+}
+
+/** "ORD-84" -> "#84" */
+const shortNo = (billNo: string) => `#${billNo.match(/\d+/)?.[0] ?? billNo}`;
 
 /** The printable bill. `printedOn` is passed in so preview and print agree. */
 export const InvoiceSheet = forwardRef<
   HTMLDivElement,
   { data: OrderInvoiceDto; paper: PaperSize; printedOn: Date }
 >(function InvoiceSheet({ data, paper, printedOn }, ref) {
-  const ageGender = [
-    data.patientAge != null ? `${data.patientAge} yrs` : null,
-    data.patientGender,
-  ]
-    .filter(Boolean)
-    .join(" / ");
+  const ageGender =
+    [
+      data.patientAge != null ? String(data.patientAge) : null,
+      data.patientGender,
+    ]
+      .filter(Boolean)
+      .join(" / ") || "—";
+  const no = shortNo(data.billNo);
 
   return (
     <div ref={ref} className={`inv-sheet inv-${paper}`}>
       <div className="inv-head">
-        <div className="inv-brand">
-          <div className="inv-company">{data.companyName}</div>
-          <div className="inv-type">{data.companyType}</div>
-          <div className="inv-branch">
-            {data.branchName}
-            {data.branchPhone ? ` · ${data.branchPhone}` : ""}
-          </div>
-          {data.branchAddress && (
-            <div className="inv-muted">{data.branchAddress}</div>
-          )}
-        </div>
-        <div className="inv-title">
-          <b>BILL</b>
-          <span>{data.invoiceNo}</span>
-        </div>
+        <div className="inv-company">{data.companyName}</div>
+        <div className="inv-branch">Branch: {data.branchName}</div>
+        {data.branchAddress && (
+          <div className="inv-addr">{data.branchAddress}</div>
+        )}
+        <div className="inv-no">Invoice No: {no}</div>
       </div>
 
-      <div className="inv-info">
-        <div>
-          <div className="inv-kv">
-            <span>Patient</span>
+      <div className="inv-cards">
+        <div className="inv-card">
+          <h4>Patient</h4>
+          <div className="inv-row">
+            <span>P. Name</span>
             <span>{data.patientName}</span>
           </div>
-          <div className="inv-kv">
-            <span>Age / Gender</span>
-            <span>{ageGender || "—"}</span>
+          <div className="inv-row">
+            <span>Age/Gender</span>
+            <span>{ageGender}</span>
           </div>
-          <div className="inv-kv">
-            <span>Phone</span>
+          <div className="inv-row">
+            <span>Profile Phone</span>
             <span>{data.patientPhone}</span>
           </div>
-          <div className="inv-kv">
+          <div className="inv-row">
             <span>Doctor</span>
             <span>{data.doctor?.name ?? "—"}</span>
           </div>
-          <div className="inv-kv">
-            <span>Referral</span>
+          <div className="inv-row">
+            <span>Referrer</span>
             <span>{data.referral?.name ?? "—"}</span>
           </div>
         </div>
-        <div>
-          <div className="inv-kv">
+
+        <div className="inv-card">
+          <h4>Invoice</h4>
+          <div className="inv-row">
             <span>Bill No</span>
-            <span>{data.billNo}</span>
+            <span>{no}</span>
           </div>
-          <div className="inv-kv">
-            <span>Date</span>
-            <span>{formatDateTime(data.billDate)}</span>
+          <div className="inv-row">
+            <span>Bill Date/Time</span>
+            <span>{billDateTime(data.billDate)}</span>
           </div>
-          <div className="inv-kv">
-            <span>Payment</span>
+          <div className="inv-row">
+            <span>Payment Mode</span>
             <span>{data.paymentMode}</span>
           </div>
-          <div className="inv-kv">
-            <span>Guardian</span>
+          <div className="inv-row">
+            <span>Profile</span>
             <span>{data.guardianName || "—"}</span>
+          </div>
+        </div>
+
+        <div className="inv-card">
+          <h4>Amount</h4>
+          <div className="inv-row">
+            <span>Subtotal</span>
+            <span>{rupee(data.subtotal)}</span>
+          </div>
+          <div className="inv-row">
+            <span>Discount</span>
+            <span>- {rupee(data.discount)}</span>
+          </div>
+          <div className="inv-row">
+            <span>Total</span>
+            <span>{rupee(data.total)}</span>
+          </div>
+          <div className="inv-row">
+            <span>Paid</span>
+            <span>{rupee(data.paid)}</span>
+          </div>
+          <div className="inv-row">
+            <span>Due</span>
+            <span>{rupee(data.due)}</span>
           </div>
         </div>
       </div>
@@ -152,7 +175,7 @@ export const InvoiceSheet = forwardRef<
         <thead>
           <tr>
             <th className="n">#</th>
-            <th>Test Description</th>
+            <th className="c">Test Description</th>
             <th className="r">Rate</th>
             <th className="r">Less</th>
             <th className="r">Amount</th>
@@ -163,61 +186,49 @@ export const InvoiceSheet = forwardRef<
             <tr key={l.testId}>
               <td className="n">{i + 1}</td>
               <td>{l.description}</td>
-              <td className="r">{amount(l.rate)}</td>
-              <td className="r">{amount(l.less)}</td>
-              <td className="r">{amount(l.amount)}</td>
+              <td className="r">{rupee(l.rate)}</td>
+              <td className="r">{rupee(l.less)}</td>
+              <td className="r">{rupee(l.amount)}</td>
             </tr>
           ))}
         </tbody>
       </table>
 
-      <div className="inv-summary">
-        <div className="inv-pay">
-          <h4>Payments</h4>
-          {data.payments.length === 0 ? (
-            <div className="inv-muted">No payment received</div>
-          ) : (
-            data.payments.map((p) => (
-              <div className="inv-kv" key={p.method}>
-                <span>{p.method}</span>
-                <span>{amount(p.amount)}</span>
-              </div>
-            ))
-          )}
+      <div className="inv-bottom">
+        <div className="inv-note">
+          <b>Note:</b> Please bring receipt while collecting reports.
+          <br />
+          This is a computer-generated bill.
         </div>
-        <div className="inv-amt">
-          <h4>Amount</h4>
-          <div className="inv-kv">
-            <span>Subtotal</span>
-            <span>{amount(data.subtotal)}</span>
-          </div>
-          <div className="inv-kv">
-            <span>Discount</span>
-            <span>{amount(data.discount)}</span>
-          </div>
-          <div className="inv-kv inv-grand">
-            <span>Total</span>
-            <span>{amount(data.total)}</span>
-          </div>
-          <div className="inv-kv">
-            <span>Paid</span>
-            <span>{amount(data.paid)}</span>
-          </div>
-          <div className="inv-kv inv-due">
-            <span>Due</span>
-            <span>{amount(data.due)}</span>
-          </div>
-        </div>
-      </div>
-
-      <div className="inv-note">
-        Note: Please bring this receipt while collecting reports. This is a
-        computer generated bill.
+        <table className="inv-pay">
+          <thead>
+            <tr>
+              <th colSpan={3}>Payments</th>
+            </tr>
+          </thead>
+          <tbody>
+            {data.payments.length === 0 ? (
+              <tr>
+                <td colSpan={3} style={{ textAlign: "center" }}>
+                  No payment received
+                </td>
+              </tr>
+            ) : (
+              data.payments.map((p, i) => (
+                <tr key={p.method}>
+                  <td className="n">{i + 1}</td>
+                  <td>{p.method}</td>
+                  <td className="r">{rupee(p.amount)}</td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
       </div>
 
       <div className="inv-foot">
         <span className="inv-printed">
-          Printed on: {formatDateTime(printedOn)}
+          Printed on: {billDateTime(printedOn)}
         </span>
         <div className="inv-sign">Signature</div>
       </div>

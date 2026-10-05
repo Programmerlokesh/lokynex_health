@@ -4,7 +4,7 @@ import { printSheet } from "@/lib/print-sheet";
 import { OrderInvoiceDto } from "@/types/order";
 import CloseIcon from "@mui/icons-material/Close";
 import PrintOutlinedIcon from "@mui/icons-material/PrintOutlined";
-import { Box, Button, Dialog, IconButton, Typography } from "@mui/material";
+import { Box, Button, Dialog, Typography } from "@mui/material";
 import { useEffect, useRef, useState } from "react";
 import {
   INVOICE_CSS,
@@ -15,7 +15,7 @@ import {
 
 const MM_TO_PX = 96 / 25.4;
 
-/** The bill is always printed on A5. */
+/** The bill is always printed on A5 landscape. */
 const PAPER: PaperSize = "A5";
 
 /**
@@ -43,7 +43,7 @@ function BillPreview({
     const el = boxRef.current;
     if (!el) return;
     const update = () => {
-      setScale(Math.min(1, (el.clientWidth - 2) / sheetW));
+      setScale(Math.min(1, el.clientWidth / sheetW));
       // A long test list makes the sheet taller than one page; follow its real height.
       setSheetH(sheetRef.current?.offsetHeight ?? 0);
     };
@@ -55,85 +55,124 @@ function BillPreview({
   }, [sheetW]);
 
   return (
-    <>
+    <Box
+      sx={{
+        minHeight: "100%",
+        p: { xs: 1, sm: 3 },
+        background:
+          "linear-gradient(135deg,#eef2ff 0%,#f5eefe 55%,#fdf2f8 100%)",
+      }}
+    >
       <style>{INVOICE_CSS}</style>
 
       <Box
         sx={{
-          display: "flex",
-          alignItems: "center",
-          gap: 1,
-          px: { xs: 1.5, sm: 3 },
-          py: 1,
-          borderBottom: 1,
-          borderColor: "divider",
-          position: "sticky",
-          top: 0,
-          bgcolor: "background.paper",
-          zIndex: 1,
+          maxWidth: 1160,
+          mx: "auto",
+          p: { xs: 1.5, sm: 3 },
+          borderRadius: { xs: 3, sm: 6 },
+          bgcolor: "rgba(255,255,255,0.7)",
+          boxShadow: "0 12px 40px rgba(80,70,160,0.15)",
         }}
       >
-        <Typography
-          variant="subtitle1"
-          sx={{ fontWeight: 700, flexGrow: 1 }}
-          noWrap
-        >
-          Bill · A5
-        </Typography>
-        <Button
-          variant="contained"
-          startIcon={<PrintOutlinedIcon />}
-          onClick={() =>
-            sheetRef.current && printSheet(sheetRef.current, PAPER)
-          }
-        >
-          Print Bill
-        </Button>
-        <IconButton aria-label="Close" onClick={onClose}>
-          <CloseIcon />
-        </IconButton>
-      </Box>
-
-      <Box
-        ref={boxRef}
-        sx={{
-          flexGrow: 1,
-          overflow: "auto",
-          bgcolor: "action.hover",
-          p: { xs: 1, sm: 3 },
-        }}
-      >
-        {/* Wrapper takes the scaled footprint so scrolling matches what is visible */}
         <Box
           sx={{
-            width: sheetW * scale,
-            height: (sheetH || PAPER_MM[PAPER].h * MM_TO_PX) * scale,
-            mx: "auto",
-            boxShadow: 3,
-            overflow: "hidden",
+            display: "flex",
+            alignItems: "flex-start",
+            flexWrap: "wrap",
+            gap: 1.5,
+            mb: 2,
           }}
         >
-          <Box
+          <Box sx={{ flexGrow: 1, minWidth: 0 }}>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1.25 }}>
+              <PrintOutlinedIcon />
+              <Typography variant="h5" sx={{ fontWeight: 800 }}>
+                Print Invoice
+              </Typography>
+            </Box>
+            <Typography variant="body2" sx={{ fontWeight: 700, mt: 0.5 }}>
+              A5 landscape, print-ready.
+            </Typography>
+          </Box>
+
+          <Button
+            variant="contained"
+            startIcon={<CloseIcon fontSize="small" />}
+            onClick={onClose}
             sx={{
-              transform: `scale(${scale})`,
-              transformOrigin: "top left",
-              width: sheetW,
+              bgcolor: "#fff",
+              color: "text.primary",
+              borderRadius: 99,
+              px: 3,
+              boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+              "&:hover": { bgcolor: "#f3f4f6" },
             }}
           >
-            <InvoiceSheet
-              ref={sheetRef}
-              data={data}
-              paper={PAPER}
-              printedOn={printedOn}
-            />
+            Close
+          </Button>
+          <Button
+            variant="contained"
+            startIcon={<PrintOutlinedIcon fontSize="small" />}
+            onClick={() =>
+              sheetRef.current && printSheet(sheetRef.current, PAPER)
+            }
+            sx={{
+              bgcolor: "#3b82f6",
+              borderRadius: 99,
+              px: 3,
+              "&:hover": { bgcolor: "#2563eb" },
+            }}
+          >
+            Print
+          </Button>
+        </Box>
+
+        <Box
+          sx={{
+            p: { xs: 1, sm: 2 },
+            borderRadius: { xs: 2, sm: 5 },
+            bgcolor: "rgba(255,255,255,0.8)",
+            boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.04)",
+            overflow: "auto",
+          }}
+        >
+          <Box ref={boxRef} sx={{ width: "100%" }}>
+            {/* Wrapper takes the scaled footprint so scrolling matches what is visible */}
+            <Box
+              sx={{
+                width: sheetW * scale,
+                height: (sheetH || PAPER_MM[PAPER].h * MM_TO_PX) * scale,
+                mx: "auto",
+                borderRadius: 3,
+                boxShadow: "0 8px 28px rgba(0,0,0,0.12)",
+                overflow: "hidden",
+                bgcolor: "#fff",
+              }}
+            >
+              <Box
+                sx={{
+                  transform: `scale(${scale})`,
+                  transformOrigin: "top left",
+                  width: sheetW,
+                }}
+              >
+                <InvoiceSheet
+                  ref={sheetRef}
+                  data={data}
+                  paper={PAPER}
+                  printedOn={printedOn}
+                />
+              </Box>
+            </Box>
           </Box>
         </Box>
       </Box>
-    </>
+    </Box>
   );
 }
 
-/** "Generate Bill": opens the A5 bill preview with Print + Close in the top corner. */
+/** "Generate Bill": opens the A5 landscape bill preview with Print + Close. */
 export function BillDialog({
   open,
   onClose,
