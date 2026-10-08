@@ -123,6 +123,15 @@ const ITEMS: {
     moduleName: "OrderListAndReports",
   },
   {
+    label: "Upload Report",
+    href: "/reports/upload",
+    tag: "Reports",
+    path: "reports › upload",
+    group: "reports",
+    icon: ReportIcon,
+    moduleName: "OrderListAndReports",
+  },
+  {
     label: "Report Builder",
     href: "/report-builder",
     tag: "Reports",

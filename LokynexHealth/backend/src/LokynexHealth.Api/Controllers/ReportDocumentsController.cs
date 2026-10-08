@@ -1,8 +1,12 @@
 using LokynexHealth.Application.Common.Interfaces;
+using LokynexHealth.Application.ReportDocuments.Commands.CreateReportDocument;
 using LokynexHealth.Application.ReportDocuments.Commands.DeleteReportDocument;
 using LokynexHealth.Application.ReportDocuments.Commands.GenerateReportDocument;
 using LokynexHealth.Application.ReportDocuments.Commands.UpdateReportDocument;
+using LokynexHealth.Application.ReportDocuments.Queries.GetOrderForReport;
 using LokynexHealth.Application.ReportDocuments.Queries.GetOrderItemsForReport;
+using LokynexHealth.Application.ReportDocuments.Queries.GetOrdersForReport;
+using LokynexHealth.Application.ReportDocuments.Queries.GetReportDocumentById;
 using LokynexHealth.Application.ReportDocuments.Queries.GetReportDocuments;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -32,7 +36,16 @@ public class ReportDocumentsController : ControllerBase
         return CreatedAtAction(nameof(Generate), new { id }, new { id });
     }
 
-    [HttpPut("{id}")]
+    // Blank / editor / DOCX-import report
+    [HttpPost]
+    public async Task<IActionResult> Create([FromBody] CreateReportDocumentCommand command, CancellationToken ct)
+    {
+        command.CreatedBy = _currentUser.UserId;
+        var id = await _mediator.Send(command, ct);
+        return CreatedAtAction(nameof(GetById), new { id }, new { id });
+    }
+
+    [HttpPut("{id:guid}")]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateReportDocumentCommand command, CancellationToken ct)
     {
         command.Id = id;
@@ -41,7 +54,7 @@ public class ReportDocumentsController : ControllerBase
         return NoContent();
     }
 
-    [HttpDelete("{id}")]
+    [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Delete(Guid id, CancellationToken ct)
     {
         await _mediator.Send(new DeleteReportDocumentCommand { Id = id, DeletedBy = _currentUser.UserId ?? Guid.Empty }, ct);
@@ -55,10 +68,32 @@ public class ReportDocumentsController : ControllerBase
         return Ok(result);
     }
 
+    [HttpGet("{id:guid}")]
+    public async Task<IActionResult> GetById(Guid id, CancellationToken ct)
+    {
+        var result = await _mediator.Send(new GetReportDocumentByIdQuery { Id = id }, ct);
+        return Ok(result);
+    }
+
     [HttpGet("order-items-lookup")]
     public async Task<IActionResult> GetOrderItemsLookup([FromQuery] string? search, CancellationToken ct)
     {
         var result = await _mediator.Send(new GetOrderItemsForReportQuery { Search = search }, ct);
+        return Ok(result);
+    }
+
+    // Order-wise list for the "Upload Report" page (never cached server side).
+    [HttpGet("orders")]
+    public async Task<IActionResult> GetOrders([FromQuery] GetOrdersForReportQuery query, CancellationToken ct)
+    {
+        var result = await _mediator.Send(query, ct);
+        return Ok(result);
+    }
+
+    [HttpGet("orders/{orderId:guid}")]
+    public async Task<IActionResult> GetOrder(Guid orderId, CancellationToken ct)
+    {
+        var result = await _mediator.Send(new GetOrderForReportQuery { OrderId = orderId }, ct);
         return Ok(result);
     }
 }

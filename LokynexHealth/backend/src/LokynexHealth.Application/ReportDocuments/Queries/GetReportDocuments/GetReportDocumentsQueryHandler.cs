@@ -17,13 +17,14 @@ public class GetReportDocumentsQueryHandler : IRequestHandler<GetReportDocuments
     public async Task<PagedResult<ReportDocumentDto>> Handle(GetReportDocumentsQuery request, CancellationToken cancellationToken)
     {
         var query = _db.ReportDocuments
-            .Include(d => d.OrderItem).ThenInclude(oi => oi.Test)
-            .Include(d => d.OrderItem).ThenInclude(oi => oi.Order).ThenInclude(o => o.Patient)
-            .Include(d => d.OrderItem).ThenInclude(oi => oi.Order).ThenInclude(o => o.Relative)
+            .AsNoTracking()
             .Where(d => d.IsDeleted == request.ShowDeleted);
 
         if (request.OrderItemId.HasValue)
             query = query.Where(d => d.OrderItemId == request.OrderItemId.Value);
+
+        if (request.OrderId.HasValue)
+            query = query.Where(d => d.OrderItem.OrderId == request.OrderId.Value);
 
         var totalCount = await query.CountAsync(cancellationToken);
 
@@ -31,21 +32,7 @@ public class GetReportDocumentsQueryHandler : IRequestHandler<GetReportDocuments
             .OrderByDescending(d => d.CreatedAt)
             .Skip((request.PageNumber - 1) * request.PageSize)
             .Take(request.PageSize)
-            .Select(d => new ReportDocumentDto
-            {
-                Id = d.Id,
-                OrderItemId = d.OrderItemId,
-                OrderNumber = d.OrderItem.Order.OrderNumber,
-                TestName = d.OrderItem.Test.Name,
-                PatientName = d.OrderItem.Order.Relative != null
-                    ? d.OrderItem.Order.Relative.Name
-                    : d.OrderItem.Order.Patient.Phone,
-                HeaderContent = d.HeaderContent,
-                FooterContent = d.FooterContent,
-                BodyContent = d.BodyContent,
-                IsDeleted = d.IsDeleted,
-                CreatedAt = d.CreatedAt
-            })
+            .Select(ReportDocumentProjection.ToDto)
             .ToListAsync(cancellationToken);
 
         return new PagedResult<ReportDocumentDto>

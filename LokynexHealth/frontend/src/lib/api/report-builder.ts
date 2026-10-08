@@ -1,8 +1,11 @@
 import { apiClient } from "@/lib/api-client";
 import {
+  CreateReportDocumentRequest,
   CreateReportTemplateRequest,
   GenerateReportDocumentRequest,
+  GetOrdersForReportParams,
   GetReportDocumentsParams,
+  OrderForReportDto,
   OrderItemLookupDto,
   ReportDocumentDto,
   ReportTemplateDto,
@@ -43,6 +46,25 @@ export async function getOrderItemsLookupApi(
   return res.data;
 }
 
+export async function getOrdersForReportApi(
+  params: GetOrdersForReportParams,
+): Promise<PagedResult<OrderForReportDto>> {
+  const res = await apiClient.get<PagedResult<OrderForReportDto>>(
+    "/ReportDocuments/orders",
+    { params: { ...params, search: params.search || undefined } },
+  );
+  return res.data;
+}
+
+export async function getOrderForReportApi(
+  orderId: string,
+): Promise<OrderForReportDto> {
+  const res = await apiClient.get<OrderForReportDto>(
+    `/ReportDocuments/orders/${orderId}`,
+  );
+  return res.data;
+}
+
 export async function getReportDocumentsApi(
   params: GetReportDocumentsParams,
 ): Promise<PagedResult<ReportDocumentDto>> {
@@ -53,6 +75,13 @@ export async function getReportDocumentsApi(
   return res.data;
 }
 
+export async function getReportDocumentApi(
+  id: string,
+): Promise<ReportDocumentDto> {
+  const res = await apiClient.get<ReportDocumentDto>(`/ReportDocuments/${id}`);
+  return res.data;
+}
+
 export async function generateReportDocumentApi(
   data: GenerateReportDocumentRequest,
 ): Promise<{ id: string }> {
@@ -60,6 +89,13 @@ export async function generateReportDocumentApi(
     "/ReportDocuments/generate",
     data,
   );
+  return res.data;
+}
+
+export async function createReportDocumentApi(
+  data: CreateReportDocumentRequest,
+): Promise<{ id: string }> {
+  const res = await apiClient.post<{ id: string }>("/ReportDocuments", data);
   return res.data;
 }
 

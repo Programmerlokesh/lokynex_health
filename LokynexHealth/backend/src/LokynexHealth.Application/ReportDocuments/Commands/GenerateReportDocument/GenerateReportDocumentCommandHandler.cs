@@ -4,6 +4,7 @@ using LokynexHealth.Application.Common.Interfaces;
 using LokynexHealth.Domain.Entities;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using LokynexHealth.Domain.Enums;
 
 namespace LokynexHealth.Application.ReportDocuments.Commands.GenerateReportDocument;
 
@@ -87,6 +88,7 @@ public class GenerateReportDocumentCommandHandler : IRequestHandler<GenerateRepo
         };
 
         _db.ReportDocuments.Add(document);
+        orderItem.ReportStatus = ReportStatusType.Uploaded;
         await _db.SaveChangesAsync(cancellationToken);
 
         return document.Id;
