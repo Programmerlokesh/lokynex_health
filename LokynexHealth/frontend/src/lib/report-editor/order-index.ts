@@ -33,13 +33,23 @@ export class OrderIndex {
     const words = tokens(query);
     if (words.length === 0) return this.rows;
 
-    let hits: Set<number> | null = null;
+    let hits: Set<number> | undefined;
     for (const w of words) {
-      const current = new Set(this.trie.startsWith(w));
-      hits = hits ? new Set([...hits].filter((i) => current.has(i))) : current;
+      const current = new Set<number>(this.trie.startsWith(w));
+      if (hits === undefined) {
+        hits = current;
+      } else {
+        const prev: Set<number> = hits;
+        const next = new Set<number>();
+        prev.forEach((i: number) => {
+          if (current.has(i)) next.add(i);
+        });
+        hits = next;
+      }
       if (hits.size === 0) return [];
     }
-    return [...(hits as Set<number>)]
+    if (!hits) return this.rows;
+    return Array.from(hits)
       .sort((a, b) => a - b)
       .map((i) => this.rows[i]);
   }
