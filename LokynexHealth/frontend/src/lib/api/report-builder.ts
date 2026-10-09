@@ -7,6 +7,7 @@ import {
   GetReportDocumentsParams,
   OrderForReportDto,
   OrderItemLookupDto,
+  OrdersForReportResult,
   ReportDocumentDto,
   ReportTemplateDto,
   UpdateReportDocumentRequest,
@@ -48,10 +49,14 @@ export async function getOrderItemsLookupApi(
 
 export async function getOrdersForReportApi(
   params: GetOrdersForReportParams,
-): Promise<PagedResult<OrderForReportDto>> {
-  const res = await apiClient.get<PagedResult<OrderForReportDto>>(
+): Promise<OrdersForReportResult> {
+  // drop empty values so the URL stays clean
+  const clean = Object.fromEntries(
+    Object.entries(params).filter(([, v]) => v !== "" && v !== undefined),
+  );
+  const res = await apiClient.get<OrdersForReportResult>(
     "/ReportDocuments/orders",
-    { params: { ...params, search: params.search || undefined } },
+    { params: clean },
   );
   return res.data;
 }
@@ -108,4 +113,20 @@ export async function updateReportDocumentApi(
 
 export async function deleteReportDocumentApi(id: string): Promise<void> {
   await apiClient.delete(`/ReportDocuments/${id}`);
+}
+
+// Legacy .doc -> .docx (server converts with LibreOffice). Returns the .docx bytes.
+export async function convertDocToDocxApi(file: File): Promise<ArrayBuffer> {
+  const form = new FormData();
+  form.append("file", file);
+  const res = await apiClient.post<ArrayBuffer>(
+    "/ReportDocuments/convert-doc",
+    form,
+    {
+      responseType: "arraybuffer",
+      headers: { "Content-Type": "multipart/form-data" },
+      timeout: 90_000,
+    },
+  );
+  return res.data;
 }

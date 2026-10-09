@@ -1,3 +1,4 @@
+import { PagedResult } from "@/types/user";
 export interface ReportTemplateDto {
   id: string;
   name: string;
@@ -90,9 +91,24 @@ export interface OrderForReportDto {
   items: OrderForReportItemDto[];
 }
 
+export type ReportStatusFilter = "Any" | "Pending" | "Reported";
+
 export interface GetOrdersForReportParams {
   search?: string;
-  onlyPending?: boolean;
+  status?: ReportStatusFilter;
+  /** ISO instant, inclusive */
+  from?: string;
+  /** ISO instant, exclusive */
+  to?: string;
+  patientName?: string;
+  phone?: string;
+  orderNumber?: string;
+  testName?: string;
   pageNumber?: number;
   pageSize?: number;
+}
+
+export interface OrdersForReportResult extends PagedResult<OrderForReportDto> {
+  pendingCount: number;
+  reportedCount: number;
 }
