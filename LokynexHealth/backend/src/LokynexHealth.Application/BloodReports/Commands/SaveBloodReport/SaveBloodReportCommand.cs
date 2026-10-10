@@ -1,6 +1,7 @@
 using FluentValidation;
 using LokynexHealth.Application.Common.Exceptions;
 using LokynexHealth.Application.Common.Interfaces;
+using LokynexHealth.Application.ReportOptions;
 using LokynexHealth.Domain.Entities;
 using LokynexHealth.Domain.Enums;
 using MediatR;
@@ -229,6 +230,10 @@ public class SaveBloodReportCommandHandler : IRequestHandler<SaveBloodReportComm
             info.ReagentName = doc.ReagentName;
             info.UpdatedAt = now;
         }
+
+        // machine / chemical typed by hand -> add to the pick-list for next time
+        await ReportOptionSync.EnsureAsync(_db, ReportOptionKinds.Machine, doc.MachineName, ct);
+        await ReportOptionSync.EnsureAsync(_db, ReportOptionKinds.Reagent, doc.ReagentName, ct);
 
         await _db.SaveChangesAsync(ct);
         return doc.Id;

@@ -49,6 +49,7 @@ public class LokynexHealthDbContext : DbContext, IApplicationDbContext
     public DbSet<LabReportSetting> LabReportSettings => Set<LabReportSetting>();
     public DbSet<ReportDelivery> ReportDeliveries => Set<ReportDelivery>();
     public DbSet<TestReportInfo> TestReportInfos => Set<TestReportInfo>();
+    public DbSet<ReportOption> ReportOptions => Set<ReportOption>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

@@ -49,6 +49,7 @@ public interface IApplicationDbContext
     DbSet<LabReportSetting> LabReportSettings { get; }
     DbSet<ReportDelivery> ReportDeliveries { get; }
     DbSet<TestReportInfo> TestReportInfos { get; }
+    DbSet<ReportOption> ReportOptions { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken);
 }

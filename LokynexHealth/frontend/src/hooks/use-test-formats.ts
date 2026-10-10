@@ -42,6 +42,7 @@ export function useSaveTestFormat(testId: string) {
       qc.invalidateQueries({ queryKey: ["test-formats"] });
       // blood report entry screens must pick up the new format
       qc.invalidateQueries({ queryKey: ["blood-report-form"] });
+      qc.invalidateQueries({ queryKey: ["report-options"] });
     },
   });
 }

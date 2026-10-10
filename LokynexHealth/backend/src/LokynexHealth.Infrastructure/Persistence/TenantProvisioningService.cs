@@ -18,7 +18,8 @@ public class TenantProvisioningService : ITenantProvisioningService
     {
         "TenantSchemaTemplate.sql",
         "BloodReportFormats.sql",
-        "BloodReportMachineChemical.sql"
+        "BloodReportMachineChemical.sql",
+        "BloodReportOptions.sql"
     };
 
     // The standalone SQL files start with "SET search_path TO lab_demo, public;".

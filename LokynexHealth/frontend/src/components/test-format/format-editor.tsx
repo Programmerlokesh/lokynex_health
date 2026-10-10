@@ -1,6 +1,7 @@
 "use client";
 
 import { Pill } from "@/components/report-builder/report-toolbar-ui";
+import { OptionSelect } from "@/components/report-options/option-select";
 import { cardSx, pillBtnSx } from "@/components/reports/report-shell";
 import { useSaveTestFormat } from "@/hooks/use-test-formats";
 import { getApiErrorMessage } from "@/lib/api-error";
@@ -364,17 +365,17 @@ export function FormatEditor({
             value={info.method}
             onChange={(e) => setInfo({ ...info, method: e.target.value })}
           />
-          <TextField
-            size="small"
+          <OptionSelect
+            kind="Machine"
             label="Analyser / Machine name"
             value={info.machine}
-            onChange={(e) => setInfo({ ...info, machine: e.target.value })}
+            onChange={(v) => setInfo({ ...info, machine: v })}
           />
-          <TextField
-            size="small"
+          <OptionSelect
+            kind="Reagent"
             label="Reagent / Chemical name"
             value={info.reagent}
-            onChange={(e) => setInfo({ ...info, reagent: e.target.value })}
+            onChange={(v) => setInfo({ ...info, reagent: v })}
           />
           <TextField
             size="small"

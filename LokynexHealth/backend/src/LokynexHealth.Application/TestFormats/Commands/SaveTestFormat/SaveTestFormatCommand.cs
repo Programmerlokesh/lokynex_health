@@ -2,6 +2,7 @@ using System.Globalization;
 using FluentValidation;
 using LokynexHealth.Application.Common.Exceptions;
 using LokynexHealth.Application.Common.Interfaces;
+using LokynexHealth.Application.ReportOptions;
 using LokynexHealth.Domain.Entities;
 using LokynexHealth.Domain.Enums;
 using MediatR;
@@ -218,6 +219,10 @@ public class SaveTestFormatCommandHandler : IRequestHandler<SaveTestFormatComman
         info.ReagentName = Clean(request.ReagentName);
         info.Interpretation = Clean(request.Interpretation);
         info.UpdatedAt = now;
+
+        // machine / reagent typed by hand -> add to the pick-list
+        await ReportOptionSync.EnsureAsync(_db, ReportOptionKinds.Machine, info.MachineName, ct);
+        await ReportOptionSync.EnsureAsync(_db, ReportOptionKinds.Reagent, info.ReagentName, ct);
 
         try
         {

@@ -30,6 +30,7 @@ export function useSaveBloodReport() {
       qc.invalidateQueries({ queryKey: ["blood-report-form"] });
       qc.invalidateQueries({ queryKey: ["report-documents"] });
       qc.invalidateQueries({ queryKey: ["report-orders"] });
+      qc.invalidateQueries({ queryKey: ["report-options"] });
     },
   });
 }

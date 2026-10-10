@@ -3,6 +3,7 @@
 import { LetterheadSettingsDialog } from "@/components/blood-report/letterhead-settings-dialog";
 import { WhatsAppDialog } from "@/components/blood-report/whatsapp-dialog";
 import { Pill } from "@/components/report-builder/report-toolbar-ui";
+import { OptionSelect } from "@/components/report-options/option-select";
 import {
   cardSx,
   HeaderCard,
@@ -454,17 +455,17 @@ function EntryForm({ form }: { form: BloodReportFormDto }) {
             value={meta.method}
             onChange={(e) => setMeta({ ...meta, method: e.target.value })}
           />
-          <TextField
-            size="small"
+          <OptionSelect
+            kind="Machine"
             label="Analyser / Machine name"
             value={meta.machine}
-            onChange={(e) => setMeta({ ...meta, machine: e.target.value })}
+            onChange={(v) => setMeta((m) => ({ ...m, machine: v }))}
           />
-          <TextField
-            size="small"
+          <OptionSelect
+            kind="Reagent"
             label="Reagent / Chemical name"
             value={meta.reagent}
-            onChange={(e) => setMeta({ ...meta, reagent: e.target.value })}
+            onChange={(v) => setMeta((m) => ({ ...m, reagent: v }))}
           />
           <Box />
           <TextField

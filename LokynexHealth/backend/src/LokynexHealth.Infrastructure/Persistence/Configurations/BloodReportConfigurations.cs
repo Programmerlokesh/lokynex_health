@@ -112,3 +112,17 @@ public class TestReportInfoConfiguration : IEntityTypeConfiguration<TestReportIn
         builder.HasOne<Test>().WithMany().HasForeignKey(x => x.TestId);
     }
 }
+
+
+public class ReportOptionConfiguration : IEntityTypeConfiguration<ReportOption>
+{
+    public void Configure(EntityTypeBuilder<ReportOption> builder)
+    {
+        builder.ToTable("report_options");
+        builder.HasKey(x => x.Id);
+        builder.Property(x => x.Id).HasDefaultValueSql("gen_random_uuid()");
+
+        builder.Property(x => x.Kind).HasMaxLength(10).IsRequired();
+        builder.Property(x => x.Name).HasMaxLength(200).IsRequired();
+    }
+}

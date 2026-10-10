@@ -8,6 +8,7 @@
     <EmbeddedResource Include="Persistence\Scripts\TenantSchemaTemplate.sql" />
     <EmbeddedResource Include="Persistence\Scripts\BloodReportFormats.sql" />
     <EmbeddedResource Include="Persistence\Scripts\BloodReportMachineChemical.sql" />
+    <EmbeddedResource Include="Persistence\Scripts\BloodReportOptions.sql" />
   </ItemGroup>
 
   <ItemGroup>

@@ -88,3 +88,14 @@ public class TestReportInfo
     public string? Interpretation { get; set; }
     public DateTimeOffset UpdatedAt { get; set; }
 }
+
+
+/// <summary>
+/// Pick-list entry for blood reports: a machine (analyser) or a reagent (chemical)
+/// the lab uses. Kind = "Machine" | "Reagent".
+/// </summary>
+public class ReportOption : BaseEntity
+{
+    public string Kind { get; set; } = default!;
+    public string Name { get; set; } = default!;
+}
