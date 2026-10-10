@@ -42,6 +42,14 @@ public class LokynexHealthDbContext : DbContext, IApplicationDbContext
     public DbSet<Subscription> Subscriptions => Set<Subscription>();
     public DbSet<Notification> Notifications => Set<Notification>();
 
+    // ---- structured blood reports ----
+    public DbSet<TestParameter> TestParameters => Set<TestParameter>();
+    public DbSet<TestReferenceRange> TestReferenceRanges => Set<TestReferenceRange>();
+    public DbSet<ReportResult> ReportResults => Set<ReportResult>();
+    public DbSet<LabReportSetting> LabReportSettings => Set<LabReportSetting>();
+    public DbSet<ReportDelivery> ReportDeliveries => Set<ReportDelivery>();
+    public DbSet<TestReportInfo> TestReportInfos => Set<TestReportInfo>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         // Model-level enum registrations (used for migrations / model metadata).

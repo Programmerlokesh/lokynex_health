@@ -15,6 +15,10 @@ import {
   useReportTemplates,
 } from "@/hooks/use-report-builder";
 import { getApiErrorMessage } from "@/lib/api-error";
+import {
+  buildPrintDocument,
+  STRUCTURED_MARKER,
+} from "@/lib/blood-report/build-report";
 import { formatDateTime } from "@/lib/format";
 import { printHtml } from "@/lib/order-report";
 import { buildFieldMap, mergeFields } from "@/lib/report-editor/merge-fields";
@@ -161,6 +165,9 @@ export default function OrderReportsPage() {
       `/reports/editor?orderId=${order.id}&itemId=${activeItem.id}&type=${type}`,
     );
 
+  const goBloodFormat = (itemId: string) =>
+    router.push(`/reports/blood/${order.id}?item=${itemId}`);
+
   async function useTemplate(templateId: string) {
     setError(null);
     try {
@@ -215,15 +222,40 @@ export default function OrderReportsPage() {
     }
   }
 
+  const isStructured = (d: ReportDocumentDto) =>
+    !!d.bodyContent && d.bodyContent.startsWith(STRUCTURED_MARKER);
+
   function printDoc(d: ReportDocumentDto) {
+    const title = `${d.testName} - ${d.orderNumber}`;
+    if (isStructured(d)) {
+      // blood report: header / footer repeat on every printed page
+      printHtml(
+        buildPrintDocument(title, {
+          headerHtml: sanitizeHtml(d.headerContent ?? ""),
+          bodyHtml: sanitizeHtml(
+            (d.bodyContent ?? "").replace(STRUCTURED_MARKER, ""),
+          ),
+          footerHtml: sanitizeHtml(d.footerContent ?? ""),
+        }),
+      );
+      return;
+    }
     printHtml(
       buildReportPrintHtml({
-        title: `${d.testName} - ${d.orderNumber}`,
+        title,
         header: d.headerContent,
         body: d.bodyContent,
         footer: d.footerContent,
       }),
     );
+  }
+
+  function editDoc(d: ReportDocumentDto) {
+    if (isStructured(d)) {
+      goBloodFormat(d.orderItemId);
+      return;
+    }
+    router.push(`/reports/editor?docId=${d.id}`);
   }
 
   const rows = docs?.items ?? [];
@@ -240,7 +272,7 @@ export default function OrderReportsPage() {
       <Button
         size="small"
         variant="contained"
-        onClick={() => router.push(`/reports/editor?docId=${d.id}`)}
+        onClick={() => editDoc(d)}
         sx={pillBtnSx}
       >
         Edit
@@ -328,16 +360,33 @@ export default function OrderReportsPage() {
         </Box>
       )}
 
-      {/* ───── 3 ways to start a report ───── */}
+      {/* ───── 4 ways to start a report ───── */}
       <Box
         sx={{
           display: "grid",
           gap: 2,
-          gridTemplateColumns: { xs: "1fr", md: "repeat(3, 1fr)" },
+          gridTemplateColumns: {
+            xs: "1fr",
+            md: "repeat(2, 1fr)",
+            xl: "repeat(4, 1fr)",
+          },
         }}
       >
         <OptionCard
-          title="1) Create from Scratch"
+          title="1) Blood / Lab Test Format"
+          desc={`Ready format for “${activeItem.testName}”: parameters, units, normal ranges, machine & chemical details. Just enter the values and print.`}
+        >
+          <Button
+            variant="contained"
+            onClick={() => goBloodFormat(activeItem.id)}
+            sx={pillBtnSx}
+          >
+            Open Format
+          </Button>
+        </OptionCard>
+
+        <OptionCard
+          title="2) Create from Scratch"
           desc={`Start a fresh ${getModality(type).label} report in the online editor.`}
         >
           <TextField
@@ -359,7 +408,7 @@ export default function OrderReportsPage() {
         </OptionCard>
 
         <OptionCard
-          title="2) Create from Template"
+          title="3) Create from Template"
           desc="Select a saved template; patient details are filled in automatically."
         >
           <Button
@@ -372,7 +421,7 @@ export default function OrderReportsPage() {
         </OptionCard>
 
         <OptionCard
-          title="3) Edit from DOC / DOCX"
+          title="4) Edit from DOC / DOCX"
           desc="Upload a Word (.docx) file. It is converted to editable text; very complex layouts may be simplified."
         >
           <input

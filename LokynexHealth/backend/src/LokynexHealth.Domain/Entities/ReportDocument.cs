@@ -16,6 +16,19 @@ public class ReportDocument : BaseEntity
     public string? OriginalFilePath { get; set; }
     public string? ExportedFilePath { get; set; }
 
+    // ---- structured blood report (014 / 015 SQL) ----
+    public bool? UseLetterhead { get; set; }
+    public DateTimeOffset? SampleCollectedAt { get; set; }
+    public DateTimeOffset? ReportedAt { get; set; }
+    public Guid? VerifiedBy { get; set; }
+    public DateTimeOffset? PdfGeneratedAt { get; set; }
+    public string? Specimen { get; set; }
+    public string? MethodText { get; set; }
+    public string? MachineName { get; set; }
+    public string? ReagentName { get; set; }
+    public string? SampleId { get; set; }
+    public string? ReportRemarks { get; set; }
+
     public bool IsDeleted { get; set; }
     public DateTimeOffset? DeletedAt { get; set; }
     public Guid? DeletedBy { get; set; }

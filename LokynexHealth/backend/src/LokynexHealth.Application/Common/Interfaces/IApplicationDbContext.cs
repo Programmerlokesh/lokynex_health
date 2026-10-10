@@ -42,5 +42,13 @@ public interface IApplicationDbContext
     DbSet<ReportTemplate> ReportTemplates { get; }
     DbSet<ReportDocument> ReportDocuments { get; }
 
+    // ---- structured blood reports ----
+    DbSet<TestParameter> TestParameters { get; }
+    DbSet<TestReferenceRange> TestReferenceRanges { get; }
+    DbSet<ReportResult> ReportResults { get; }
+    DbSet<LabReportSetting> LabReportSettings { get; }
+    DbSet<ReportDelivery> ReportDeliveries { get; }
+    DbSet<TestReportInfo> TestReportInfos { get; }
+
     Task<int> SaveChangesAsync(CancellationToken cancellationToken);
 }
