@@ -3,10 +3,12 @@
   <ItemGroup>
     <ProjectReference Include="..\LokynexHealth.Application\LokynexHealth.Application.csproj" />
   </ItemGroup>
-  
+
   <ItemGroup>
-  <EmbeddedResource Include="Persistence\Scripts\TenantSchemaTemplate.sql" />
-</ItemGroup>
+    <EmbeddedResource Include="Persistence\Scripts\TenantSchemaTemplate.sql" />
+    <EmbeddedResource Include="Persistence\Scripts\BloodReportFormats.sql" />
+    <EmbeddedResource Include="Persistence\Scripts\BloodReportMachineChemical.sql" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="BCrypt.Net-Next" Version="4.2.0" />

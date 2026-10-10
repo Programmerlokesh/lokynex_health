@@ -87,6 +87,15 @@ const ITEMS: {
     moduleName: "DepartmentsAndTests",
   },
   {
+    label: "Test Formats",
+    href: "/test-formats",
+    tag: "Catalog",
+    path: "catalog › test-formats",
+    group: "settings",
+    icon: MicroscopeIcon,
+    moduleName: "DepartmentsAndTests",
+  },
+  {
     label: "Doctor / Referral / Technician",
     href: "/directory",
     tag: "Masters",
