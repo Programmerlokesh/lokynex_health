@@ -132,56 +132,5 @@ LANGUAGE sql STABLE AS $$
     LIMIT 1;
 $$;
 
--- ---------- starter format: CBC (adult ranges; verify with your pathologist) ----------
--- Only runs for a CBC test that has NO parameters yet. Edit anything later
--- from the "Test Formats" screen.
-DO $$
-DECLARE
-    t_id UUID;
-    p_id UUID;
-    r    RECORD;
-BEGIN
-    FOR t_id IN SELECT id FROM tests WHERE name ILIKE 'CBC%' LOOP
-        IF EXISTS (SELECT 1 FROM test_parameters WHERE test_id = t_id) THEN
-            CONTINUE;
-        END IF;
-
-        FOR r IN
-            SELECT * FROM (VALUES
-              -- sort, section,               name,                 unit,         dec, bold, m_lo,   m_hi,    f_lo,   f_hi,    crit_lo, crit_hi
-              (10, 'HAEMOGLOBIN',           'Haemoglobin (Hb)',    'g/dL',        1, true,  13.0,    17.0,    12.0,   15.0,    7.0,     20.0),
-              (20, 'RED BLOOD CELLS',       'Total RBC Count',     'million/cumm',2, false, 4.5,     5.5,     3.8,    4.8,     NULL,    NULL),
-              (30, 'RED BLOOD CELLS',       'PCV / Haematocrit',   '%',           1, false, 40.0,    50.0,    36.0,   46.0,    NULL,    NULL),
-              (40, 'RED CELL INDICES',      'MCV',                 'fL',          1, false, 83.0,    101.0,   83.0,   101.0,   NULL,    NULL),
-              (50, 'RED CELL INDICES',      'MCH',                 'pg',          1, false, 27.0,    32.0,    27.0,   32.0,    NULL,    NULL),
-              (60, 'RED CELL INDICES',      'MCHC',                'g/dL',        1, false, 31.5,    34.5,    31.5,   34.5,    NULL,    NULL),
-              (70, 'RED CELL INDICES',      'RDW-CV',              '%',           1, false, 11.6,    14.0,    11.6,   14.0,    NULL,    NULL),
-              (80, 'WHITE BLOOD CELLS',     'Total WBC Count',     '/cumm',       0, true,  4000.0,  11000.0, 4000.0, 11000.0, 2000.0,  30000.0),
-              (90, 'DIFFERENTIAL COUNT',    'Neutrophils',         '%',           0, false, 40.0,    80.0,    40.0,   80.0,    NULL,    NULL),
-              (100,'DIFFERENTIAL COUNT',    'Lymphocytes',         '%',           0, false, 20.0,    40.0,    20.0,   40.0,    NULL,    NULL),
-              (110,'DIFFERENTIAL COUNT',    'Monocytes',           '%',           0, false, 2.0,     10.0,    2.0,    10.0,    NULL,    NULL),
-              (120,'DIFFERENTIAL COUNT',    'Eosinophils',         '%',           0, false, 1.0,     6.0,     1.0,    6.0,     NULL,    NULL),
-              (130,'DIFFERENTIAL COUNT',    'Basophils',           '%',           0, false, 0.0,     2.0,     0.0,    2.0,     NULL,    NULL),
-              (140,'PLATELETS',             'Platelet Count',      '/cumm',       0, true,  150000.0,410000.0,150000.0,410000.0,20000.0,1000000.0)
-            ) AS v(sort_order, section_name, name, unit, dp, is_bold, m_lo, m_hi, f_lo, f_hi, c_lo, c_hi)
-        LOOP
-            INSERT INTO test_parameters (test_id, section_name, name, unit, result_type, decimal_places, sort_order, is_bold)
-            VALUES (t_id, r.section_name, r.name, r.unit, 'Number', r.dp::smallint, r.sort_order, r.is_bold)
-            RETURNING id INTO p_id;
-
-            IF r.m_lo = r.f_lo AND r.m_hi = r.f_hi THEN
-                INSERT INTO test_reference_ranges
-                    (parameter_id, gender, low_value, high_value, critical_low, critical_high, display_text)
-                VALUES (p_id, NULL, r.m_lo, r.m_hi, r.c_lo, r.c_hi,
-                        trim(trailing '.' FROM trim(trailing '0' FROM r.m_lo::text)) || ' - ' ||
-                        trim(trailing '.' FROM trim(trailing '0' FROM r.m_hi::text)));
-            ELSE
-                INSERT INTO test_reference_ranges
-                    (parameter_id, gender, low_value, high_value, critical_low, critical_high, display_text)
-                VALUES
-                    (p_id, 'Male',   r.m_lo, r.m_hi, r.c_lo, r.c_hi, r.m_lo::numeric(14,1)::text || ' - ' || r.m_hi::numeric(14,1)::text),
-                    (p_id, 'Female', r.f_lo, r.f_hi, r.c_lo, r.c_hi, r.f_lo::numeric(14,1)::text || ' - ' || r.f_hi::numeric(14,1)::text);
-            END IF;
-        END LOOP;
-    END LOOP;
-END $$;
+-- NOTE: no sample test formats are seeded here any more.
+-- Test formats (parameters + normal ranges) come from 017_seed_all_blood_test_formats.sql.

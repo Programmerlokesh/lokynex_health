@@ -1,4 +1,4 @@
-export type ResultFlag = "Normal" | "Low" | "High" | "Critical";
+export type ResultFlag = "Normal" | "Low" | "High" | "Critical" | "Abnormal";
 
 export interface BloodParameterDto {
   parameterId: string;

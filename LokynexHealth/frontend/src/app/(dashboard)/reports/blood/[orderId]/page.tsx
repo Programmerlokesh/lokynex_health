@@ -157,7 +157,11 @@ const ParamRow = memo(function ParamRow({
           <TextField
             select
             size="small"
-            value={flag === "Low" || flag === "High" ? flag : "Normal"}
+            value={
+              flag === "Low" || flag === "High" || flag === "Abnormal"
+                ? flag
+                : "Normal"
+            }
             onChange={(e) =>
               onFlag(p.parameterId, e.target.value as ResultFlag)
             }
@@ -166,6 +170,7 @@ const ParamRow = memo(function ParamRow({
             <MenuItem value="Normal">Normal</MenuItem>
             <MenuItem value="Low">Low</MenuItem>
             <MenuItem value="High">High</MenuItem>
+            <MenuItem value="Abnormal">Abnormal</MenuItem>
           </TextField>
         ) : (
           <Box
@@ -204,7 +209,13 @@ function EntryForm({ form }: { form: BloodReportFormDto }) {
   );
   const [manualFlags, setManualFlags] = useState<Record<string, ResultFlag>>(
     () =>
-      Object.fromEntries(form.parameters.map((p) => [p.parameterId, p.flag])),
+      // only a hand-picked flag is "manual"; an auto "Abnormal" is recomputed from the value
+      Object.fromEntries(
+        form.parameters.map((p) => [
+          p.parameterId,
+          p.flag === "Low" || p.flag === "High" ? p.flag : "Normal",
+        ]),
+      ),
   );
   const [meta, setMeta] = useState({
     sampleId: form.sampleId ?? "",
@@ -910,8 +921,8 @@ function BloodReportPage() {
         <Alert severity="warning">
           “{form.testName}” does not have a report format yet. Use the editor
           instead: <Link href={`/reports/order/${order.id}`}>go back</Link> and
-          choose “Create from Scratch”. (A format exists only for tests listed
-          in 014_blood_report_formats.sql — the test name must match exactly.)
+          choose “Create from Scratch”. (A format is added by running
+          017_seed_all_blood_test_formats.sql, or from the Test Formats screen.)
         </Alert>
       ) : (
         <EntryForm key={form.orderItemId} form={form} />

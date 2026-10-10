@@ -1,7 +1,7 @@
 -- ======================================================================
 -- 017_seed_all_blood_test_formats.sql
--- Report formats (parameters + normal ranges) for 40 blood test groups
--- (86 parameters). Runs on EVERY schema that has a `tests` table.
+-- Report formats (parameters + normal ranges) for 41 blood test groups
+-- (CBC included, 100 parameters). Runs on EVERY schema that has a `tests` table.
 --  * Matches your existing tests by NAME (pattern match), never creates tests.
 --  * Only fills tests that have NO parameters yet, so it never overwrites
 --    a format you already edited. Safe to re-run.
@@ -33,6 +33,7 @@ DECLARE
     n_done INT;
 BEGIN
     FOR d IN SELECT * FROM (VALUES
+        ('cbc', '^cbc|complete blood count|complete h(a)?emogram'),
         ('esr', '^esr|erythrocyte sed'),
         ('hb', '^h(a)?emoglobin'),
         ('pbs', 'smear'),
@@ -86,6 +87,20 @@ BEGIN
                    AND NOT EXISTS (SELECT 1 FROM test_parameters tp WHERE tp.test_id = tests.id)
         LOOP
             FOR p IN SELECT * FROM (VALUES
+        ('cbc', 10, 'HAEMOGLOBIN', 'Haemoglobin (Hb)', 'g/dL', 1, true, 'Number'),
+        ('cbc', 20, 'RED BLOOD CELLS', 'Total RBC Count', 'million/cumm', 2, false, 'Number'),
+        ('cbc', 30, 'RED BLOOD CELLS', 'PCV / Haematocrit', '%', 1, false, 'Number'),
+        ('cbc', 40, 'RED CELL INDICES', 'MCV', 'fL', 1, false, 'Number'),
+        ('cbc', 50, 'RED CELL INDICES', 'MCH', 'pg', 1, false, 'Number'),
+        ('cbc', 60, 'RED CELL INDICES', 'MCHC', 'g/dL', 1, false, 'Number'),
+        ('cbc', 70, 'RED CELL INDICES', 'RDW-CV', '%', 1, false, 'Number'),
+        ('cbc', 80, 'WHITE BLOOD CELLS', 'Total WBC Count', '/cumm', 0, true, 'Number'),
+        ('cbc', 90, 'DIFFERENTIAL COUNT', 'Neutrophils', '%', 0, false, 'Number'),
+        ('cbc', 100, 'DIFFERENTIAL COUNT', 'Lymphocytes', '%', 0, false, 'Number'),
+        ('cbc', 110, 'DIFFERENTIAL COUNT', 'Monocytes', '%', 0, false, 'Number'),
+        ('cbc', 120, 'DIFFERENTIAL COUNT', 'Eosinophils', '%', 0, false, 'Number'),
+        ('cbc', 130, 'DIFFERENTIAL COUNT', 'Basophils', '%', 0, false, 'Number'),
+        ('cbc', 140, 'PLATELETS', 'Platelet Count', '/cumm', 0, true, 'Number'),
         ('esr', 10, '', 'ESR (1st hour)', 'mm/hr', 0, true, 'Number'),
         ('hb', 10, '', 'Haemoglobin (Hb)', 'g/dL', 1, true, 'Number'),
         ('pbs', 10, 'PERIPHERAL SMEAR', 'RBC Morphology', NULL, NULL, false, 'Text'),
@@ -184,6 +199,23 @@ BEGIN
                     (parameter_id, gender, low_value, high_value, critical_low, critical_high, normal_text, display_text)
                 SELECT p_id, r.g::gender_type, r.lo, r.hi, r.clo, r.chi, r.txt, r.disp
                 FROM (VALUES
+        ('cbc', 10, 'Male', 13, 17, 7, 20, '13 - 17', NULL),
+        ('cbc', 10, 'Female', 12, 15, 7, 20, '12 - 15', NULL),
+        ('cbc', 20, 'Male', 4.5, 5.5, NULL, NULL, '4.5 - 5.5', NULL),
+        ('cbc', 20, 'Female', 3.8, 4.8, NULL, NULL, '3.8 - 4.8', NULL),
+        ('cbc', 30, 'Male', 40, 50, NULL, NULL, '40 - 50', NULL),
+        ('cbc', 30, 'Female', 36, 46, NULL, NULL, '36 - 46', NULL),
+        ('cbc', 40, NULL, 83, 101, NULL, NULL, '83 - 101', NULL),
+        ('cbc', 50, NULL, 27, 32, NULL, NULL, '27 - 32', NULL),
+        ('cbc', 60, NULL, 31.5, 34.5, NULL, NULL, '31.5 - 34.5', NULL),
+        ('cbc', 70, NULL, 11.6, 14.0, NULL, NULL, '11.6 - 14', NULL),
+        ('cbc', 80, NULL, 4000, 11000, 2000, 30000, '4000 - 11000', NULL),
+        ('cbc', 90, NULL, 40, 80, NULL, NULL, '40 - 80', NULL),
+        ('cbc', 100, NULL, 20, 40, NULL, NULL, '20 - 40', NULL),
+        ('cbc', 110, NULL, 2, 10, NULL, NULL, '2 - 10', NULL),
+        ('cbc', 120, NULL, 1, 6, NULL, NULL, '1 - 6', NULL),
+        ('cbc', 130, NULL, 0, 2, NULL, NULL, '0 - 2', NULL),
+        ('cbc', 140, NULL, 150000, 410000, 20000, 1000000, '150000 - 410000', NULL),
         ('esr', 10, 'Male', 0, 15, NULL, NULL, '0 - 15', NULL),
         ('esr', 10, 'Female', 0, 20, NULL, NULL, '0 - 20', NULL),
         ('hb', 10, 'Male', 13, 17, 7, 20, '13 - 17', NULL),

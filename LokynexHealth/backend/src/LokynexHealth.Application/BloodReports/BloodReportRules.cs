@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text.RegularExpressions;
 using LokynexHealth.Domain.Entities;
 using LokynexHealth.Domain.Enums;
 
@@ -42,6 +43,49 @@ public static class BloodReportRules
         var s = raw.Trim().Replace(",", "");
         if (s.StartsWith('<') || s.StartsWith('>')) return null;
         return decimal.TryParse(s, NumberStyles.Float, CultureInfo.InvariantCulture, out var v) ? v : null;
+    }
+
+    // ---- text results (Reactive / Detected / Widal titre ...) ----
+    // Mirrored in the UI: frontend/src/lib/blood-report/flags.ts (computeTextFlag).
+    private static readonly Regex TitreValue = new(@"^1\s*[:/]\s*(\d+)$", RegexOptions.Compiled);
+    private static readonly Regex TitreLimit = new(@"^<\s*1\s*:\s*(\d+)", RegexOptions.Compiled);
+    private static readonly Regex NegativeRef = new(
+        @"^(non[\s-]*reactive|not[\s-]*detected|negative|absent|nil)\b",
+        RegexOptions.IgnoreCase | RegexOptions.Compiled);
+    private static readonly Regex NegativeValue = new(
+        @"^(non[\s-]*reactive|not[\s-]*detected|not[\s-]*seen|negative|neg|nil|absent|normal|no)\b",
+        RegexOptions.IgnoreCase | RegexOptions.Compiled);
+    private static readonly Regex PositiveValue = new(
+        @"(reactive|positive|detected|present|seen|\bpos\b|\+)",
+        RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+    /// <summary>
+    /// Auto flag for NON-numeric results. Returns "Abnormal" only when the result is clearly
+    /// outside the reference text (e.g. reference "Non-Reactive" but result "Reactive", or
+    /// Widal reference "&lt; 1:80" and result "1:160"). Anything unclear stays "Normal".
+    /// </summary>
+    public static string ComputeTextFlag(string? value, string? referenceText)
+    {
+        var v = value?.Trim();
+        var r = referenceText?.Trim();
+        if (string.IsNullOrEmpty(v) || string.IsNullOrEmpty(r)) return "Normal";
+
+        // Titre style: reference "< 1:80", result "1:160"
+        var limit = TitreLimit.Match(r);
+        if (limit.Success)
+        {
+            var t = TitreValue.Match(v);
+            if (t.Success
+                && int.TryParse(t.Groups[1].Value, out var n)
+                && int.TryParse(limit.Groups[1].Value, out var lim))
+                return n >= lim ? "Abnormal" : "Normal";
+            return "Normal";
+        }
+
+        // Qualitative style: reference "Non-Reactive" / "Not Detected" / "Negative"
+        if (!NegativeRef.IsMatch(r)) return "Normal";
+        if (NegativeValue.IsMatch(v)) return "Normal";
+        return PositiveValue.IsMatch(v) ? "Abnormal" : "Normal";
     }
 
     public static string ComputeFlag(decimal? value, decimal? low, decimal? high, decimal? critLow, decimal? critHigh)

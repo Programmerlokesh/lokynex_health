@@ -159,7 +159,9 @@ ${form.departmentName ? `<div style="font-size:11px;color:#555">Department of ${
 <tbody>${bodyRows || `<tr><td colspan="4" style="padding:14px;text-align:center;color:#777">No results entered.</td></tr>`}</tbody>
 </table>`;
 
-  const legend = rows.some((r) => r.flag !== "Normal")
+  const legend = rows.some(
+    (r) => r.flag === "Low" || r.flag === "High" || r.flag === "Critical",
+  )
     ? `<div data-keep="1" style="font-size:10.5px;color:#555;margin-top:4px">L = Low, H = High, ✱ = Critical value</div>`
     : "";
 

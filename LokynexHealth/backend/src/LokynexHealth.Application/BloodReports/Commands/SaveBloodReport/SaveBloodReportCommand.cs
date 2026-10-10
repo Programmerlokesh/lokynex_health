@@ -13,7 +13,7 @@ public class SaveBloodResultInput
     public Guid ParameterId { get; set; }
     /// <summary>Empty / null = this parameter is not part of the report.</summary>
     public string? Value { get; set; }
-    /// <summary>Only used for non-numeric results (Normal / Low / High).</summary>
+    /// <summary>Only used for non-numeric results (Normal / Low / High / Abnormal).</summary>
     public string? Flag { get; set; }
 }
 
@@ -167,7 +167,10 @@ public class SaveBloodReportCommandHandler : IRequestHandler<SaveBloodReportComm
             }
             else
             {
-                flag = input.Flag is "Low" or "High" ? input.Flag : "Normal";
+                // non-numeric result: a manual Low/High/Abnormal wins, otherwise decide from the reference text
+                flag = input.Flag is "Low" or "High" or "Abnormal"
+                    ? input.Flag
+                    : BloodReportRules.ComputeTextFlag(value, refText);
             }
 
             keep.Add(p.Id);
