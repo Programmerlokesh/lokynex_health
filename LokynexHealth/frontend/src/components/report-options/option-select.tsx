@@ -34,7 +34,7 @@ export function OptionSelect({
   value: string;
   onChange: (v: string) => void;
 }) {
-  const { data, isLoading } = useReportOptions(kind);
+  const { data, isLoading, isError, refetch } = useReportOptions(kind);
   const create = useCreateReportOption();
   const remove = useDeleteReportOption();
 
@@ -47,6 +47,8 @@ export function OptionSelect({
     <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, minWidth: 0 }}>
       <Autocomplete
         freeSolo
+        forcePopupIcon
+        openOnFocus
         size="small"
         fullWidth
         loading={isLoading}
@@ -99,7 +101,25 @@ export function OptionSelect({
           <TextField
             {...params}
             label={label}
-            helperText="Pick from the list or type a new one"
+            error={isError}
+            helperText={
+              isError ? (
+                <span>
+                  Could not load the list.{" "}
+                  <a
+                    href="#"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      void refetch();
+                    }}
+                  >
+                    Retry
+                  </a>
+                </span>
+              ) : (
+                "Pick from the list or type a new one"
+              )
+            }
           />
         )}
       />
