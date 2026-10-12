@@ -31,7 +31,7 @@ public class GetTestFormatsQueryHandler : IRequestHandler<GetTestFormatsQuery, L
 
         var tests = await q
             .OrderBy(t => t.Department.Name).ThenBy(t => t.Name)
-            .Take(500)
+            .Take(1000)
             .Select(t => new { t.Id, t.Name, Department = t.Department.Name })
             .ToListAsync(ct);
 
