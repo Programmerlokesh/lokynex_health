@@ -475,6 +475,6 @@ CREATE INDEX idx_doctor_clinic_bookings_branch_date ON doctor_clinic_bookings (b
 CREATE UNIQUE INDEX uq_doctor_clinic_bookings_serial
     ON doctor_clinic_bookings (doctor_id, branch_id, booking_date, serial_no)
     WHERE serial_no IS NOT NULL;
-    
+
 CREATE INDEX idx_doctor_clinic_bookings_doctor_date ON doctor_clinic_bookings (doctor_id, booking_date);
 CREATE INDEX idx_doctor_clinic_bookings_branch_date ON doctor_clinic_bookings (branch_id, booking_date);
