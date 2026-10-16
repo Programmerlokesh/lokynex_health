@@ -8,7 +8,9 @@ import {
   getReferralsListApi,
   getTechniciansListApi,
   setDirectoryStatusApi,
+  setDoctorStatusApi,
   updateDirectoryRecordApi,
+  updateDoctorApi,
 } from "@/lib/api/directory";
 import {
   CreateDoctorRequest,
@@ -17,6 +19,7 @@ import {
   DirectoryKind,
   DirectoryPayload,
   DirectoryRecord,
+  UpdateDoctorRequest,
 } from "@/types/directory";
 import { PagedResult } from "@/types/user";
 import {
@@ -46,6 +49,10 @@ type ListData = PagedResult<DirectoryRecord>;
 function refreshDirectory(qc: QueryClient, kind: DirectoryKind) {
   qc.invalidateQueries({ queryKey: [LIST_KEY[kind]] });
   qc.invalidateQueries({ queryKey: [LOOKUP_KEY[kind]] });
+  // Doctor-clinic schedules show doctor name/status, so keep them fresh too.
+  if (kind === "doctor") {
+    qc.invalidateQueries({ queryKey: ["doctor-clinic-schedules"] });
+  }
 }
 
 // ---------------------------------------------------------------------
@@ -79,6 +86,24 @@ export function useCreateDoctor() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (data: CreateDoctorRequest) => createDoctorApi(data),
+    onSuccess: () => refreshDirectory(qc, "doctor"),
+  });
+}
+
+export function useUpdateDoctor() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: UpdateDoctorRequest }) =>
+      updateDoctorApi(id, data),
+    onSuccess: () => refreshDirectory(qc, "doctor"),
+  });
+}
+
+export function useSetDoctorStatus() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, isActive }: { id: string; isActive: boolean }) =>
+      setDoctorStatusApi(id, isActive),
     onSuccess: () => refreshDirectory(qc, "doctor"),
   });
 }
@@ -164,95 +189,5 @@ export function useSetDirectoryStatus(kind: DirectoryKind) {
     },
 
     onSettled: () => refreshDirectory(qc, kind),
-  });
-}
-
-import {
-  createDoctorApi,
-  createReferralApi,
-  createTechnicianApi,
-  getDoctorsListApi,
-  getReferralsListApi,
-  getTechniciansListApi,
-  setDoctorStatusApi,
-  updateDoctorApi,
-} from "@/lib/api/directory";
-import {
-  CreateDoctorRequest,
-  CreateReferralRequest,
-  CreateTechnicianRequest,
-  UpdateDoctorRequest,
-} from "@/types/directory";
-import {
-  QueryClient,
-  useMutation,
-  useQuery,
-  useQueryClient,
-} from "@tanstack/react-query";
-
-/** "doctors-list" = directory / doctors tab, "doctors" = pickers (lookups). */
-function invalidateDoctors(qc: QueryClient) {
-  qc.invalidateQueries({ queryKey: ["doctors-list"] });
-  qc.invalidateQueries({ queryKey: ["doctors"] });
-}
-
-export function useDoctorsList(search: string) {
-  return useQuery({
-    queryKey: ["doctors-list", search],
-    queryFn: () => getDoctorsListApi(search || undefined),
-  });
-}
-export function useCreateDoctor() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (data: CreateDoctorRequest) => createDoctorApi(data),
-    onSuccess: () => invalidateDoctors(qc),
-  });
-}
-export function useUpdateDoctor() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: UpdateDoctorRequest }) =>
-      updateDoctorApi(id, data),
-    onSuccess: () => invalidateDoctors(qc),
-  });
-}
-export function useSetDoctorStatus() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: ({ id, isActive }: { id: string; isActive: boolean }) =>
-      setDoctorStatusApi(id, isActive),
-    onSuccess: () => {
-      invalidateDoctors(qc);
-      qc.invalidateQueries({ queryKey: ["doctor-clinic-schedules"] });
-    },
-  });
-}
-
-export function useReferralsList(search: string) {
-  return useQuery({
-    queryKey: ["referrals-list", search],
-    queryFn: () => getReferralsListApi(search || undefined),
-  });
-}
-export function useCreateReferral() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (data: CreateReferralRequest) => createReferralApi(data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["referrals-list"] }),
-  });
-}
-
-export function useTechniciansList(search: string) {
-  return useQuery({
-    queryKey: ["technicians-list", search],
-    queryFn: () => getTechniciansListApi(search || undefined),
-  });
-}
-export function useCreateTechnician() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (data: CreateTechnicianRequest) => createTechnicianApi(data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["technicians-list"] }),
   });
 }
