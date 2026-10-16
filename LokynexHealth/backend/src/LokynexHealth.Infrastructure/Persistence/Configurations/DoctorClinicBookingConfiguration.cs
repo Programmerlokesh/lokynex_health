@@ -15,8 +15,13 @@ public class DoctorClinicBookingConfiguration : IEntityTypeConfiguration<DoctorC
         builder.Property(b => b.Status).HasColumnType("booking_status_type").HasDefaultValue(Domain.Enums.BookingStatusType.Booked);
         builder.Property(b => b.PatientName).HasMaxLength(150).IsRequired();
         builder.Property(b => b.PatientPhone).HasMaxLength(20).IsRequired();
+        builder.Property(b => b.VisitFee).HasColumnType("numeric(10,2)").HasDefaultValue(0m);
+        builder.Property(b => b.PaymentMethod).HasColumnType("payment_method_type");
 
         builder.HasIndex(b => new { b.DoctorId, b.BookingDate });
         builder.HasIndex(b => new { b.BranchId, b.BookingDate });
+        builder.HasIndex(b => new { b.DoctorId, b.BranchId, b.BookingDate, b.SerialNo })
+            .IsUnique()
+            .HasFilter("serial_no IS NOT NULL");
     }
 }

@@ -453,5 +453,28 @@ CREATE TABLE doctor_clinic_bookings (
     status          booking_status_type NOT NULL DEFAULT 'Booked',
     created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+CREATE TABLE doctor_clinic_bookings (
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    schedule_id     UUID REFERENCES doctor_clinic_schedules(id),
+    doctor_id       UUID NOT NULL REFERENCES platform.doctors(id),
+    branch_id       UUID NOT NULL REFERENCES branches(id),
+    booking_date    DATE NOT NULL,
+    time_slot       TIME NOT NULL,
+    serial_no       INT,                                  -- 1,2,3.. per doctor + branch + day
+    patient_name    VARCHAR(150) NOT NULL,
+    patient_phone   VARCHAR(20) NOT NULL,
+    patient_email   CITEXT,
+    note            TEXT,                                 -- reason for visit
+    visit_fee       NUMERIC(10,2) NOT NULL DEFAULT 0,
+    payment_method  payment_method_type,                  -- NULL when visit_fee = 0
+    status          booking_status_type NOT NULL DEFAULT 'Booked',
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX idx_doctor_clinic_bookings_doctor_date ON doctor_clinic_bookings (doctor_id, booking_date);
+CREATE INDEX idx_doctor_clinic_bookings_branch_date ON doctor_clinic_bookings (branch_id, booking_date);
+CREATE UNIQUE INDEX uq_doctor_clinic_bookings_serial
+    ON doctor_clinic_bookings (doctor_id, branch_id, booking_date, serial_no)
+    WHERE serial_no IS NOT NULL;
+    
 CREATE INDEX idx_doctor_clinic_bookings_doctor_date ON doctor_clinic_bookings (doctor_id, booking_date);
 CREATE INDEX idx_doctor_clinic_bookings_branch_date ON doctor_clinic_bookings (branch_id, booking_date);

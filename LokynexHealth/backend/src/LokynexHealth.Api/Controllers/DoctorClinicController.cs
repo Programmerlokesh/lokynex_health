@@ -2,6 +2,7 @@ using LokynexHealth.Application.DoctorClinic.Commands.BookAppointment;
 using LokynexHealth.Application.DoctorClinic.Commands.CreateSchedule;
 using LokynexHealth.Application.DoctorClinic.Commands.ToggleScheduleStatus;
 using LokynexHealth.Application.DoctorClinic.Queries.GetAvailableSlots;
+using LokynexHealth.Application.DoctorClinic.Queries.GetBookings;
 using LokynexHealth.Application.DoctorClinic.Queries.GetSchedules;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -53,7 +54,15 @@ public class DoctorClinicController : ControllerBase
     [HttpPost("bookings")]
     public async Task<IActionResult> Book([FromBody] BookAppointmentCommand command, CancellationToken ct)
     {
-        var id = await _mediator.Send(command, ct);
-        return CreatedAtAction(nameof(Book), new { id }, new { id });
+        var result = await _mediator.Send(command, ct);
+        return CreatedAtAction(nameof(Book), new { id = result.Id }, new { id = result.Id, serialNo = result.SerialNo });
+    }
+
+    /// <summary>All patients booked with one doctor on one date (optionally one branch).</summary>
+    [HttpGet("bookings")]
+    public async Task<IActionResult> GetBookings([FromQuery] GetBookingsQuery query, CancellationToken ct)
+    {
+        var result = await _mediator.Send(query, ct);
+        return Ok(result);
     }
 }

@@ -2,6 +2,7 @@ import {
   bookAppointmentApi,
   createScheduleApi,
   getAvailableSlotsApi,
+  getBookingsApi,
   getSchedulesApi,
   toggleScheduleStatusApi,
 } from "@/lib/api/doctor-clinic";
@@ -9,6 +10,7 @@ import {
   BookAppointmentRequest,
   CreateScheduleRequest,
   GetAvailableSlotsParams,
+  GetBookingsParams,
 } from "@/types/doctor-clinic";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
@@ -50,7 +52,18 @@ export function useBookAppointment() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (data: BookAppointmentRequest) => bookAppointmentApi(data),
-    onSuccess: () =>
-      qc.invalidateQueries({ queryKey: ["doctor-clinic-slots"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["doctor-clinic-slots"] });
+      qc.invalidateQueries({ queryKey: ["doctor-clinic-bookings"] });
+    },
+  });
+}
+
+/** Patients booked with one doctor on one date. */
+export function useBookings(params: GetBookingsParams | null) {
+  return useQuery({
+    queryKey: ["doctor-clinic-bookings", params],
+    queryFn: () => getBookingsApi(params!),
+    enabled: !!params,
   });
 }

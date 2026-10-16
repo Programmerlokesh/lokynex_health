@@ -8,6 +8,7 @@ import {
   DoctorFullDto,
   ReferralFullDto,
   TechnicianFullDto,
+  UpdateDoctorRequest,
 } from "@/types/directory";
 import { PagedResult } from "@/types/user";
 
@@ -98,4 +99,19 @@ export async function deleteDirectoryRecordApi(
   id: string,
 ): Promise<void> {
   await apiClient.delete(`${BASE[kind]}/${id}`);
+}
+
+// ---------------- doctor shortcuts (kept so old imports still work) ----------------
+export async function updateDoctorApi(
+  id: string,
+  data: UpdateDoctorRequest,
+): Promise<void> {
+  await updateDirectoryRecordApi("doctor", id, data);
+}
+
+export async function setDoctorStatusApi(
+  id: string,
+  isActive: boolean,
+): Promise<void> {
+  await setDirectoryStatusApi("doctor", id, isActive);
 }

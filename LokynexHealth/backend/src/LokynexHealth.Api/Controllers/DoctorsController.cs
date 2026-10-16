@@ -1,5 +1,6 @@
 using LokynexHealth.Application.Doctors.Commands.CreateDoctor;
-using LokynexHealth.Application.Doctors.Commands.ManageDoctor;
+using LokynexHealth.Application.Doctors.Commands.SetDoctorStatus;
+using LokynexHealth.Application.Doctors.Commands.UpdateDoctor;
 using LokynexHealth.Application.Doctors.Queries.GetDoctors;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -33,6 +34,9 @@ public class DoctorsController : ControllerBase
         return Ok(result);
     }
 
+    // NOTE: doctors are a GLOBAL registry shared by every lab, so edit / deactivate
+    // affect all labs. To limit these two actions to lab owners, add
+    // [Authorize(Roles = "LabAdmin")] on them.
     [HttpPut("{id:guid}")]
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateDoctorCommand command, CancellationToken ct)
     {
@@ -46,15 +50,6 @@ public class DoctorsController : ControllerBase
     {
         command.Id = id;
         await _mediator.Send(command, ct);
-        return NoContent();
-    }
-
-    // Doctors are shared by EVERY lab, so permanent delete is LabAdmin-only.
-    [HttpDelete("{id:guid}")]
-    [Authorize(Roles = "LabAdmin")]
-    public async Task<IActionResult> Delete(Guid id, CancellationToken ct)
-    {
-        await _mediator.Send(new DeleteDoctorCommand { Id = id }, ct);
         return NoContent();
     }
 }

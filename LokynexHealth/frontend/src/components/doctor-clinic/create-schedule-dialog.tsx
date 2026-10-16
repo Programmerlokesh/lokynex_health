@@ -4,6 +4,8 @@ import { useBranches } from "@/hooks/use-branches";
 import { useDebounce } from "@/hooks/use-debounce";
 import { useCreateSchedule } from "@/hooks/use-doctor-clinic";
 import { useDoctors } from "@/hooks/use-lookups";
+import { getApiErrorMessage } from "@/lib/api-error";
+import { LookupDto } from "@/types/lookup";
 import AddIcon from "@mui/icons-material/Add";
 import {
   Alert,
@@ -16,23 +18,19 @@ import {
   DialogTitle,
   MenuItem,
   TextField,
+  useMediaQuery,
+  useTheme,
 } from "@mui/material";
 import { useState } from "react";
-
-const DAYS = [
-  "Sunday",
-  "Monday",
-  "Tuesday",
-  "Wednesday",
-  "Thursday",
-  "Friday",
-  "Saturday",
-];
+import { DAYS } from "./clinic-utils";
 
 export function CreateScheduleDialog() {
+  const theme = useTheme();
+  const fullScreen = useMediaQuery(theme.breakpoints.down("sm"));
+
   const [open, setOpen] = useState(false);
   const [branchId, setBranchId] = useState("");
-  const [doctorId, setDoctorId] = useState<string | null>(null);
+  const [doctor, setDoctor] = useState<LookupDto | null>(null);
   const [doctorSearch, setDoctorSearch] = useState("");
   const debouncedDoctorSearch = useDebounce(doctorSearch, 350);
   const [dayOfWeek, setDayOfWeek] = useState(1);
@@ -42,28 +40,35 @@ export function CreateScheduleDialog() {
   const [maxPatients, setMaxPatients] = useState("1");
 
   const { data: branches } = useBranches({ pageSize: 100 });
-  const { data: doctorResult } = useDoctors(debouncedDoctorSearch);
+  // Only active doctors can be given a clinic schedule.
+  const { data: doctorResult } = useDoctors(debouncedDoctorSearch, true);
   const createSchedule = useCreateSchedule();
 
   function resetForm() {
     setBranchId("");
-    setDoctorId(null);
+    setDoctor(null);
     setDoctorSearch("");
     setDayOfWeek(1);
     setTimeFrom("");
     setTimeTo("");
     setSlotMinutes("15");
     setMaxPatients("1");
+    createSchedule.reset();
+  }
+
+  function handleClose() {
+    setOpen(false);
+    createSchedule.reset();
   }
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!branchId || !doctorId || !timeFrom || !timeTo) return;
+    if (!branchId || !doctor || !timeFrom || !timeTo) return;
 
     createSchedule.mutate(
       {
         branchId,
-        doctorId,
+        doctorId: doctor.id,
         dayOfWeek,
         slotMinutes: Number(slotMinutes),
         timeFrom: `${timeFrom}:00`,
@@ -90,20 +95,33 @@ export function CreateScheduleDialog() {
       </Button>
       <Dialog
         open={open}
-        onClose={() => setOpen(false)}
+        onClose={handleClose}
         fullWidth
         maxWidth="xs"
+        fullScreen={fullScreen}
       >
         <DialogTitle sx={{ fontWeight: 700 }}>
           Create Clinic Schedule
         </DialogTitle>
-        <Box component="form" onSubmit={handleSubmit}>
+        <Box
+          component="form"
+          onSubmit={handleSubmit}
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            flex: 1,
+            minHeight: 0,
+          }}
+        >
           <DialogContent
             sx={{ display: "flex", flexDirection: "column", gap: 2 }}
           >
             {createSchedule.isError && (
               <Alert severity="error">
-                Could not create the schedule. Please try again.
+                {getApiErrorMessage(
+                  createSchedule.error,
+                  "Could not create the schedule. Please try again.",
+                )}
               </Alert>
             )}
 
@@ -125,9 +143,12 @@ export function CreateScheduleDialog() {
 
             <Autocomplete
               options={doctorResult?.items ?? []}
+              value={doctor}
+              isOptionEqualToValue={(o, v) => o.id === v.id}
               getOptionLabel={(o) => `${o.fullName} — ${o.phone}`}
+              filterOptions={(x) => x}
               onInputChange={(_, v) => setDoctorSearch(v)}
-              onChange={(_, v) => setDoctorId(v?.id ?? null)}
+              onChange={(_, v) => setDoctor(v)}
               renderInput={(params) => (
                 <TextField {...params} label="Doctor" size="small" required />
               )}
@@ -148,7 +169,13 @@ export function CreateScheduleDialog() {
               ))}
             </TextField>
 
-            <Box sx={{ display: "flex", flexDirection: { xs: "column", sm: "row" }, gap: 2 }}>
+            <Box
+              sx={{
+                display: "flex",
+                flexDirection: { xs: "column", sm: "row" },
+                gap: 2,
+              }}
+            >
               <TextField
                 label="Time From"
                 type="time"
@@ -171,7 +198,13 @@ export function CreateScheduleDialog() {
               />
             </Box>
 
-            <Box sx={{ display: "flex", flexDirection: { xs: "column", sm: "row" }, gap: 2 }}>
+            <Box
+              sx={{
+                display: "flex",
+                flexDirection: { xs: "column", sm: "row" },
+                gap: 2,
+              }}
+            >
               <TextField
                 label="Slot Minutes"
                 type="number"
@@ -193,7 +226,7 @@ export function CreateScheduleDialog() {
             </Box>
           </DialogContent>
           <DialogActions sx={{ px: 3, pb: 3 }}>
-            <Button onClick={() => setOpen(false)} color="inherit">
+            <Button onClick={handleClose} color="inherit">
               Cancel
             </Button>
             <Button
@@ -202,7 +235,7 @@ export function CreateScheduleDialog() {
               disabled={
                 createSchedule.isPending ||
                 !branchId ||
-                !doctorId ||
+                !doctor ||
                 !timeFrom ||
                 !timeTo
               }

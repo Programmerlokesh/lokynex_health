@@ -4,9 +4,15 @@ import { PagedResult } from "@/types/user";
 
 export async function getDoctorsApi(
   search?: string,
+  activeOnly?: boolean,
 ): Promise<PagedResult<LookupDto>> {
   const response = await apiClient.get<PagedResult<LookupDto>>("/Doctors", {
-    params: { search, status: "Active", pageSize: 50 },
+    params: {
+      search,
+      status: "Active",
+      pageSize: 50,
+      activeOnly: activeOnly || undefined,
+    },
   });
   return response.data;
 }

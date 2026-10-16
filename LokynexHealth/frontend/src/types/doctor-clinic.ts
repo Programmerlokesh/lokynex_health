@@ -1,48 +1,67 @@
-export interface ScheduleDto {
-  id: string;
-  branchId: string;
-  branchName: string;
-  doctorId: string;
-  doctorName: string;
-  dayOfWeek: number; // 0 = Sunday ... 6 = Saturday
-  slotMinutes: number;
-  timeFrom: string; // "HH:mm:ss"
-  timeTo: string;
-  maxPatients: number;
-  isActive: boolean;
+import { apiClient } from "@/lib/api-client";
+import {
+  AvailableSlotDto,
+  BookAppointmentRequest,
+  BookAppointmentResult,
+  BookingDto,
+  CreateScheduleRequest,
+  GetAvailableSlotsParams,
+  GetBookingsParams,
+  ScheduleDto,
+} from "@/types/doctor-clinic";
+
+export async function getSchedulesApi(params: {
+  branchId?: string;
+  doctorId?: string;
+}): Promise<ScheduleDto[]> {
+  const res = await apiClient.get<ScheduleDto[]>("/DoctorClinic/schedules", {
+    params,
+  });
+  return res.data;
 }
 
-export interface CreateScheduleRequest {
-  branchId: string;
-  doctorId: string;
-  dayOfWeek: number;
-  slotMinutes: number;
-  timeFrom: string;
-  timeTo: string;
-  maxPatients: number;
+export async function createScheduleApi(
+  data: CreateScheduleRequest,
+): Promise<{ id: string }> {
+  const res = await apiClient.post<{ id: string }>(
+    "/DoctorClinic/schedules",
+    data,
+  );
+  return res.data;
 }
 
-export interface AvailableSlotDto {
-  timeSlot: string;
-  maxPatients: number;
-  bookedCount: number;
-  availableCount: number;
-  isFull: boolean;
+export async function toggleScheduleStatusApi(
+  id: string,
+  isActive: boolean,
+): Promise<void> {
+  await apiClient.patch(`/DoctorClinic/schedules/${id}/status`, { isActive });
 }
 
-export interface GetAvailableSlotsParams {
-  doctorId: string;
-  branchId: string;
-  date: string;
+export async function getAvailableSlotsApi(
+  params: GetAvailableSlotsParams,
+): Promise<AvailableSlotDto[]> {
+  const res = await apiClient.get<AvailableSlotDto[]>(
+    "/DoctorClinic/available-slots",
+    { params },
+  );
+  return res.data;
 }
 
-export interface BookAppointmentRequest {
-  doctorId: string;
-  branchId: string;
-  bookingDate: string;
-  timeSlot: string;
-  patientName: string;
-  patientPhone: string;
-  patientEmail?: string;
-  note?: string;
+export async function bookAppointmentApi(
+  data: BookAppointmentRequest,
+): Promise<BookAppointmentResult> {
+  const res = await apiClient.post<BookAppointmentResult>(
+    "/DoctorClinic/bookings",
+    data,
+  );
+  return res.data;
+}
+
+export async function getBookingsApi(
+  params: GetBookingsParams,
+): Promise<BookingDto[]> {
+  const res = await apiClient.get<BookingDto[]>("/DoctorClinic/bookings", {
+    params,
+  });
+  return res.data;
 }

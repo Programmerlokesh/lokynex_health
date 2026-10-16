@@ -35,3 +35,35 @@ export function useAllTechnicians(enabled = true) {
     enabled,
   });
 }
+
+/** activeOnly = hide deactivated doctors (use it wherever a doctor must be selectable for new work). */
+export function useDoctors(search: string, activeOnly = false) {
+  return useQuery({
+    queryKey: ["doctors", search, activeOnly],
+    queryFn: () => getDoctorsApi(search || undefined, activeOnly),
+  });
+}
+
+export function useReferrals(search: string) {
+  return useQuery({
+    queryKey: ["referrals", search],
+    queryFn: () => getReferralsApi(search || undefined),
+  });
+}
+
+export function useTechnicians(branchId: string | null) {
+  return useQuery({
+    queryKey: ["technicians", branchId],
+    queryFn: () => getTechniciansApi(branchId ?? undefined),
+    enabled: !!branchId, // don't fetch until a branch is chosen — avoids a wasted request
+  });
+}
+
+/** Every technician of the lab (all branches) — for commission setup screens. */
+export function useAllTechnicians(enabled = true) {
+  return useQuery({
+    queryKey: ["technicians", "all"],
+    queryFn: () => getTechniciansApi(undefined),
+    enabled,
+  });
+}

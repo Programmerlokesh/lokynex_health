@@ -18,13 +18,10 @@ public class GetDoctorsQueryHandler : IRequestHandler<GetDoctorsQuery, PagedResu
 
     public async Task<PagedResult<DoctorDto>> Handle(GetDoctorsQuery request, CancellationToken cancellationToken)
     {
-        var pageNumber = Math.Max(1, request.PageNumber);
-        var pageSize = Math.Clamp(request.PageSize, 1, 200);
+        var query = _db.Doctors.AsQueryable();
 
-        var query = _db.Doctors.AsNoTracking().AsQueryable();
-
-        if (Enum.TryParse<PlatformRecordStatus>(request.Status, true, out var status))
-            query = query.Where(d => d.Status == status);
+        if (request.ActiveOnly)
+            query = query.Where(d => d.Status == PlatformRecordStatus.Active);
 
         if (!string.IsNullOrWhiteSpace(request.Search))
         {
@@ -41,10 +38,13 @@ public class GetDoctorsQueryHandler : IRequestHandler<GetDoctorsQuery, PagedResu
 
         var totalCount = await query.CountAsync(cancellationToken);
 
+        // Fetch the raw entities first (native enum stays as-is in the query) —
+        // ToListAsync() materializes the results, THEN we map to DTO with
+        // .ToString() running in memory (LINQ-to-Objects), not translated to SQL.
         var doctorEntities = await query
             .OrderBy(d => d.FullName)
-            .Skip((pageNumber - 1) * pageSize)
-            .Take(pageSize)
+            .Skip((request.PageNumber - 1) * request.PageSize)
+            .Take(request.PageSize)
             .ToListAsync(cancellationToken);
 
         var doctors = doctorEntities.Select(d => new DoctorDto
@@ -52,7 +52,6 @@ public class GetDoctorsQueryHandler : IRequestHandler<GetDoctorsQuery, PagedResu
             Id = d.Id,
             FullName = d.FullName,
             Phone = d.Phone,
-            WhatsappNumber = d.WhatsappNumber,
             Email = d.Email,
             Address = d.Address,
             Specialization = d.Specialization,
@@ -63,8 +62,8 @@ public class GetDoctorsQueryHandler : IRequestHandler<GetDoctorsQuery, PagedResu
         {
             Items = doctors,
             TotalCount = totalCount,
-            PageNumber = pageNumber,
-            PageSize = pageSize
+            PageNumber = request.PageNumber,
+            PageSize = request.PageSize
         };
     }
 }

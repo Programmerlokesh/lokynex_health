@@ -1,7 +1,9 @@
 "use client";
 
 import { BookAppointmentPanel } from "@/components/doctor-clinic/book-appointment-panel";
+import { BookingsPanel } from "@/components/doctor-clinic/bookings-panel";
 import { CreateScheduleDialog } from "@/components/doctor-clinic/create-schedule-dialog";
+import { DoctorsPanel } from "@/components/doctor-clinic/doctors-panel";
 import { SchedulesTable } from "@/components/doctor-clinic/schedules-table";
 import { MicroscopeIcon } from "@/components/icons/lab-icons";
 import { brand } from "@/components/providers/mui-theme-provider";
@@ -20,7 +22,7 @@ export default function DoctorClinicPage() {
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-                    flexWrap: "wrap",
+          flexWrap: "wrap",
           gap: 1.5,
         }}
       >
@@ -43,22 +45,30 @@ export default function DoctorClinicPage() {
         {tab === 0 && <CreateScheduleDialog />}
       </Box>
 
-      <Tabs value={tab} onChange={(_, v) => setTab(v)}>
+      <Tabs
+        value={tab}
+        onChange={(_, v) => setTab(v)}
+        variant="scrollable"
+        scrollButtons="auto"
+        allowScrollButtonsMobile
+      >
         <Tab label="Schedules" />
         <Tab label="Book Appointment" />
+        <Tab label="Bookings" />
+        <Tab label="Doctors" />
       </Tabs>
 
-      {tab === 0 ? (
-        isLoading ? (
+      {tab === 0 &&
+        (isLoading ? (
           <Box sx={{ display: "flex", justifyContent: "center", py: 6 }}>
             <CircularProgress size={28} />
           </Box>
         ) : (
           <SchedulesTable rows={schedules ?? []} />
-        )
-      ) : (
-        <BookAppointmentPanel />
-      )}
+        ))}
+      {tab === 1 && <BookAppointmentPanel />}
+      {tab === 2 && <BookingsPanel />}
+      {tab === 3 && <DoctorsPanel />}
     </Box>
   );
 }

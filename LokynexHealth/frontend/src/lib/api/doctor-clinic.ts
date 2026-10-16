@@ -2,8 +2,11 @@ import { apiClient } from "@/lib/api-client";
 import {
   AvailableSlotDto,
   BookAppointmentRequest,
+  BookAppointmentResult,
+  BookingDto,
   CreateScheduleRequest,
   GetAvailableSlotsParams,
+  GetBookingsParams,
   ScheduleDto,
 } from "@/types/doctor-clinic";
 
@@ -46,10 +49,19 @@ export async function getAvailableSlotsApi(
 
 export async function bookAppointmentApi(
   data: BookAppointmentRequest,
-): Promise<{ id: string }> {
-  const res = await apiClient.post<{ id: string }>(
+): Promise<BookAppointmentResult> {
+  const res = await apiClient.post<BookAppointmentResult>(
     "/DoctorClinic/bookings",
     data,
   );
+  return res.data;
+}
+
+export async function getBookingsApi(
+  params: GetBookingsParams,
+): Promise<BookingDto[]> {
+  const res = await apiClient.get<BookingDto[]>("/DoctorClinic/bookings", {
+    params,
+  });
   return res.data;
 }

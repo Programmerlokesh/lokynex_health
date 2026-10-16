@@ -47,6 +47,8 @@ export interface CreateDoctorRequest {
   specialization?: string;
 }
 
+export type UpdateDoctorRequest = CreateDoctorRequest;
+
 export interface CreateReferralRequest {
   fullName: string;
   phone: string;
