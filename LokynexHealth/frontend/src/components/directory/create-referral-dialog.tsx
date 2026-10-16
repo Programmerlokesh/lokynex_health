@@ -17,7 +17,6 @@ import { useState } from "react";
 export function CreateReferralDialog() {
   return <AddDirectoryButton kind="referral" />;
 }
-
 export function CreateReferralDialog() {
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({

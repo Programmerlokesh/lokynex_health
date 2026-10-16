@@ -17,7 +17,6 @@ import { useState } from "react";
 export function CreateDoctorDialog() {
   return <AddDirectoryButton kind="doctor" />;
 }
-
 export function CreateDoctorDialog() {
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({
