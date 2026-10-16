@@ -6,6 +6,7 @@ public class CreateDoctorCommand : IRequest<Guid>
 {
     public string FullName { get; set; } = default!;
     public string Phone { get; set; } = default!;
+    public string? WhatsappNumber { get; set; }
     public string? Email { get; set; }
     public string? Address { get; set; }
     public string? Specialization { get; set; }

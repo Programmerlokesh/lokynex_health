@@ -1,5 +1,6 @@
 "use client";
 
+import { AddDirectoryButton } from "@/components/directory/directory-form-dialog";
 import { useCreateDoctor } from "@/hooks/use-directory";
 import AddIcon from "@mui/icons-material/Add";
 import {
@@ -12,6 +13,10 @@ import {
   TextField,
 } from "@mui/material";
 import { useState } from "react";
+
+export function CreateDoctorDialog() {
+  return <AddDirectoryButton kind="doctor" />;
+}
 
 export function CreateDoctorDialog() {
   const [open, setOpen] = useState(false);

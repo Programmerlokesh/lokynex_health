@@ -17,17 +17,20 @@ public class CreateDoctorCommandHandler : IRequestHandler<CreateDoctorCommand, G
         _db = db;
     }
 
+    private static string? Clean(string? s) => string.IsNullOrWhiteSpace(s) ? null : s.Trim();
+
     public async Task<Guid> Handle(CreateDoctorCommand request, CancellationToken cancellationToken)
     {
         var fullName = request.FullName.Trim();
         // Always stored as exactly 10 digits (the validator already rejected anything else).
         var phone = PhoneNormalizer.ToIndianMobile(request.Phone)
             ?? throw new ConflictException("Enter a valid 10-digit Indian mobile number.");
-        var email = string.IsNullOrWhiteSpace(request.Email) ? null : request.Email.Trim();
+        var whatsapp = PhoneNormalizer.ToIndianMobile(request.WhatsappNumber); // null when blank
+        var email = Clean(request.Email);
 
         // ---- Duplicate check 1: same phone number ----
         // Doctors are a GLOBAL registry shared by every lab, so this checks all of them.
-        // Old rows may still be stored with spaces / +91, hence the format-insensitive match.
+        // Indexed LIKE pre-filter, then exact confirm in memory on the few candidates.
         if (PhoneNormalizer.FormatInsensitiveLikePattern(phone) is { } pattern)
         {
             var candidates = await _db.Doctors
@@ -67,9 +70,10 @@ public class CreateDoctorCommandHandler : IRequestHandler<CreateDoctorCommand, G
             Id = Guid.NewGuid(),
             FullName = fullName,
             Phone = phone,
+            WhatsappNumber = whatsapp,
             Email = email,
-            Address = request.Address,
-            Specialization = request.Specialization,
+            Address = Clean(request.Address),
+            Specialization = Clean(request.Specialization),
             Status = PlatformRecordStatus.Active,
             CreatedAt = DateTimeOffset.UtcNow
         };

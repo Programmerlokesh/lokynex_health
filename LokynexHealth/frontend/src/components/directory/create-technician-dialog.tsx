@@ -14,6 +14,11 @@ import {
   TextField,
 } from "@mui/material";
 import { useState } from "react";
+import { AddDirectoryButton } from "@/components/directory/directory-form-dialog";
+
+export function CreateTechnicianDialog() {
+  return <AddDirectoryButton kind="technician" />;
+}
 
 export function CreateTechnicianDialog() {
   const [open, setOpen] = useState(false);

@@ -1,6 +1,7 @@
 using LokynexHealth.Application.Common;
 using LokynexHealth.Application.Common.Interfaces;
 using LokynexHealth.Application.Common.Models;
+using LokynexHealth.Domain.Enums;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
@@ -17,12 +18,17 @@ public class GetReferralsQueryHandler : IRequestHandler<GetReferralsQuery, Paged
 
     public async Task<PagedResult<ReferralDto>> Handle(GetReferralsQuery request, CancellationToken cancellationToken)
     {
-        var query = _db.Referrals.AsQueryable();
+        var pageNumber = Math.Max(1, request.PageNumber);
+        var pageSize = Math.Clamp(request.PageSize, 1, 200);
+
+        var query = _db.Referrals.AsNoTracking().AsQueryable();
+
+        if (Enum.TryParse<PlatformRecordStatus>(request.Status, true, out var status))
+            query = query.Where(r => r.Status == status);
 
         if (!string.IsNullOrWhiteSpace(request.Search))
         {
             var term = $"%{request.Search}%";
-            // Format-insensitive phone match (null when the search has < 6 digits).
             var phonePattern = PhoneNormalizer.FormatInsensitiveLikePattern(request.Search);
 
             query = query.Where(r =>
@@ -36,8 +42,8 @@ public class GetReferralsQueryHandler : IRequestHandler<GetReferralsQuery, Paged
 
         var referralEntities = await query
             .OrderBy(r => r.FullName)
-            .Skip((request.PageNumber - 1) * request.PageSize)
-            .Take(request.PageSize)
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
             .ToListAsync(cancellationToken);
 
         var referrals = referralEntities.Select(r => new ReferralDto
@@ -45,6 +51,7 @@ public class GetReferralsQueryHandler : IRequestHandler<GetReferralsQuery, Paged
             Id = r.Id,
             FullName = r.FullName,
             Phone = r.Phone,
+            WhatsappNumber = r.WhatsappNumber,
             Email = r.Email,
             Address = r.Address,
             Status = r.Status.ToString()
@@ -54,8 +61,8 @@ public class GetReferralsQueryHandler : IRequestHandler<GetReferralsQuery, Paged
         {
             Items = referrals,
             TotalCount = totalCount,
-            PageNumber = request.PageNumber,
-            PageSize = request.PageSize
+            PageNumber = pageNumber,
+            PageSize = pageSize
         };
     }
 }

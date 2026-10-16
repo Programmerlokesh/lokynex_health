@@ -1,5 +1,7 @@
+using LokynexHealth.Application.Common;
 using LokynexHealth.Application.Common.Interfaces;
 using LokynexHealth.Application.Common.Models;
+using LokynexHealth.Domain.Enums;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
@@ -16,29 +18,35 @@ public class GetTechniciansQueryHandler : IRequestHandler<GetTechniciansQuery, P
 
     public async Task<PagedResult<TechnicianDto>> Handle(GetTechniciansQuery request, CancellationToken cancellationToken)
     {
-        var query = _db.Technicians.Include(t => t.Branch).AsQueryable();
+        var pageNumber = Math.Max(1, request.PageNumber);
+        var pageSize = Math.Clamp(request.PageSize, 1, 200);
+
+        var query = _db.Technicians.AsNoTracking().Include(t => t.Branch).AsQueryable();
 
         if (request.BranchId.HasValue)
             query = query.Where(t => t.BranchId == request.BranchId.Value);
 
+        if (Enum.TryParse<RecordStatus>(request.Status, true, out var status))
+            query = query.Where(t => t.Status == status);
+
         if (!string.IsNullOrWhiteSpace(request.Search))
         {
             var term = $"%{request.Search}%";
+            var phonePattern = PhoneNormalizer.FormatInsensitiveLikePattern(request.Search);
+
             query = query.Where(t =>
                 EF.Functions.ILike(t.FullName, term) ||
                 (t.Email != null && EF.Functions.ILike(t.Email, term)) ||
-                EF.Functions.ILike(t.Phone, term));
+                EF.Functions.ILike(t.Phone, term) ||
+                (phonePattern != null && EF.Functions.Like(t.Phone, phonePattern)));
         }
 
         var totalCount = await query.CountAsync(cancellationToken);
 
-        // Fetch the raw entities first (native enum stays as-is in the query) —
-        // ToListAsync() materializes the results, THEN we map to DTO with
-        // .ToString() running in memory (LINQ-to-Objects), not translated to SQL.
         var technicianEntities = await query
             .OrderBy(t => t.FullName)
-            .Skip((request.PageNumber - 1) * request.PageSize)
-            .Take(request.PageSize)
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
             .ToListAsync(cancellationToken);
 
         var technicians = technicianEntities.Select(t => new TechnicianDto
@@ -48,6 +56,7 @@ public class GetTechniciansQueryHandler : IRequestHandler<GetTechniciansQuery, P
             BranchName = t.Branch.BranchName,
             FullName = t.FullName,
             Phone = t.Phone,
+            WhatsappNumber = t.WhatsappNumber,
             Email = t.Email,
             Address = t.Address,
             Status = t.Status.ToString()
@@ -57,8 +66,8 @@ public class GetTechniciansQueryHandler : IRequestHandler<GetTechniciansQuery, P
         {
             Items = technicians,
             TotalCount = totalCount,
-            PageNumber = request.PageNumber,
-            PageSize = request.PageSize
+            PageNumber = pageNumber,
+            PageSize = pageSize
         };
     }
 }

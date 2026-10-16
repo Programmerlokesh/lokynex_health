@@ -13,6 +13,7 @@ public class DoctorConfiguration : IEntityTypeConfiguration<Doctor>
         builder.Property(d => d.Id).HasDefaultValueSql("gen_random_uuid()");
         builder.Property(d => d.FullName).HasMaxLength(150).IsRequired();
         builder.Property(d => d.Phone).HasMaxLength(20).IsRequired();
+        builder.Property(d => d.WhatsappNumber).HasMaxLength(20);
         builder.Property(d => d.Status).HasColumnType("platform.record_status").HasDefaultValue(Domain.Enums.PlatformRecordStatus.Active);
     }
 }

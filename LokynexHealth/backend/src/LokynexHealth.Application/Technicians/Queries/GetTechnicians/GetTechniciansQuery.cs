@@ -7,6 +7,7 @@ public class GetTechniciansQuery : IRequest<PagedResult<TechnicianDto>>
 {
     public Guid? BranchId { get; set; }
     public string? Search { get; set; }
+    public string? Status { get; set; }   // "Active" | "Inactive" | null = all
     public int PageNumber { get; set; } = 1;
     public int PageSize { get; set; } = 20;
 }

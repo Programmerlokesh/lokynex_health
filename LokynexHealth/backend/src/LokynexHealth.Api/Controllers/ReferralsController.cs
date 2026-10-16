@@ -1,4 +1,5 @@
 using LokynexHealth.Application.Referrals.Commands.CreateReferral;
+using LokynexHealth.Application.Referrals.Commands.ManageReferral;
 using LokynexHealth.Application.Referrals.Queries.GetReferrals;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -30,5 +31,30 @@ public class ReferralsController : ControllerBase
     {
         var result = await _mediator.Send(query, ct);
         return Ok(result);
+    }
+
+    [HttpPut("{id:guid}")]
+    public async Task<IActionResult> Update(Guid id, [FromBody] UpdateReferralCommand command, CancellationToken ct)
+    {
+        command.Id = id;
+        await _mediator.Send(command, ct);
+        return NoContent();
+    }
+
+    [HttpPatch("{id:guid}/status")]
+    public async Task<IActionResult> SetStatus(Guid id, [FromBody] SetReferralStatusCommand command, CancellationToken ct)
+    {
+        command.Id = id;
+        await _mediator.Send(command, ct);
+        return NoContent();
+    }
+
+    // Referrals are shared by EVERY lab, so permanent delete is LabAdmin-only.
+    [HttpDelete("{id:guid}")]
+    [Authorize(Roles = "LabAdmin")]
+    public async Task<IActionResult> Delete(Guid id, CancellationToken ct)
+    {
+        await _mediator.Send(new DeleteReferralCommand { Id = id }, ct);
+        return NoContent();
     }
 }

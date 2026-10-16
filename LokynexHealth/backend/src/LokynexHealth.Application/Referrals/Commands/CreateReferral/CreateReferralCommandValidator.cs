@@ -12,6 +12,10 @@ public class CreateReferralCommandValidator : AbstractValidator<CreateReferralCo
             .NotEmpty()
             .Must(p => PhoneNormalizer.ToIndianMobile(p) is not null)
             .WithMessage("Enter a valid 10-digit Indian mobile number (starts with 6, 7, 8 or 9).");
+        RuleFor(x => x.WhatsappNumber)
+            .Must(p => PhoneNormalizer.ToIndianMobile(p) is not null)
+            .WithMessage("Enter a valid 10-digit WhatsApp number (starts with 6, 7, 8 or 9).")
+            .When(x => !string.IsNullOrWhiteSpace(x.WhatsappNumber));
         RuleFor(x => x.Email).EmailAddress().When(x => !string.IsNullOrWhiteSpace(x.Email));
     }
 }

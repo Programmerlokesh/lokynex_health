@@ -149,6 +149,7 @@ CREATE TABLE platform.doctors (
     phone           VARCHAR(20) NOT NULL,
     email           CITEXT,
     address         TEXT,
+    whatsapp_number VARCHAR(20),
     specialization  VARCHAR(150),   -- used by Doctor Clinic module
     status          platform.record_status NOT NULL DEFAULT 'Active',
     created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -167,6 +168,7 @@ CREATE TABLE platform.referrals (
     phone           VARCHAR(20) NOT NULL,
     email           CITEXT,
     address         TEXT,
+    whatsapp_number VARCHAR(20),
     status          platform.record_status NOT NULL DEFAULT 'Active',
     created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at      TIMESTAMPTZ

@@ -12,8 +12,10 @@ import {
   useReferralsList,
   useTechniciansList,
 } from "@/hooks/use-directory";
+import { getApiErrorMessage } from "@/lib/api-error";
 import SearchIcon from "@mui/icons-material/Search";
 import {
+  Alert,
   Box,
   CircularProgress,
   InputAdornment,
@@ -29,6 +31,7 @@ export default function DirectoryPage() {
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounce(search, 400);
 
+  // Only the visible tab hits the API (search is "" for the others -> cached list).
   const doctors = useDoctorsList(tab === 0 ? debouncedSearch : "");
   const referrals = useReferralsList(tab === 1 ? debouncedSearch : "");
   const technicians = useTechniciansList(tab === 2 ? debouncedSearch : "");
@@ -40,9 +43,9 @@ export default function DirectoryPage() {
       <Box
         sx={{
           display: "flex",
-          alignItems: "center",
+          alignItems: { xs: "stretch", sm: "center" },
+          flexDirection: { xs: "column", sm: "row" },
           justifyContent: "space-between",
-          flexWrap: "wrap",
           gap: 1.5,
         }}
       >
@@ -67,7 +70,12 @@ export default function DirectoryPage() {
         {tab === 2 && <CreateTechnicianDialog />}
       </Box>
 
-      <Tabs value={tab} onChange={(_, v) => setTab(v)}>
+      <Tabs
+        value={tab}
+        onChange={(_, v) => setTab(v)}
+        variant="scrollable"
+        allowScrollButtonsMobile
+      >
         <Tab label="Doctors" />
         <Tab label="Referrals" />
         <Tab label="Technicians" />
@@ -78,7 +86,7 @@ export default function DirectoryPage() {
         size="small"
         value={search}
         onChange={(e) => setSearch(e.target.value)}
-        sx={{ width: "100%", maxWidth: 380 }}
+        sx={{ width: "100%", maxWidth: { sm: 380 } }}
         slotProps={{
           input: {
             startAdornment: (
@@ -96,17 +104,20 @@ export default function DirectoryPage() {
         </Box>
       )}
 
+      {activeQuery.isError && (
+        <Alert severity="error">
+          {getApiErrorMessage(activeQuery.error, "Could not load the list.")}
+        </Alert>
+      )}
+
       {tab === 0 && doctors.data && (
-        <DirectoryTable rows={doctors.data.items} />
+        <DirectoryTable kind="doctor" rows={doctors.data.items} />
       )}
       {tab === 1 && referrals.data && (
-        <DirectoryTable rows={referrals.data.items} />
+        <DirectoryTable kind="referral" rows={referrals.data.items} />
       )}
       {tab === 2 && technicians.data && (
-        <DirectoryTable
-          rows={technicians.data.items}
-          extraColumn={{ header: "Branch", render: (row) => row.branchName }}
-        />
+        <DirectoryTable kind="technician" rows={technicians.data.items} />
       )}
     </Box>
   );

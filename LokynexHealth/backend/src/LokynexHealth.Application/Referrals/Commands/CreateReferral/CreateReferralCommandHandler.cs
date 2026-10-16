@@ -17,17 +17,17 @@ public class CreateReferralCommandHandler : IRequestHandler<CreateReferralComman
         _db = db;
     }
 
+    private static string? Clean(string? s) => string.IsNullOrWhiteSpace(s) ? null : s.Trim();
+
     public async Task<Guid> Handle(CreateReferralCommand request, CancellationToken cancellationToken)
     {
         var fullName = request.FullName.Trim();
-        // Always stored as exactly 10 digits (the validator already rejected anything else).
         var phone = PhoneNormalizer.ToIndianMobile(request.Phone)
             ?? throw new ConflictException("Enter a valid 10-digit Indian mobile number.");
-        var email = string.IsNullOrWhiteSpace(request.Email) ? null : request.Email.Trim();
+        var whatsapp = PhoneNormalizer.ToIndianMobile(request.WhatsappNumber);
+        var email = Clean(request.Email);
 
-        // ---- Duplicate check 1: same phone number ----
-        // Referrals are a GLOBAL registry shared by every lab, so this checks all of them.
-        // Old rows may still be stored with spaces / +91, hence the format-insensitive match.
+        // ---- Duplicate check 1: same phone number (global registry) ----
         if (PhoneNormalizer.FormatInsensitiveLikePattern(phone) is { } pattern)
         {
             var candidates = await _db.Referrals
@@ -67,8 +67,9 @@ public class CreateReferralCommandHandler : IRequestHandler<CreateReferralComman
             Id = Guid.NewGuid(),
             FullName = fullName,
             Phone = phone,
+            WhatsappNumber = whatsapp,
             Email = email,
-            Address = request.Address,
+            Address = Clean(request.Address),
             Status = PlatformRecordStatus.Active,
             CreatedAt = DateTimeOffset.UtcNow
         };

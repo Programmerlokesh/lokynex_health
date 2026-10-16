@@ -13,6 +13,7 @@ public class TechnicianConfiguration : IEntityTypeConfiguration<Technician>
         builder.Property(t => t.Id).HasDefaultValueSql("gen_random_uuid()");
         builder.Property(t => t.FullName).HasMaxLength(150).IsRequired();
         builder.Property(t => t.Phone).HasMaxLength(20).IsRequired();
+        builder.Property(t => t.WhatsappNumber).HasMaxLength(20);
         builder.Property(t => t.Status).HasColumnType("record_status").HasDefaultValue(Domain.Enums.RecordStatus.Active);
 
         builder.HasOne(t => t.Branch).WithMany().HasForeignKey(t => t.BranchId);

@@ -164,6 +164,7 @@ CREATE TABLE technicians (
     phone           VARCHAR(20) NOT NULL,
     email           CITEXT,
     address         TEXT,
+    whatsapp_number VARCHAR(20),
     status          record_status NOT NULL DEFAULT 'Active',
     created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at      TIMESTAMPTZ

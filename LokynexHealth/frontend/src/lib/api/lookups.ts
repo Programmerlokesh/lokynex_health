@@ -6,7 +6,7 @@ export async function getDoctorsApi(
   search?: string,
 ): Promise<PagedResult<LookupDto>> {
   const response = await apiClient.get<PagedResult<LookupDto>>("/Doctors", {
-    params: { search, pageSize: 50 },
+    params: { search, status: "Active", pageSize: 50 },
   });
   return response.data;
 }
@@ -15,7 +15,7 @@ export async function getReferralsApi(
   search?: string,
 ): Promise<PagedResult<LookupDto>> {
   const response = await apiClient.get<PagedResult<LookupDto>>("/Referrals", {
-    params: { search, pageSize: 50 },
+    params: { search, status: "Active", pageSize: 50 },
   });
   return response.data;
 }
@@ -26,7 +26,7 @@ export async function getTechniciansApi(
   const response = await apiClient.get<PagedResult<TechnicianDto>>(
     "/Technicians",
     {
-      params: { branchId, pageSize: 100 },
+      params: { branchId, status: "Active", pageSize: 100 },
     },
   );
   return response.data;
