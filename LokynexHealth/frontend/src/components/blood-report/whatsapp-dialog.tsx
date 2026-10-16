@@ -31,6 +31,7 @@ export function WhatsAppDialog({
   makePdf,
   onSent,
   onClose,
+  phoneLabel = "Patient WhatsApp number",
 }: {
   defaultPhone: string;
   message: string;
@@ -38,6 +39,7 @@ export function WhatsAppDialog({
   makePdf: () => Promise<Blob>;
   onSent: (phone: string) => void;
   onClose: () => void;
+  phoneLabel?: string;
 }) {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
@@ -103,7 +105,7 @@ export function WhatsAppDialog({
       <DialogTitle sx={{ fontWeight: 800 }}>Send on WhatsApp</DialogTitle>
       <DialogContent sx={{ display: "grid", gap: 2, pt: 1 }}>
         <TextField
-          label="Patient WhatsApp number"
+          label={phoneLabel}
           size="small"
           value={phone}
           onChange={(e) => setPhone(e.target.value)}

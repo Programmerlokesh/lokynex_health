@@ -18,10 +18,12 @@ export function OrderReportDialog({
   open,
   onClose,
   html,
+  title = "Orders report",
 }: {
   open: boolean;
   onClose: () => void;
   html: string;
+  title?: string;
 }) {
   const theme = useTheme();
   const fullScreen = useMediaQuery(theme.breakpoints.down("md"));
@@ -46,7 +48,7 @@ export function OrderReportDialog({
         }}
       >
         <Typography variant="subtitle1" sx={{ fontWeight: 700, flexGrow: 1 }}>
-          Orders report
+          {title}
         </Typography>
         <Button
           variant="contained"
@@ -71,7 +73,7 @@ export function OrderReportDialog({
       >
         <Box
           component="iframe"
-          title="Orders report preview"
+          title={`${title} preview`}
           srcDoc={html}
           sx={{
             display: "block",
