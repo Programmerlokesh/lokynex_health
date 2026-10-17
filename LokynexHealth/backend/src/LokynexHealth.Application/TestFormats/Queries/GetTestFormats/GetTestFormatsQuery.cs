@@ -31,7 +31,7 @@ public class GetTestFormatsQueryHandler : IRequestHandler<GetTestFormatsQuery, L
 
         var tests = await q
             .OrderBy(t => t.Department.Name).ThenBy(t => t.Name)
-            .Take(1000)
+            .Take(5000)   // was 1000: with 900+ seeded tests the last departments (Urine, Stool, Semen ...) were cut off
             .Select(t => new { t.Id, t.Name, Department = t.Department.Name })
             .ToListAsync(ct);
 
