@@ -33,6 +33,7 @@ export interface LabReportSettingsDto {
 export interface BloodReportFormDto {
   orderId: string;
   orderItemId: string;
+  testId: string;
   orderNumber: string;
   orderCreatedAt: string;
   testName: string;
@@ -51,6 +52,8 @@ export interface BloodReportFormDto {
   branchPhone: string | null;
 
   reportDocumentId: string | null;
+  /** QR token of the saved report (null until the first save) */
+  publicToken: string | null;
   hasFormat: boolean;
 
   sampleId: string | null;
@@ -77,11 +80,18 @@ export interface SaveBloodReportRequest {
   sampleCollectedAt?: string | null;
   reportedAt?: string | null;
   rememberDefaults: boolean;
+  /** the token already printed into the QR code */
+  publicToken?: string;
   useLetterhead: boolean;
   headerContent: string;
   bodyContent: string;
   footerContent: string;
   results: { parameterId: string; value: string; flag: ResultFlag }[];
+}
+
+export interface SaveBloodReportResult {
+  id: string;
+  publicToken: string;
 }
 
 export type DeliveryChannel = "Print" | "Download" | "WhatsApp";

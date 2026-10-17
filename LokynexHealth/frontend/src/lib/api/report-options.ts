@@ -3,9 +3,10 @@ import { ReportOptionDto, ReportOptionKind } from "@/types/report-option";
 
 export async function getReportOptionsApi(
   kind?: ReportOptionKind,
+  testId?: string,
 ): Promise<ReportOptionDto[]> {
   const res = await apiClient.get<ReportOptionDto[]>("/ReportOptions", {
-    params: { kind },
+    params: { kind, testId },
   });
   return res.data;
 }
@@ -13,6 +14,7 @@ export async function getReportOptionsApi(
 export async function createReportOptionApi(data: {
   kind: ReportOptionKind;
   name: string;
+  testId?: string;
 }): Promise<ReportOptionDto> {
   const res = await apiClient.post<ReportOptionDto>("/ReportOptions", data);
   return res.data;

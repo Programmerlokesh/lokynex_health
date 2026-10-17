@@ -15,6 +15,7 @@ public class ReportDocumentConfiguration : IEntityTypeConfiguration<ReportDocume
         builder.Property(r => r.SourceType).HasColumnType("report_source_type").HasDefaultValue(Domain.Enums.ReportSourceType.Manual);
         builder.Property(r => r.OriginalFilePath).HasMaxLength(500);
         builder.Property(r => r.ExportedFilePath).HasMaxLength(500);
+        builder.Property(r => r.PublicToken).HasMaxLength(40);
 
         builder.HasOne(r => r.OrderItem).WithMany().HasForeignKey(r => r.OrderItemId);
 

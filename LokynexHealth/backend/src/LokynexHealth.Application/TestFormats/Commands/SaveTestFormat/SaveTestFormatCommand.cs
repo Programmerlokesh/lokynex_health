@@ -221,8 +221,9 @@ public class SaveTestFormatCommandHandler : IRequestHandler<SaveTestFormatComman
         info.UpdatedAt = now;
 
         // machine / reagent typed by hand -> add to the pick-list
-        await ReportOptionSync.EnsureAsync(_db, ReportOptionKinds.Machine, info.MachineName, ct);
-        await ReportOptionSync.EnsureAsync(_db, ReportOptionKinds.Reagent, info.ReagentName, ct);
+        var optionCategory = await ReportOptionCategories.ForTestIdAsync(_db, test.Id, ct);
+        await ReportOptionSync.EnsureAsync(_db, ReportOptionKinds.Machine, info.MachineName, ct, optionCategory);
+        await ReportOptionSync.EnsureAsync(_db, ReportOptionKinds.Reagent, info.ReagentName, ct, optionCategory);
 
         try
         {

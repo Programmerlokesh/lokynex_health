@@ -36,6 +36,7 @@ public class BloodReportFormDto
 {
     public Guid OrderId { get; set; }
     public Guid OrderItemId { get; set; }
+    public Guid TestId { get; set; }
     public string OrderNumber { get; set; } = default!;
     public DateTimeOffset OrderCreatedAt { get; set; }
     public string TestName { get; set; } = default!;
@@ -54,6 +55,7 @@ public class BloodReportFormDto
     public string? BranchPhone { get; set; }
 
     public Guid? ReportDocumentId { get; set; }
+    public string? PublicToken { get; set; }
     public bool HasFormat { get; set; }
 
     public string? SampleId { get; set; }

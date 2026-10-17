@@ -37,8 +37,8 @@ public class BloodReportsController : ControllerBase
     public async Task<IActionResult> Save([FromBody] SaveBloodReportCommand command, CancellationToken ct)
     {
         command.CreatedBy = _currentUser.UserId;
-        var id = await _mediator.Send(command, ct);
-        return Ok(new { id });
+        var result = await _mediator.Send(command, ct);
+        return Ok(new { id = result.Id, publicToken = result.PublicToken });
     }
 
     [HttpGet("settings")]

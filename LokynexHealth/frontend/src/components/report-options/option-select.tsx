@@ -22,19 +22,23 @@ import {
  *  - type a new name: it is added to the list automatically when the report /
  *    format is saved (or press the + button to add it right now).
  *  - the bin icon removes a name from the list (old reports keep their text).
+ *  - testId: only the machines / chemicals that fit that kind of test are listed
+ *    (CBC -> haematology analysers, LFT -> biochemistry analysers, TSH -> immunoassay ...).
  */
 export function OptionSelect({
   kind,
   label,
   value,
   onChange,
+  testId,
 }: {
   kind: ReportOptionKind;
   label: string;
   value: string;
   onChange: (v: string) => void;
+  testId?: string;
 }) {
-  const { data, isLoading, isError, refetch } = useReportOptions(kind);
+  const { data, isLoading, isError, refetch } = useReportOptions(kind, testId);
   const create = useCreateReportOption();
   const remove = useDeleteReportOption();
 
@@ -116,6 +120,8 @@ export function OptionSelect({
                     Retry
                   </a>
                 </span>
+              ) : testId ? (
+                "Showing the ones for this test. Pick, or type a new one"
               ) : (
                 "Pick from the list or type a new one"
               )
@@ -131,7 +137,7 @@ export function OptionSelect({
               color="primary"
               aria-label={`Add ${typed} to list`}
               disabled={create.isPending}
-              onClick={() => create.mutate({ kind, name: typed })}
+              onClick={() => create.mutate({ kind, name: typed, testId })}
             >
               <AddIcon />
             </IconButton>

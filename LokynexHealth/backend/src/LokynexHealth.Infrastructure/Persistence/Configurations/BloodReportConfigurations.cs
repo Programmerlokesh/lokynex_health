@@ -124,5 +124,6 @@ public class ReportOptionConfiguration : IEntityTypeConfiguration<ReportOption>
 
         builder.Property(x => x.Kind).HasMaxLength(10).IsRequired();
         builder.Property(x => x.Name).HasMaxLength(200).IsRequired();
+        builder.Property(x => x.Categories).HasMaxLength(200);
     }
 }

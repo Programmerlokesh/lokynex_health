@@ -18,10 +18,11 @@ public class ReportOptionsController : ControllerBase
     }
 
     // Machines / reagents the lab can pick from. ?kind=Machine | Reagent (empty = both)
+    // ?testId=... -> only the ones that fit that test (Haematology, Biochemistry, ...)
     [HttpGet]
-    public async Task<IActionResult> GetAll([FromQuery] string? kind, CancellationToken ct)
+    public async Task<IActionResult> GetAll([FromQuery] string? kind, [FromQuery] Guid? testId, CancellationToken ct)
     {
-        var result = await _mediator.Send(new GetReportOptionsQuery { Kind = kind }, ct);
+        var result = await _mediator.Send(new GetReportOptionsQuery { Kind = kind, TestId = testId }, ct);
         return Ok(result);
     }
 

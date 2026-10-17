@@ -4,6 +4,7 @@ import {
   LabReportSettingsDto,
   LogDeliveryRequest,
   SaveBloodReportRequest,
+  SaveBloodReportResult,
 } from "@/types/blood-report";
 
 export async function getBloodReportFormApi(
@@ -17,8 +18,11 @@ export async function getBloodReportFormApi(
 
 export async function saveBloodReportApi(
   data: SaveBloodReportRequest,
-): Promise<{ id: string }> {
-  const res = await apiClient.post<{ id: string }>("/BloodReports/save", data);
+): Promise<SaveBloodReportResult> {
+  const res = await apiClient.post<SaveBloodReportResult>(
+    "/BloodReports/save",
+    data,
+  );
   return res.data;
 }
 

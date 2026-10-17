@@ -29,6 +29,9 @@ public class ReportDocument : BaseEntity
     public string? SampleId { get; set; }
     public string? ReportRemarks { get; set; }
 
+    /// <summary>Secret id inside the QR code (024 SQL). 32 hex chars.</summary>
+    public string? PublicToken { get; set; }
+
     public bool IsDeleted { get; set; }
     public DateTimeOffset? DeletedAt { get; set; }
     public Guid? DeletedBy { get; set; }

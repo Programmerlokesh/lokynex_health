@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using FluentValidation;
 using LokynexHealth.Application.Common.Exceptions;
 using LokynexHealth.Application.Common.Interfaces;
@@ -24,6 +25,82 @@ public class ReportOptionDto
     public Guid Id { get; set; }
     public string Kind { get; set; } = default!;
     public string Name { get; set; } = default!;
+    /// <summary>Comma separated test categories; null = every test.</summary>
+    public string? Categories { get; set; }
+}
+
+/// <summary>
+/// Which kind of test a report belongs to -> decides which machines / reagents are offered.
+/// Test-name rules win, then the department name. Unknown = null = show every option.
+/// </summary>
+public static class ReportOptionCategories
+{
+    public const string Haematology = "Haematology";
+    public const string Biochemistry = "Biochemistry";
+    public const string Immunoassay = "Immunoassay";
+    public const string Serology = "Serology";
+    public const string Coagulation = "Coagulation";
+    public const string HbA1c = "HbA1c";
+
+    private const RegexOptions Opt = RegexOptions.IgnoreCase | RegexOptions.Compiled;
+
+    private static readonly Regex HbA1cRx = new(@"hba1c|glycosylated|glycated|\ba1c\b", Opt);
+
+    private static readonly Regex CoagRx = new(
+        @"\bpt\b|\binr\b|a?ptt\b|prothrombin|thromboplastin|coagulation|fibrinogen|d-?dimer", Opt);
+
+    private static readonly Regex HaemRx = new(
+        @"\bcbc\b|complete blood|h(a)?emogram|h(a)?emoglobin|\bhb\b|\besr\b|erythrocyte|leuko?cyte|\btlc\b|\bdlc\b|" +
+        @"differential|platelet|\brbc\b|\bwbc\b|\bpcv\b|h(a)?ematocrit|\bmcv\b|\bmchc?\b|\brdw\b|reticulocyte|" +
+        @"smear|eosinophil|neutrophil|lymphocyte|monocyte|basophil", Opt);
+
+    private static readonly Regex SeroRx = new(
+        @"widal|typhi|dengue|\bhiv\b|hbsag|\bhcv\b|hepatitis|\bhav\b|\bhev\b|vdrl|\brpr\b|syphilis|malaria|" +
+        @"rheumatoid|\bra factor|\baso\b|chikungunya|leptospira|brucella|\btpha\b", Opt);
+
+    private static readonly Regex ImmunoRx = new(
+        @"\btsh\b|thyroid|\bt3\b|\bt4\b|\bft3\b|\bft4\b|troponin|ck-?mb|ferritin|vitamin|\bb12\b|folate|folic|" +
+        @"\bpsa\b|\bcea\b|\bafp\b|\bca ?(125|19-?9|15-?3)|cortisol|prolactin|\bfsh\b|\blh\b|testosterone|" +
+        @"o?estradiol|progesterone|hcg|insulin|\bpth\b|parathyroid|procalcitonin|\bbnp\b|anti-?ccp|\bige\b|\bamh\b|" +
+        @"homocysteine", Opt);
+
+    private static readonly Regex ChemRx = new(
+        @"glucose|sugar|\bfbs\b|\bppbs\b|\brbs\b|ogtt|urea|\bbun\b|creatinine|uric|bilirubin|\bsgot\b|\bsgpt\b|" +
+        @"\bast\b|\balt\b|\balp\b|\bggt\b|alkaline|protein|albumin|globulin|cholesterol|triglycerid|\bhdl\b|" +
+        @"\bldl\b|\bvldl\b|lipid|\blft\b|\bkft\b|\brft\b|liver function|kidney function|renal|calcium|phosph|" +
+        @"magnesium|sodium|potassium|chloride|electrolyte|amylase|lipase|\bldh\b|\biron\b|\btibc\b|\bcrp\b|" +
+        @"c-?reactive|\bcpk\b|creatine kinase", Opt);
+
+    public static string? ForTest(string? department, string? testName)
+    {
+        var name = testName ?? string.Empty;
+        if (HbA1cRx.IsMatch(name)) return HbA1c;
+        if (CoagRx.IsMatch(name)) return Coagulation;
+        if (HaemRx.IsMatch(name)) return Haematology;
+        if (SeroRx.IsMatch(name)) return Serology;
+        if (ImmunoRx.IsMatch(name)) return Immunoassay;
+        if (ChemRx.IsMatch(name)) return Biochemistry;
+
+        var d = (department ?? string.Empty).ToLowerInvariant();
+        if (d.Contains("haemat") || d.Contains("hemat")) return Haematology;
+        if (d.Contains("coag")) return Coagulation;
+        if (d.Contains("serolog")) return Serology;
+        if (d.Contains("immun") || d.Contains("hormon") || d.Contains("endocrin") ||
+            d.Contains("cardiac") || d.Contains("tumo") || d.Contains("vitamin")) return Immunoassay;
+        if (d.Contains("biochem") || d.Contains("clinical chem")) return Biochemistry;
+        return null;
+    }
+
+    /// <summary>Category of a test row (null when the test is unknown / not recognised).</summary>
+    public static async Task<string?> ForTestIdAsync(IApplicationDbContext db, Guid? testId, CancellationToken ct)
+    {
+        if (testId is null || testId == Guid.Empty) return null;
+        var t = await db.Tests.AsNoTracking()
+            .Where(x => x.Id == testId.Value)
+            .Select(x => new { x.Name, Department = x.Department.Name })
+            .FirstOrDefaultAsync(ct);
+        return t is null ? null : ForTest(t.Department, t.Name);
+    }
 }
 
 /// <summary>
@@ -53,11 +130,14 @@ public static class ReportOptionsSchema
         "Span Diagnostics kit", "J. Mitra kit", "Meril Diagnostics kit", "Manual kit"
     };
 
-    /// <summary>True when the exception is PostgreSQL "relation does not exist" (42P01).</summary>
+    /// <summary>
+    /// True when the exception is PostgreSQL "relation does not exist" (42P01)
+    /// or "column does not exist" (42703, SQL 024 not run yet).
+    /// </summary>
     public static bool IsMissingTable(Exception ex)
     {
         for (var e = ex; e is not null; e = e.InnerException)
-            if (e is PostgresException { SqlState: "42P01" }) return true;
+            if (e is PostgresException { SqlState: "42P01" or "42703" }) return true;
         return false;
     }
 
@@ -73,6 +153,10 @@ public static class ReportOptionsSchema
             " name VARCHAR(200) NOT NULL," +
             " created_at TIMESTAMPTZ NOT NULL DEFAULT now()," +
             " updated_at TIMESTAMPTZ);",
+            ct);
+
+        await db.Database.ExecuteSqlRawAsync(
+            "ALTER TABLE report_options ADD COLUMN IF NOT EXISTS categories VARCHAR(200);",
             ct);
 
         await db.Database.ExecuteSqlRawAsync(
@@ -97,7 +181,8 @@ public static class ReportOptionsSchema
 public static class ReportOptionSync
 {
     public static async Task EnsureAsync(
-        IApplicationDbContext db, string kind, string? name, CancellationToken ct)
+        IApplicationDbContext db, string kind, string? name, CancellationToken ct,
+        string? category = null)
     {
         var clean = name?.Trim();
         if (string.IsNullOrEmpty(clean)) return;
@@ -123,6 +208,7 @@ public static class ReportOptionSync
             Id = Guid.NewGuid(),
             Kind = kind,
             Name = clean,
+            Categories = category,
             CreatedAt = DateTimeOffset.UtcNow
         });
     }
@@ -133,6 +219,12 @@ public class GetReportOptionsQuery : IRequest<List<ReportOptionDto>>
 {
     /// <summary>Machine | Reagent. Empty = both.</summary>
     public string? Kind { get; set; }
+
+    /// <summary>
+    /// When set, only machines / reagents that fit this test are returned
+    /// (plus the ones that are not tied to any category, e.g. "Manual method").
+    /// </summary>
+    public Guid? TestId { get; set; }
 }
 
 public class GetReportOptionsQueryHandler : IRequestHandler<GetReportOptionsQuery, List<ReportOptionDto>>
@@ -158,15 +250,28 @@ public class GetReportOptionsQueryHandler : IRequestHandler<GetReportOptionsQuer
         }
     }
 
-    private Task<List<ReportOptionDto>> LoadAsync(GetReportOptionsQuery request, CancellationToken ct)
+    private async Task<List<ReportOptionDto>> LoadAsync(GetReportOptionsQuery request, CancellationToken ct)
     {
         var q = _db.ReportOptions.AsNoTracking();
         if (ReportOptionKinds.IsValid(request.Kind))
             q = q.Where(o => o.Kind == request.Kind);
 
-        return q
+        var category = await ReportOptionCategories.ForTestIdAsync(_db, request.TestId, ct);
+        if (category is not null)
+        {
+            var tag = "," + category + ",";
+            q = q.Where(o => o.Categories == null || ("," + o.Categories + ",").Contains(tag));
+        }
+
+        return await q
             .OrderBy(o => o.Kind).ThenBy(o => o.Name)
-            .Select(o => new ReportOptionDto { Id = o.Id, Kind = o.Kind, Name = o.Name })
+            .Select(o => new ReportOptionDto
+            {
+                Id = o.Id,
+                Kind = o.Kind,
+                Name = o.Name,
+                Categories = o.Categories
+            })
             .ToListAsync(ct);
     }
 }
@@ -176,6 +281,9 @@ public class CreateReportOptionCommand : IRequest<ReportOptionDto>
 {
     public string Kind { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
+
+    /// <summary>The test being reported / edited: the new name is filed under that test's category.</summary>
+    public Guid? TestId { get; set; }
 }
 
 public class CreateReportOptionCommandValidator : AbstractValidator<CreateReportOptionCommand>
@@ -215,13 +323,20 @@ public class CreateReportOptionCommandHandler : IRequestHandler<CreateReportOpti
                 Id = Guid.NewGuid(),
                 Kind = request.Kind,
                 Name = name,
+                Categories = await ReportOptionCategories.ForTestIdAsync(_db, request.TestId, ct),
                 CreatedAt = DateTimeOffset.UtcNow
             };
             _db.ReportOptions.Add(existing);
             await _db.SaveChangesAsync(ct);
         }
 
-        return new ReportOptionDto { Id = existing.Id, Kind = existing.Kind, Name = existing.Name };
+        return new ReportOptionDto
+        {
+            Id = existing.Id,
+            Kind = existing.Kind,
+            Name = existing.Name,
+            Categories = existing.Categories
+        };
     }
 }
 

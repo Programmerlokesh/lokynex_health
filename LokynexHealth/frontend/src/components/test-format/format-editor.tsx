@@ -367,12 +367,14 @@ export function FormatEditor({
           />
           <OptionSelect
             kind="Machine"
+            testId={format.testId}
             label="Analyser / Machine name"
             value={info.machine}
             onChange={(v) => setInfo({ ...info, machine: v })}
           />
           <OptionSelect
             kind="Reagent"
+            testId={format.testId}
             label="Reagent / Chemical name"
             value={info.reagent}
             onChange={(v) => setInfo({ ...info, reagent: v })}

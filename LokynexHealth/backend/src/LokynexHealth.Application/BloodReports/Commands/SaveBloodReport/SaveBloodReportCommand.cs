@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using FluentValidation;
 using LokynexHealth.Application.Common.Exceptions;
 using LokynexHealth.Application.Common.Interfaces;
@@ -18,7 +19,14 @@ public class SaveBloodResultInput
     public string? Flag { get; set; }
 }
 
-public class SaveBloodReportCommand : IRequest<Guid>
+public class SaveBloodReportResult
+{
+    public Guid Id { get; set; }
+    /// <summary>Secret id used in the QR code (public report link).</summary>
+    public string PublicToken { get; set; } = string.Empty;
+}
+
+public class SaveBloodReportCommand : IRequest<SaveBloodReportResult>
 {
     public Guid OrderItemId { get; set; }
     public Guid? CreatedBy { get; set; }   // set by the controller
@@ -33,6 +41,12 @@ public class SaveBloodReportCommand : IRequest<Guid>
     public DateTimeOffset? ReportedAt { get; set; }
     public bool RememberDefaults { get; set; }
     public bool? UseLetterhead { get; set; }
+
+    /// <summary>
+    /// QR token the screen already printed into the report (32 hex chars). Used only when the
+    /// report has no token yet; otherwise the stored one is kept and returned.
+    /// </summary>
+    public string? PublicToken { get; set; }
 
     // HTML snapshots built by the UI (so the old Print button keeps working)
     public string? HeaderContent { get; set; }
@@ -63,7 +77,7 @@ public class SaveBloodReportCommandValidator : AbstractValidator<SaveBloodReport
     }
 }
 
-public class SaveBloodReportCommandHandler : IRequestHandler<SaveBloodReportCommand, Guid>
+public class SaveBloodReportCommandHandler : IRequestHandler<SaveBloodReportCommand, SaveBloodReportResult>
 {
     private readonly IApplicationDbContext _db;
 
@@ -72,11 +86,16 @@ public class SaveBloodReportCommandHandler : IRequestHandler<SaveBloodReportComm
         _db = db;
     }
 
+    private static readonly Regex TokenRx = new("^[a-f0-9]{32}$", RegexOptions.Compiled);
+
     private static string? Clean(string? v) => string.IsNullOrWhiteSpace(v) ? null : v.Trim();
 
-    public async Task<Guid> Handle(SaveBloodReportCommand request, CancellationToken ct)
+    private static string NewToken() => Guid.NewGuid().ToString("N");
+
+    public async Task<SaveBloodReportResult> Handle(SaveBloodReportCommand request, CancellationToken ct)
     {
         var item = await _db.OrderItems
+            .Include(i => i.Test).ThenInclude(t => t.Department)
             .Include(i => i.Order).ThenInclude(o => o.Patient)
             .Include(i => i.Order).ThenInclude(o => o.Relative)
             .FirstOrDefaultAsync(i => i.Id == request.OrderItemId, ct)
@@ -127,6 +146,13 @@ public class SaveBloodReportCommandHandler : IRequestHandler<SaveBloodReportComm
         {
             doc.UpdatedBy = userId;
             doc.UpdatedAt = now;
+        }
+
+        // QR token: keep the one already stored, else take the one the screen printed, else make one.
+        if (string.IsNullOrEmpty(doc.PublicToken))
+        {
+            var wanted = request.PublicToken?.Trim().ToLowerInvariant();
+            doc.PublicToken = wanted is not null && TokenRx.IsMatch(wanted) ? wanted : NewToken();
         }
 
         doc.HeaderContent = request.HeaderContent;
@@ -232,10 +258,11 @@ public class SaveBloodReportCommandHandler : IRequestHandler<SaveBloodReportComm
         }
 
         // machine / chemical typed by hand -> add to the pick-list for next time
-        await ReportOptionSync.EnsureAsync(_db, ReportOptionKinds.Machine, doc.MachineName, ct);
-        await ReportOptionSync.EnsureAsync(_db, ReportOptionKinds.Reagent, doc.ReagentName, ct);
+        var category = ReportOptionCategories.ForTest(item.Test.Department?.Name, item.Test.Name);
+        await ReportOptionSync.EnsureAsync(_db, ReportOptionKinds.Machine, doc.MachineName, ct, category);
+        await ReportOptionSync.EnsureAsync(_db, ReportOptionKinds.Reagent, doc.ReagentName, ct, category);
 
         await _db.SaveChangesAsync(ct);
-        return doc.Id;
+        return new SaveBloodReportResult { Id = doc.Id, PublicToken = doc.PublicToken! };
     }
 }

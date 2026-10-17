@@ -98,4 +98,7 @@ public class ReportOption : BaseEntity
 {
     public string Kind { get; set; } = default!;
     public string Name { get; set; } = default!;
+
+    /// <summary>Comma separated test categories; NULL = shown for every test.</summary>
+    public string? Categories { get; set; }
 }

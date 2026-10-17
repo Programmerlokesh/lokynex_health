@@ -24,6 +24,10 @@ import {
 } from "@/lib/blood-report/build-report";
 import { resolveFlag } from "@/lib/blood-report/flags";
 import { buildReportPdf } from "@/lib/blood-report/pdf";
+import {
+  generateReportToken,
+  makeReportQrDataUrl,
+} from "@/lib/blood-report/qr";
 import { downloadBlob } from "@/lib/blood-report/share";
 import { printHtml } from "@/lib/order-report";
 import { useAuthStore } from "@/store/auth-store";
@@ -54,6 +58,7 @@ import {
   memo,
   Suspense,
   useCallback,
+  useEffect,
   useMemo,
   useState,
 } from "react";
@@ -234,6 +239,19 @@ function EntryForm({ form }: { form: BloodReportFormDto }) {
   );
   const [remember, setRemember] = useState(false);
 
+  // ---- QR code (top-right corner of the report): scan => report opens on the phone ----
+  const [qrToken] = useState(() => form.publicToken ?? generateReportToken());
+  const [qrUrl, setQrUrl] = useState<string | null>(null);
+  useEffect(() => {
+    let alive = true;
+    makeReportQrDataUrl(qrToken)
+      .then((u) => alive && setQrUrl(u))
+      .catch(() => alive && setQrUrl(null));
+    return () => {
+      alive = false;
+    };
+  }, [qrToken]);
+
   const [settings, setSettings] = useState(form.settings);
   const [useLetterhead, setUseLetterhead] = useState(
     form.settings.useLetterhead,
@@ -296,6 +314,7 @@ function EntryForm({ form }: { form: BloodReportFormDto }) {
         blankHeaderMm: clampMm(blankTop),
         blankFooterMm: clampMm(blankBottom),
         labName: user?.labName,
+        qrDataUrl: qrUrl,
       }),
     [
       form,
@@ -308,6 +327,7 @@ function EntryForm({ form }: { form: BloodReportFormDto }) {
       blankTop,
       blankBottom,
       user?.labName,
+      qrUrl,
     ],
   );
 
@@ -317,6 +337,8 @@ function EntryForm({ form }: { form: BloodReportFormDto }) {
   async function persist(): Promise<string> {
     if (enteredCount === 0)
       throw new Error("Enter at least one result value first.");
+    if (!qrUrl)
+      throw new Error("QR code is still getting ready. Try again in a second.");
     const res = await save.mutateAsync({
       orderItemId: form.orderItemId,
       sampleId: meta.sampleId,
@@ -328,6 +350,7 @@ function EntryForm({ form }: { form: BloodReportFormDto }) {
       sampleCollectedAt: fromLocalInput(collectedAt),
       reportedAt: fromLocalInput(reportedAt),
       rememberDefaults: remember,
+      publicToken: qrToken,
       useLetterhead,
       headerContent: parts.headerHtml,
       bodyContent: parts.bodyHtml,
@@ -338,6 +361,12 @@ function EntryForm({ form }: { form: BloodReportFormDto }) {
         flag: manualFlags[p.parameterId] ?? "Normal",
       })),
     });
+    // the server keeps the FIRST token of a report; if another screen created it
+    // a moment earlier, the QR we just printed would point nowhere.
+    if (res.publicToken !== qrToken)
+      throw new Error(
+        "This report was just created on another screen. Reload this page and try again.",
+      );
     return res.id;
   }
 
@@ -457,12 +486,14 @@ function EntryForm({ form }: { form: BloodReportFormDto }) {
           />
           <OptionSelect
             kind="Machine"
+            testId={form.testId}
             label="Analyser / Machine name"
             value={meta.machine}
             onChange={(v) => setMeta((m) => ({ ...m, machine: v }))}
           />
           <OptionSelect
             kind="Reagent"
+            testId={form.testId}
             label="Reagent / Chemical name"
             value={meta.reagent}
             onChange={(v) => setMeta((m) => ({ ...m, reagent: v }))}

@@ -6,10 +6,10 @@ import {
 import { ReportOptionKind } from "@/types/report-option";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-export function useReportOptions(kind: ReportOptionKind) {
+export function useReportOptions(kind: ReportOptionKind, testId?: string) {
   return useQuery({
-    queryKey: ["report-options", kind],
-    queryFn: () => getReportOptionsApi(kind),
+    queryKey: ["report-options", kind, testId ?? "all"],
+    queryFn: () => getReportOptionsApi(kind, testId),
     staleTime: 60_000,
     refetchOnWindowFocus: false,
   });

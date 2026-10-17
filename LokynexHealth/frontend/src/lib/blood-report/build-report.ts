@@ -89,6 +89,8 @@ function buildBody(args: {
   rows: ReportRow[];
   meta: ReportMeta;
   settings: LabReportSettingsDto;
+  /** PNG data-URL of the report QR (top-right corner). null = no QR. */
+  qrDataUrl?: string | null;
 }): string {
   const { form, meta, settings } = args;
   const rows = args.rows.filter((r) => r.value.trim() !== "");
@@ -96,12 +98,21 @@ function buildBody(args: {
   const sex = form.patientGender ?? "—";
   const ageSex = `${form.patientAge ?? "—"}${form.patientAge !== null ? " Years" : ""} / ${sex}`;
 
-  const patient = `<table data-plain="1" data-keep="1" style="width:100%;border-collapse:collapse;border-top:1px solid #333;border-bottom:1px solid #333;margin:6px 0">
+  const patientRows = `<table data-plain="1" style="width:100%;border-collapse:collapse">
 <tr>${infoPair("Patient Name", form.patientName)}${infoPair("Order No", form.orderNumber)}</tr>
 <tr>${infoPair("Age / Sex", ageSex)}${infoPair("Patient ID", form.patientCode)}</tr>
 <tr>${infoPair("Referred By", form.doctorName ?? form.referralName ?? "Self")}${infoPair("Phone", form.patientPhone)}</tr>
 <tr>${infoPair("Sample Collected", fmtDate(meta.collectedAt))}${infoPair("Reported On", fmtDate(meta.reportedAt))}</tr>
 ${meta.sampleId ? `<tr>${infoPair("Sample ID", meta.sampleId)}<td></td></tr>` : ""}
+</table>`;
+
+  // QR in the top-right corner: scan => full report opens on the phone
+  const qrCell = args.qrDataUrl
+    ? `<td style="width:96px;vertical-align:top;text-align:center;padding:4px 0 4px 6px;border-left:1px solid #ddd"><img data-qr="1" src="${e(args.qrDataUrl)}" alt="QR" style="width:84px;height:84px;display:block;margin:0 auto"/><div style="font-size:9px;line-height:1.15;color:#444;margin-top:2px">Scan to view<br/>full report</div></td>`
+    : "";
+
+  const patient = `<table data-plain="1" data-keep="1" style="width:100%;border-collapse:collapse;border-top:1px solid #333;border-bottom:1px solid #333;margin:6px 0">
+<tr><td style="padding:0;vertical-align:top">${patientRows}</td>${qrCell}</tr>
 </table>`;
 
   const title = `<div data-keep="1" style="text-align:center;margin:12px 0 6px">
@@ -190,6 +201,8 @@ export function buildReportParts(args: {
   blankHeaderMm: number;
   blankFooterMm: number;
   labName?: string | null;
+  /** PNG data-URL of the report QR (see lib/blood-report/qr.ts) */
+  qrDataUrl?: string | null;
 }): ReportParts {
   const { form, settings, useLetterhead } = args;
 
