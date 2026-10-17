@@ -40,7 +40,7 @@ WITH raw AS (
            btrim(split_part(l.line, '|', 1)) AS name,
            btrim(split_part(l.line, '|', 2)) AS tag
     FROM (VALUES
-    ('HEM', 'Hematology', 'Auto', $b$
+    ('HEM', 'Hematology', 'Auto', $pack_data$
 Complete Blood Count (CBC)|PE
 Complete Hemogram|PE
 Hemoglobin (Hb)|E
@@ -75,8 +75,8 @@ HbA2 Quantification
 HbF Quantification
 Eosinophil Count
 LE Cell Test (legacy / limited use)
-$b$),
-    ('COA', 'Coagulation', 'Auto', $b$
+$pack_data$),
+    ('COA', 'Coagulation', 'Auto', $pack_data$
 Prothrombin Time (PT)|C
 International Normalized Ratio (INR)|C
 Activated Partial Thromboplastin Time (aPTT)|C
@@ -101,8 +101,8 @@ Antithrombin III
 Coagulation Mixing Study
 Thromboelastography (TEG)
 ROTEM
-$b$),
-    ('BIO', 'Biochemistry', 'Auto', $b$
+$pack_data$),
+    ('BIO', 'Biochemistry', 'Auto', $pack_data$
 Fasting Plasma Glucose (FPG)
 Random Blood Glucose (RBG)
 Post-Prandial Blood Glucose (PPBG)
@@ -174,8 +174,8 @@ Selenium
 Lead (blood)
 Mercury (blood)
 Arsenic (blood)
-$b$),
-    ('END', 'Endocrinology', 'Auto', $b$
+$pack_data$),
+    ('END', 'Endocrinology', 'Auto', $pack_data$
 Thyroid Stimulating Hormone (TSH)
 Free T4 (FT4)
 Free T3 (FT3)
@@ -211,8 +211,8 @@ Beta-hCG, Quantitative
 PAPP-A
 Inhibin A
 Inhibin B
-$b$),
-    ('IMM', 'Immunoassay', 'Auto', $b$
+$pack_data$),
+    ('IMM', 'Immunoassay', 'Auto', $pack_data$
 Vitamin B12
 Folate / Folic Acid
 25-OH Vitamin D
@@ -250,8 +250,8 @@ HE4
 Serum Beta-hCG
 Carboxyhemoglobin|E
 Methemoglobin|E
-$b$),
-    ('SER', 'Serology', 'Text', $b$
+$pack_data$),
+    ('SER', 'Serology', 'Text', $pack_data$
 HIV 1 & 2 Antigen/Antibody Screen|K
 HIV Viral Load (RNA PCR)|K
 HBsAg|K
@@ -296,8 +296,8 @@ Quantiferon-TB Gold (IGRA)
 SARS-CoV-2 Antibody|K
 Widal Test (limited reliability)
 Malarial Antigen Test|K
-$b$),
-    ('MIC', 'Microbiology', 'Text', $b$
+$pack_data$),
+    ('MIC', 'Microbiology', 'Text', $pack_data$
 Blood Culture|B
 Blood Culture and Sensitivity|B
 Blood Culture, Aerobic|B
@@ -305,8 +305,8 @@ Blood Culture, Anaerobic|B
 Blood Culture, Pediatric|B
 Blood Culture, Fungal|B
 Blood Culture, Mycobacterial (specialized)|B
-$b$),
-    ('AUT', 'Autoimmune / Immunology', 'Auto', $b$
+$pack_data$),
+    ('AUT', 'Autoimmune / Immunology', 'Auto', $pack_data$
 Antinuclear Antibody (ANA)|K
 ANA by IFA
 Anti-dsDNA
@@ -343,8 +343,8 @@ Free Kappa Light Chains
 Free Lambda Light Chains
 Cryoglobulins
 Cold Agglutinin Titre
-$b$),
-    ('BLO', 'Blood Bank', 'Text', $b$
+$pack_data$),
+    ('BLO', 'Blood Bank', 'Text', $pack_data$
 ABO Blood Group
 Rh(D) Typing
 Extended Red Cell Phenotyping
@@ -353,8 +353,8 @@ Crossmatch / Compatibility Testing
 Antibody Identification Panel|K
 Hemolysis Workup
 HLA Typing (transplant use)
-$b$),
-    ('TOX', 'Toxicology / Drug Monitoring', 'Auto', $b$
+$pack_data$),
+    ('TOX', 'Toxicology / Drug Monitoring', 'Auto', $pack_data$
 Blood Alcohol (Ethanol)
 Carboxyhemoglobin|E
 Methemoglobin|E
@@ -373,8 +373,8 @@ Cyclosporine Level
 Methotrexate Level
 Paracetamol / Acetaminophen Level
 Salicylate Level
-$b$),
-    ('CRI', 'Critical Care', 'Auto', $b$
+$pack_data$),
+    ('CRI', 'Critical Care', 'Auto', $pack_data$
 Arterial Blood Gas (ABG)|H
 Venous Blood Gas (VBG)|H
 Co-oximetry
@@ -383,8 +383,8 @@ Ketones / Beta-hydroxybutyrate
 Blood Lactate
 Ionized Calcium
 Serum Osmolality
-$b$),
-    ('MOL', 'Molecular / Genetics', 'Text', $b$
+$pack_data$),
+    ('MOL', 'Molecular / Genetics', 'Text', $pack_data$
 JAK2 V617F Mutation
 BCR-ABL1 (CML Testing)|E
 Factor V Leiden Mutation
@@ -399,8 +399,8 @@ Cell-free Fetal DNA / NIPT
 Flow Cytometry (blood / marrow)
 Immunophenotyping (blood / marrow)
 HLA Typing for Transplant
-$b$),
-    ('PRO', 'Profiles / Panels', 'Auto', $b$
+$pack_data$),
+    ('PRO', 'Profiles / Panels', 'Auto', $pack_data$
 Complete Hemogram Profile|PE
 Basic Metabolic Panel (BMP)|P
 Comprehensive Metabolic Panel (CMP)|P
@@ -425,15 +425,15 @@ Tumor Marker Profile|P
 Drug Monitoring Profile|P
 Allergy / Specific IgE Panel|P
 Food-specific IgE Panel|P
-$b$),
-    ('PRE', 'Pregnancy / Screening', 'Auto', $b$
+$pack_data$),
+    ('PRE', 'Pregnancy / Screening', 'Auto', $pack_data$
 Triple Marker Screen (maternal serum)
 Quadruple Marker Screen (maternal serum)
 First-trimester Combined Screening (serum markers)
 Maternal Serum AFP
 Indirect Coombs / Antibody Screen in Pregnancy|K
-$b$),
-    ('SPE', 'Specialized', 'Auto', $b$
+$pack_data$),
+    ('SPE', 'Specialized', 'Auto', $pack_data$
 Reticulocyte Hemoglobin Content|E
 Soluble Transferrin Receptor
 Erythropoietin Level
@@ -449,7 +449,7 @@ Fragile X Testing (blood-based sample)
 Quantitative G6PD Activity|E
 Anti-Müllerian Hormone (AMH), repeat alias
 Cystatin C, repeat alias for renal profile
-$b$)
+$pack_data$)
     ) AS v(prefix, dept, rtype, block)
     CROSS JOIN LATERAL regexp_split_to_table(v.block, E'\n') AS l(line)
     WHERE btrim(l.line) <> ''

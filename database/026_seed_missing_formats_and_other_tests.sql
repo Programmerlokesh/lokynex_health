@@ -62,7 +62,7 @@ DROP TABLE IF EXISTS tmp26_fmt;
 CREATE TEMP TABLE tmp26_fmt AS
 WITH raw AS (
     SELECT l.ord, btrim(l.line) AS line
-    FROM regexp_split_to_table($b$
+    FROM regexp_split_to_table($pack_data$
 -- =====================================================================
 -- PART A : tests that exist (from the pack) but have no parameter + unit
 -- =====================================================================
@@ -828,7 +828,7 @@ LYMPHOCYTE SUBSETS | CD4 / CD8 Ratio | | N | 2
 = Haptoglobin | mg/dL | N | 0 | BIO | Serum
 # Glucose Challenge Test (GCT, 50 g) | BIO | Plasma (fluoride)
 GCT | Plasma Glucose (1 hr after 50 g glucose) | mg/dL | N | 0
-$b$, E'\r?\n') WITH ORDINALITY AS l(line, ord)
+$pack_data$, E'\r?\n') WITH ORDINALITY AS l(line, ord)
     WHERE btrim(l.line) <> '' AND btrim(l.line) NOT LIKE '--%'
 ),
 grp AS (

@@ -74,7 +74,7 @@ DROP TABLE IF EXISTS tmp27_fmt;
 CREATE TEMP TABLE tmp27_fmt AS
 WITH raw AS (
     SELECT l.ord, btrim(l.line) AS line
-    FROM regexp_split_to_table($b$
+    FROM regexp_split_to_table($pack_data$
 -- =====================================================================
 -- PART A : pack test that may still have no format
 -- =====================================================================
@@ -94,7 +94,7 @@ LD BODY | LD Bodies Seen | | T |
 KLEIHAUER-BETKE | Fetal Red Cells | % | N | 2
 KLEIHAUER-BETKE | Estimated Fetomaternal Haemorrhage | mL | N | 1
  | Interpretation | | T |
-= Heinz Body Test ;; Haemoglobin H Inclusion Body Test ;; Sucrose Lysis Test (PNH Screen) ;; Ham's Acidified Serum Test | | T | | HEM | Whole blood (EDTA)
+= Heinz Body Test ;; Haemoglobin H Inclusion Body Test ;; Sucrose Lysis Test (PNH Screen) ;; Ham’s Acidified Serum Test | | T | | HEM | Whole blood (EDTA)
 = Absolute Lymphocyte Count (ALC) ;; Absolute Monocyte Count ;; Absolute Basophil Count | /cumm | N | 0 | HEM | Whole blood (EDTA)
 -- ---- COAGULATION ----
 = Factor XIII Activity ;; Plasminogen Activity ;; Alpha-2 Antiplasmin | % | N | 0 | COA | Citrated plasma
@@ -120,7 +120,7 @@ PFA-100 | Closure Time (Collagen / ADP) | sec | N | 0
 -- ---- BIOCHEMISTRY ----
 = Corrected Calcium (calculated) | mg/dL | N | 1 | BIO | Serum
 = Unsaturated Iron Binding Capacity (UIBC) | µg/dL | N | 0 | BIO | Serum
-= 5'-Nucleotidase ;; Angiotensin Converting Enzyme (ACE) ;; Prostatic Acid Phosphatase (PAP) | U/L | N | 1 | BIO | Serum
+= 5’-Nucleotidase ;; Angiotensin Converting Enzyme (ACE) ;; Prostatic Acid Phosphatase (PAP) | U/L | N | 1 | BIO | Serum
 = Serum Amyloid A (SAA) | mg/L | N | 1 | BIO | Serum
 = Methylmalonic Acid (MMA) | nmol/L | N | 0 | BIO | Serum
 = Vitamin K (Phylloquinone) | ng/mL | N | 2 | BIO | Serum (protect from light)
@@ -619,13 +619,13 @@ SAAG | Serum Albumin | g/dL | N | 1
 SAAG | Ascitic Fluid Albumin | g/dL | N | 1
 SAAG | SAAG (calculated) | g/dL | N | 1 | b
  | Interpretation | | T |
-# Pleural Fluid Light's Criteria | BOD | Pleural fluid + serum
-LIGHT'S CRITERIA | Pleural Fluid Protein | g/dL | N | 1
-LIGHT'S CRITERIA | Serum Protein | g/dL | N | 1
-LIGHT'S CRITERIA | Pleural / Serum Protein Ratio | | N | 2
-LIGHT'S CRITERIA | Pleural Fluid LDH | U/L | N | 0
-LIGHT'S CRITERIA | Serum LDH | U/L | N | 0
-LIGHT'S CRITERIA | Pleural / Serum LDH Ratio | | N | 2
+# Pleural Fluid Light’s Criteria | BOD | Pleural fluid + serum
+LIGHT’S CRITERIA | Pleural Fluid Protein | g/dL | N | 1
+LIGHT’S CRITERIA | Serum Protein | g/dL | N | 1
+LIGHT’S CRITERIA | Pleural / Serum Protein Ratio | | N | 2
+LIGHT’S CRITERIA | Pleural Fluid LDH | U/L | N | 0
+LIGHT’S CRITERIA | Serum LDH | U/L | N | 0
+LIGHT’S CRITERIA | Pleural / Serum LDH Ratio | | N | 2
  | Interpretation | | T |
 = Pleural Fluid pH | | N | 2 | BOD | Pleural fluid (heparinised syringe)
 = Pleural Fluid Triglycerides ;; Pleural Fluid Cholesterol | mg/dL | N | 0 | BOD | Pleural fluid
@@ -722,7 +722,7 @@ IHC | Negative Markers | | T |
 SPECIAL STAIN | Stain(s) Applied | | T |
 SPECIAL STAIN | Result | | T |
  | Interpretation | | T |
-$b$, E'\r?\n') WITH ORDINALITY AS l(line, ord)
+$pack_data$, E'\r?\n') WITH ORDINALITY AS l(line, ord)
     WHERE btrim(l.line) <> '' AND btrim(l.line) NOT LIKE '--%'
 ),
 grp AS (
