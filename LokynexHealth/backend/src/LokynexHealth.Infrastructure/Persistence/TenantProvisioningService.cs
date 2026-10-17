@@ -22,6 +22,29 @@ public class TenantProvisioningService : ITenantProvisioningService
         "BloodReportOptions.sql"
     };
 
+    // Test catalog (departments + tests + report formats). Same content as
+    // database/019, 017, 020, 021, 026, 027. ORDER MATTERS (020 expects 017's
+    // formats first). Every script is safe to re-run and never overwrites
+    // anything the lab edited, so a new lab starts with the full catalog and
+    // nobody has to run these by hand in the Neon SQL editor.
+    private static readonly string[] SeedFiles =
+    {
+        "SeedTests01_BloodTests.sql",
+        "SeedTests02_BloodFormats.sql",
+        "SeedTests03_SopPack.sql",
+        "SeedTests04_PanelFormats.sql",
+        "SeedTests05_OtherTests.sql",
+        "SeedTests06_MoreTests.sql"
+    };
+
+    // The seed scripts loop over EVERY lab schema. During provisioning we only
+    // want the NEW schema (the first entry of search_path), so the loop filter
+    // gets one extra condition.
+    private const string SeedSchemaFilter =
+        "NOT IN ('public', 'platform', 'information_schema', 'pg_catalog')";
+    private const string SeedSchemaFilterScoped =
+        "NOT IN ('public', 'platform', 'information_schema', 'pg_catalog') AND i.table_schema = current_schema()";
+
     // The standalone SQL files start with "SET search_path TO lab_demo, public;".
     // Remove it here: the schema of the NEW lab is set once at the top instead.
     private static readonly Regex SearchPathStatement = new(
@@ -51,6 +74,16 @@ public class TenantProvisioningService : ITenantProvisioningService
             script.Append("\n;\n");
         }
 
+        foreach (var file in SeedFiles)
+        {
+            var sql = await ReadEmbeddedScriptAsync(file, cancellationToken);
+            sql = SearchPathStatement.Replace(sql, string.Empty);
+            // normalise Windows line endings and limit the seed to the new schema
+            sql = sql.Replace("\r\n", "\n").Replace(SeedSchemaFilter, SeedSchemaFilterScoped);
+            script.Append(sql);
+            script.Append("\n;\n");
+        }
+
         await using var connection = new NpgsqlConnection(connectionString);
         await connection.OpenAsync(cancellationToken);
 
@@ -58,7 +91,7 @@ public class TenantProvisioningService : ITenantProvisioningService
         await createSchemaCmd.ExecuteNonQueryAsync(cancellationToken);
 
         await using var scriptCmd = new NpgsqlCommand(script.ToString(), connection);
-        scriptCmd.CommandTimeout = 180;
+        scriptCmd.CommandTimeout = 600; // the test catalog seed adds a few seconds
         await scriptCmd.ExecuteNonQueryAsync(cancellationToken);
     }
 

@@ -451,7 +451,7 @@ Anti-Müllerian Hormone (AMH), repeat alias
 Cystatin C, repeat alias for renal profile
 $pack_data$)
     ) AS v(prefix, dept, rtype, block)
-    CROSS JOIN LATERAL regexp_split_to_table(v.block, E'\n') AS l(line)
+    CROSS JOIN LATERAL regexp_split_to_table(v.block, E'\r?\n') AS l(line)
     WHERE btrim(l.line) <> ''
 ),
 -- pack name -> the name 019 / 017 already use for the same test (so no duplicates)
