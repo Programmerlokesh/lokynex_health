@@ -13,19 +13,45 @@ import {
   Box,
   CircularProgress,
   Divider,
+  TablePagination,
+  TextField,
   Typography,
 } from "@mui/material";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 export default function DepartmentsPage() {
   const [selectedDeptId, setSelectedDeptId] = useState<string | null>(null);
   const [editingTest, setEditingTest] = useState<TestDto | null>(null);
+  const [page, setPage] = useState(0); // MUI pagination is 0-based
+  const [pageSize, setPageSize] = useState(50);
+  const [searchInput, setSearchInput] = useState("");
+  const [search, setSearch] = useState("");
 
-  const { data, isLoading, isError } = useTests({
-    departmentId: selectedDeptId ?? undefined,
-    pageNumber: 1,
-    pageSize: 50,
-  });
+  // debounce the search box
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setSearch(searchInput.trim());
+      setPage(0);
+    }, 300);
+    return () => clearTimeout(t);
+  }, [searchInput]);
+
+  const { data, isLoading, isError } = useTests(
+    {
+      departmentId: selectedDeptId ?? undefined,
+      search: search || undefined,
+      pageNumber: page + 1,
+      pageSize,
+    },
+    { enabled: !!selectedDeptId },
+  );
+
+  function handleSelectDepartment(id: string) {
+    setSelectedDeptId(id);
+    setPage(0);
+    setSearchInput("");
+    setSearch("");
+  }
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}>
@@ -55,7 +81,7 @@ export default function DepartmentsPage() {
       >
         <DepartmentList
           selectedId={selectedDeptId}
-          onSelect={setSelectedDeptId}
+          onSelect={handleSelectDepartment}
           onDeleted={(id) => {
             if (id === selectedDeptId) setSelectedDeptId(null);
           }}
@@ -80,9 +106,21 @@ export default function DepartmentsPage() {
             }}
           >
             <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
-              {selectedDeptId ? "Tests" : "Select a department to view tests"}
+              {selectedDeptId
+                ? `Tests${data ? ` (${data.totalCount})` : ""}`
+                : "Select a department to view tests"}
             </Typography>
-            <CreateTestDialog departmentId={selectedDeptId} />
+            <Box sx={{ display: "flex", gap: 1.5, alignItems: "center" }}>
+              {selectedDeptId && (
+                <TextField
+                  size="small"
+                  placeholder="Search tests..."
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
+                />
+              )}
+              <CreateTestDialog departmentId={selectedDeptId} />
+            </Box>
           </Box>
 
           {!selectedDeptId && (
@@ -100,7 +138,21 @@ export default function DepartmentsPage() {
             <Alert severity="error">Failed to load tests.</Alert>
           )}
           {selectedDeptId && data && (
-            <TestsTable tests={data.items} onEdit={setEditingTest} />
+            <>
+              <TestsTable tests={data.items} onEdit={setEditingTest} />
+              <TablePagination
+                component="div"
+                count={data.totalCount}
+                page={page}
+                onPageChange={(_, p) => setPage(p)}
+                rowsPerPage={pageSize}
+                onRowsPerPageChange={(e) => {
+                  setPageSize(Number(e.target.value));
+                  setPage(0);
+                }}
+                rowsPerPageOptions={[25, 50, 100, 200]}
+              />
+            </>
           )}
         </Box>
       </Box>
