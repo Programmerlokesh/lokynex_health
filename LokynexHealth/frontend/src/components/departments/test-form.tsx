@@ -84,8 +84,19 @@ export function TestForm({
     onChange({ ...form, ...patch });
 
   const defaultRow = (label: string, typeKey: TypeKey, valueKey: ValueKey) => (
-    <Box sx={{ display: "flex", gap: 1.5, alignItems: "center" }}>
-      <Typography variant="body2" sx={{ width: 90, flexShrink: 0 }}>
+    <Box
+      sx={{
+        display: "grid",
+        gap: 1.25,
+        alignItems: "center",
+        // phone: label on its own line, Type + Value side by side
+        gridTemplateColumns: { xs: "1fr 1fr", sm: "90px 1fr 1fr" },
+      }}
+    >
+      <Typography
+        variant="body2"
+        sx={{ fontWeight: 600, gridColumn: { xs: "1 / -1", sm: "auto" } }}
+      >
         {label}
       </Typography>
       <TextField
@@ -96,10 +107,9 @@ export function TestForm({
         onChange={(e) =>
           set({ [typeKey]: e.target.value } as Partial<TestFormState>)
         }
-        sx={{ flex: 1 }}
       >
         <MenuItem value="Flat">Flat (₹)</MenuItem>
-        <MenuItem value="Percentage">Percentage (%)</MenuItem>
+        <MenuItem value="Percentage">Percent (%)</MenuItem>
       </TextField>
       <TextField
         size="small"
@@ -110,7 +120,6 @@ export function TestForm({
           set({ [valueKey]: e.target.value } as Partial<TestFormState>)
         }
         slotProps={{ htmlInput: { min: 0, step: "any" } }}
-        sx={{ flex: 1 }}
       />
     </Box>
   );

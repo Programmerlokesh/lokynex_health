@@ -75,7 +75,7 @@ function PersonPicker({
   return (
     <Autocomplete
       size="small"
-      sx={{ flex: 1, minWidth: 180 }}
+      sx={{ flex: 1, minWidth: 0 }}
       options={options}
       value={
         row.entity
@@ -148,14 +148,18 @@ export function TestCommissionEditor({
         <Box
           key={row.key}
           sx={{
-            display: "flex",
-            flexWrap: "wrap",
+            display: "grid",
             gap: 1,
             alignItems: "center",
             p: 1,
             border: 1,
             borderColor: "divider",
-            borderRadius: 2,
+            borderRadius: "12px",
+            // phone: [Who | Type] / [Person] / [Value | delete]
+            gridTemplateColumns: {
+              xs: "1fr 1fr",
+              sm: "130px minmax(180px, 1fr) 120px 100px auto",
+            },
           }}
         >
           <TextField
@@ -169,18 +173,27 @@ export function TestCommissionEditor({
                 entity: null,
               })
             }
-            sx={{ width: 130 }}
+            sx={{ order: 1 }}
           >
             <MenuItem value="Doctor">Doctor</MenuItem>
             <MenuItem value="Referral">Referral</MenuItem>
             <MenuItem value="Technician">Technician</MenuItem>
           </TextField>
 
-          <PersonPicker
-            key={row.entityType}
-            row={row}
-            onChange={(entity) => update(row.key, { entity })}
-          />
+          <Box
+            sx={{
+              order: { xs: 3, sm: 2 },
+              gridColumn: { xs: "1 / -1", sm: "auto" },
+              minWidth: 0,
+              display: "flex",
+            }}
+          >
+            <PersonPicker
+              key={row.entityType}
+              row={row}
+              onChange={(entity) => update(row.key, { entity })}
+            />
+          </Box>
 
           <TextField
             select
@@ -190,7 +203,7 @@ export function TestCommissionEditor({
             onChange={(e) =>
               update(row.key, { commissionType: e.target.value })
             }
-            sx={{ width: 120 }}
+            sx={{ order: { xs: 2, sm: 3 } }}
           >
             <MenuItem value="Flat">Flat (₹)</MenuItem>
             <MenuItem value="Percentage">Percent (%)</MenuItem>
@@ -205,16 +218,18 @@ export function TestCommissionEditor({
               update(row.key, { commissionValue: e.target.value })
             }
             slotProps={{ htmlInput: { min: 0, step: "any" } }}
-            sx={{ width: 100 }}
+            sx={{ order: 4 }}
           />
 
-          <IconButton
-            size="small"
-            aria-label="Remove commission row"
-            onClick={() => onChange(rows.filter((r) => r.key !== row.key))}
-          >
-            <DeleteOutlineIcon fontSize="small" />
-          </IconButton>
+          <Box sx={{ order: 5, display: "flex", justifyContent: "flex-end" }}>
+            <IconButton
+              size="small"
+              aria-label="Remove commission row"
+              onClick={() => onChange(rows.filter((r) => r.key !== row.key))}
+            >
+              <DeleteOutlineIcon fontSize="small" />
+            </IconButton>
+          </Box>
         </Box>
       ))}
 

@@ -36,7 +36,8 @@ public class TenantProvisioningService : ITenantProvisioningService
         "SeedTests03_SopPack.sql",
         "SeedTests04_PanelFormats.sql",
         "SeedTests05_OtherTests.sql",
-        "SeedTests06_MoreTests.sql"
+        "SeedTests06_MoreTests.sql",
+        "SeedTests07_ImagingAndOtherDepartments.sql"
     };
 
     // The seed scripts loop over EVERY lab schema. During provisioning we only
