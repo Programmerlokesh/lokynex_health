@@ -9,8 +9,11 @@ using Microsoft.EntityFrameworkCore;
 
 namespace LokynexHealth.Application.Doctors.Commands.ManageDoctor;
 
+// Doctors are a GLOBAL registry, but edit / activate / delete are PER LAB:
+// they are stored in this lab's doctor_lab_overrides row and never touch platform.doctors.
+
 // =====================================================================
-// UPDATE
+// UPDATE  (this lab only)
 // =====================================================================
 public class UpdateDoctorCommand : IRequest
 {
@@ -54,15 +57,17 @@ public class UpdateDoctorCommandHandler : IRequestHandler<UpdateDoctorCommand>
 
     public async Task Handle(UpdateDoctorCommand request, CancellationToken cancellationToken)
     {
-        var doctor = await _db.Doctors.FirstOrDefaultAsync(d => d.Id == request.Id, cancellationToken)
-            ?? throw new NotFoundException(nameof(Doctor), request.Id);
+        var exists = await _db.Doctors.AsNoTracking()
+            .AnyAsync(d => d.Id == request.Id, cancellationToken);
+        if (!exists)
+            throw new NotFoundException(nameof(Doctor), request.Id);
 
         var phone = PhoneNormalizer.ToIndianMobile(request.Phone)
             ?? throw new ConflictException("Enter a valid 10-digit Indian mobile number.");
         var whatsapp = PhoneNormalizer.ToIndianMobile(request.WhatsappNumber);
         var email = Clean(request.Email);
 
-        // Same duplicate rules as Create, but ignoring this doctor's own row.
+        // Duplicate rules are checked against the doctors as THIS lab sees them.
         if (PhoneNormalizer.FormatInsensitiveLikePattern(phone) is { } pattern)
         {
             var candidates = await _db.Doctors
@@ -91,20 +96,32 @@ public class UpdateDoctorCommandHandler : IRequestHandler<UpdateDoctorCommand>
                     $"Another doctor with email '{email}' already exists: {sameEmail}.");
         }
 
-        doctor.FullName = request.FullName.Trim();
-        doctor.Phone = phone;
-        doctor.WhatsappNumber = whatsapp;
-        doctor.Email = email;
-        doctor.Address = Clean(request.Address);
-        doctor.Specialization = Clean(request.Specialization);
-        doctor.UpdatedAt = DateTimeOffset.UtcNow;
+        var now = DateTimeOffset.UtcNow;
+        var ov = await _db.DoctorLabOverrides
+            .FirstOrDefaultAsync(o => o.DoctorId == request.Id, cancellationToken);
+
+        if (ov is null)
+        {
+            ov = new DoctorLabOverride { DoctorId = request.Id, CreatedAt = now };
+            _db.DoctorLabOverrides.Add(ov);
+        }
+
+        // Full snapshot of this lab's version (so cleared fields stay cleared for this lab).
+        ov.HasEdits = true;
+        ov.FullName = request.FullName.Trim();
+        ov.Phone = phone;
+        ov.WhatsappNumber = whatsapp;
+        ov.Email = email;
+        ov.Address = Clean(request.Address);
+        ov.Specialization = Clean(request.Specialization);
+        ov.UpdatedAt = now;
 
         await _db.SaveChangesAsync(cancellationToken);
     }
 }
 
 // =====================================================================
-// ACTIVATE / DEACTIVATE
+// ACTIVATE / DEACTIVATE  (this lab only)
 // =====================================================================
 public class SetDoctorStatusCommand : IRequest
 {
@@ -123,20 +140,30 @@ public class SetDoctorStatusCommandHandler : IRequestHandler<SetDoctorStatusComm
 
     public async Task Handle(SetDoctorStatusCommand request, CancellationToken cancellationToken)
     {
-        var doctor = await _db.Doctors.FirstOrDefaultAsync(d => d.Id == request.Id, cancellationToken)
-            ?? throw new NotFoundException(nameof(Doctor), request.Id);
+        var exists = await _db.Doctors.AsNoTracking()
+            .AnyAsync(d => d.Id == request.Id, cancellationToken);
+        if (!exists)
+            throw new NotFoundException(nameof(Doctor), request.Id);
 
-        var target = request.IsActive ? PlatformRecordStatus.Active : PlatformRecordStatus.Inactive;
-        if (doctor.Status == target) return; // nothing to write
+        var now = DateTimeOffset.UtcNow;
+        var ov = await _db.DoctorLabOverrides
+            .FirstOrDefaultAsync(o => o.DoctorId == request.Id, cancellationToken);
 
-        doctor.Status = target;
-        doctor.UpdatedAt = DateTimeOffset.UtcNow;
+        if (ov is null)
+        {
+            ov = new DoctorLabOverride { DoctorId = request.Id, CreatedAt = now };
+            _db.DoctorLabOverrides.Add(ov);
+        }
+
+        ov.Status = request.IsActive ? PlatformRecordStatus.Active : PlatformRecordStatus.Inactive;
+        ov.UpdatedAt = now;
+
         await _db.SaveChangesAsync(cancellationToken);
     }
 }
 
 // =====================================================================
-// DELETE (hard delete; blocked by the database if the doctor is in use)
+// DELETE  (removes the doctor from THIS lab's list only; past orders keep the name)
 // =====================================================================
 public class DeleteDoctorCommand : IRequest
 {
@@ -154,20 +181,24 @@ public class DeleteDoctorCommandHandler : IRequestHandler<DeleteDoctorCommand>
 
     public async Task Handle(DeleteDoctorCommand request, CancellationToken cancellationToken)
     {
-        var doctor = await _db.Doctors.FirstOrDefaultAsync(d => d.Id == request.Id, cancellationToken)
-            ?? throw new NotFoundException(nameof(Doctor), request.Id);
+        var exists = await _db.Doctors.AsNoTracking()
+            .AnyAsync(d => d.Id == request.Id, cancellationToken);
+        if (!exists)
+            throw new NotFoundException(nameof(Doctor), request.Id);
 
-        _db.Doctors.Remove(doctor);
-        try
+        var now = DateTimeOffset.UtcNow;
+        var ov = await _db.DoctorLabOverrides
+            .FirstOrDefaultAsync(o => o.DoctorId == request.Id, cancellationToken);
+
+        if (ov is null)
         {
-            await _db.SaveChangesAsync(cancellationToken);
+            ov = new DoctorLabOverride { DoctorId = request.Id, CreatedAt = now };
+            _db.DoctorLabOverrides.Add(ov);
         }
-        catch (DbUpdateException)
-        {
-            // Foreign keys (orders, commissions, clinic schedules...) protect real history.
-            throw new ConflictException(
-                $"Dr. {doctor.FullName} is already used in orders, commissions or clinic schedules, " +
-                "so it can't be deleted. Deactivate instead.");
-        }
+
+        ov.IsHidden = true;
+        ov.UpdatedAt = now;
+
+        await _db.SaveChangesAsync(cancellationToken);
     }
 }

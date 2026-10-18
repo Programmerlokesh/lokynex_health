@@ -19,8 +19,17 @@ public class LokynexHealthDbContext : DbContext, IApplicationDbContext
     public DbSet<UserModulePermission> UserModulePermissions => Set<UserModulePermission>();
     public DbSet<Department> Departments => Set<Department>();
     public DbSet<Test> Tests => Set<Test>();
+
+    // READ-ONLY lab-wise views (global record + this lab's overrides).
     public DbSet<Doctor> Doctors => Set<Doctor>();
     public DbSet<Referral> Referrals => Set<Referral>();
+
+    // Writes: global registry (create only) and per-lab overrides (edit / status / delete).
+    public DbSet<GlobalDoctor> GlobalDoctors => Set<GlobalDoctor>();
+    public DbSet<GlobalReferral> GlobalReferrals => Set<GlobalReferral>();
+    public DbSet<DoctorLabOverride> DoctorLabOverrides => Set<DoctorLabOverride>();
+    public DbSet<ReferralLabOverride> ReferralLabOverrides => Set<ReferralLabOverride>();
+
     public DbSet<Technician> Technicians => Set<Technician>();
     public DbSet<Patient> Patients => Set<Patient>();
     public DbSet<PatientRelative> PatientRelatives => Set<PatientRelative>();

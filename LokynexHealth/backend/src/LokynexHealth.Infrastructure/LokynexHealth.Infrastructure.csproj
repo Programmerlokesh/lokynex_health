@@ -9,6 +9,7 @@
     <EmbeddedResource Include="Persistence\Scripts\BloodReportFormats.sql" />
     <EmbeddedResource Include="Persistence\Scripts\BloodReportMachineChemical.sql" />
     <EmbeddedResource Include="Persistence\Scripts\BloodReportOptions.sql" />
+    <EmbeddedResource Include="Persistence\Scripts\DirectoryOverrides.sql" />
     <EmbeddedResource Include="Persistence\Scripts\SeedTests01_BloodTests.sql" />
     <EmbeddedResource Include="Persistence\Scripts\SeedTests02_BloodFormats.sql" />
     <EmbeddedResource Include="Persistence\Scripts\SeedTests03_SopPack.sql" />

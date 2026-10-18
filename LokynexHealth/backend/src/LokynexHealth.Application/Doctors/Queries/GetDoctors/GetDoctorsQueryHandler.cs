@@ -18,7 +18,9 @@ public class GetDoctorsQueryHandler : IRequestHandler<GetDoctorsQuery, PagedResu
 
     public async Task<PagedResult<DoctorDto>> Handle(GetDoctorsQuery request, CancellationToken cancellationToken)
     {
-        var query = _db.Doctors.AsQueryable();
+        // This lab's effective doctors: global list + this lab's own edits,
+        // minus the ones this lab removed.
+        var query = _db.Doctors.AsNoTracking().Where(d => !d.IsHidden);
 
         if (request.ActiveOnly)
             query = query.Where(d => d.Status == PlatformRecordStatus.Active);
@@ -38,9 +40,6 @@ public class GetDoctorsQueryHandler : IRequestHandler<GetDoctorsQuery, PagedResu
 
         var totalCount = await query.CountAsync(cancellationToken);
 
-        // Fetch the raw entities first (native enum stays as-is in the query) —
-        // ToListAsync() materializes the results, THEN we map to DTO with
-        // .ToString() running in memory (LINQ-to-Objects), not translated to SQL.
         var doctorEntities = await query
             .OrderBy(d => d.FullName)
             .Skip((request.PageNumber - 1) * request.PageSize)
@@ -52,6 +51,7 @@ public class GetDoctorsQueryHandler : IRequestHandler<GetDoctorsQuery, PagedResu
             Id = d.Id,
             FullName = d.FullName,
             Phone = d.Phone,
+            WhatsappNumber = d.WhatsappNumber,
             Email = d.Email,
             Address = d.Address,
             Specialization = d.Specialization,

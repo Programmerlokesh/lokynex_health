@@ -197,7 +197,9 @@ export function DirectoryFormDialog({
         >
           {kind !== "technician" && (
             <Alert severity="info" sx={{ py: 0 }}>
-              {label}s are shared by every lab — changes apply everywhere.
+              {isEdit
+                ? `Changes are saved for your lab only — other labs keep the original ${label.toLowerCase()} details.`
+                : `New ${label.toLowerCase()}s are added to the shared list, so every lab can use them.`}
             </Alert>
           )}
 

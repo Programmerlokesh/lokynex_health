@@ -19,8 +19,17 @@ public interface IApplicationDbContext
     DbSet<UserModulePermission> UserModulePermissions { get; }
     DbSet<Department> Departments { get; }
     DbSet<Test> Tests { get; }
+
+    // READ-ONLY: this lab's effective doctors / referrals (global + this lab's overrides).
     DbSet<Doctor> Doctors { get; }
     DbSet<Referral> Referrals { get; }
+
+    // Writes: global registry (create only) and per-lab overrides (edit / status / delete).
+    DbSet<GlobalDoctor> GlobalDoctors { get; }
+    DbSet<GlobalReferral> GlobalReferrals { get; }
+    DbSet<DoctorLabOverride> DoctorLabOverrides { get; }
+    DbSet<ReferralLabOverride> ReferralLabOverrides { get; }
+
     DbSet<Technician> Technicians { get; }
     DbSet<Patient> Patients { get; }
     DbSet<PatientRelative> PatientRelatives { get; }

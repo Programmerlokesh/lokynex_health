@@ -12,14 +12,16 @@ public class TenantProvisioningService : ITenantProvisioningService
     private const string ResourcePrefix = "LokynexHealth.Infrastructure.Persistence.Scripts.";
 
     // Order matters: base tables first, then blood-report formats (014) and
-    // machine / chemical info (015). All run as ONE script, so a failure in any
-    // part rolls the whole lab provisioning back instead of leaving half a schema.
+    // machine / chemical info (015), then the per-lab doctor/referral overrides.
+    // All run as ONE script, so a failure in any part rolls the whole lab
+    // provisioning back instead of leaving half a schema.
     private static readonly string[] ScriptFiles =
     {
         "TenantSchemaTemplate.sql",
         "BloodReportFormats.sql",
         "BloodReportMachineChemical.sql",
-        "BloodReportOptions.sql"
+        "BloodReportOptions.sql",
+        "DirectoryOverrides.sql"
     };
 
     // Test catalog (departments + tests + report formats). Same content as

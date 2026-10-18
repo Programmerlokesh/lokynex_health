@@ -9,8 +9,11 @@ using Microsoft.EntityFrameworkCore;
 
 namespace LokynexHealth.Application.Referrals.Commands.ManageReferral;
 
+// Referrals are a GLOBAL registry, but edit / activate / delete are PER LAB:
+// they are stored in this lab's referral_lab_overrides row and never touch platform.referrals.
+
 // =====================================================================
-// UPDATE
+// UPDATE  (this lab only)
 // =====================================================================
 public class UpdateReferralCommand : IRequest
 {
@@ -53,14 +56,17 @@ public class UpdateReferralCommandHandler : IRequestHandler<UpdateReferralComman
 
     public async Task Handle(UpdateReferralCommand request, CancellationToken cancellationToken)
     {
-        var referral = await _db.Referrals.FirstOrDefaultAsync(r => r.Id == request.Id, cancellationToken)
-            ?? throw new NotFoundException(nameof(Referral), request.Id);
+        var exists = await _db.Referrals.AsNoTracking()
+            .AnyAsync(r => r.Id == request.Id, cancellationToken);
+        if (!exists)
+            throw new NotFoundException(nameof(Referral), request.Id);
 
         var phone = PhoneNormalizer.ToIndianMobile(request.Phone)
             ?? throw new ConflictException("Enter a valid 10-digit Indian mobile number.");
         var whatsapp = PhoneNormalizer.ToIndianMobile(request.WhatsappNumber);
         var email = Clean(request.Email);
 
+        // Duplicate rules are checked against the referrals as THIS lab sees them.
         if (PhoneNormalizer.FormatInsensitiveLikePattern(phone) is { } pattern)
         {
             var candidates = await _db.Referrals
@@ -89,19 +95,31 @@ public class UpdateReferralCommandHandler : IRequestHandler<UpdateReferralComman
                     $"Another referral with email '{email}' already exists: {sameEmail}.");
         }
 
-        referral.FullName = request.FullName.Trim();
-        referral.Phone = phone;
-        referral.WhatsappNumber = whatsapp;
-        referral.Email = email;
-        referral.Address = Clean(request.Address);
-        referral.UpdatedAt = DateTimeOffset.UtcNow;
+        var now = DateTimeOffset.UtcNow;
+        var ov = await _db.ReferralLabOverrides
+            .FirstOrDefaultAsync(o => o.ReferralId == request.Id, cancellationToken);
+
+        if (ov is null)
+        {
+            ov = new ReferralLabOverride { ReferralId = request.Id, CreatedAt = now };
+            _db.ReferralLabOverrides.Add(ov);
+        }
+
+        // Full snapshot of this lab's version (so cleared fields stay cleared for this lab).
+        ov.HasEdits = true;
+        ov.FullName = request.FullName.Trim();
+        ov.Phone = phone;
+        ov.WhatsappNumber = whatsapp;
+        ov.Email = email;
+        ov.Address = Clean(request.Address);
+        ov.UpdatedAt = now;
 
         await _db.SaveChangesAsync(cancellationToken);
     }
 }
 
 // =====================================================================
-// ACTIVATE / DEACTIVATE
+// ACTIVATE / DEACTIVATE  (this lab only)
 // =====================================================================
 public class SetReferralStatusCommand : IRequest
 {
@@ -120,20 +138,30 @@ public class SetReferralStatusCommandHandler : IRequestHandler<SetReferralStatus
 
     public async Task Handle(SetReferralStatusCommand request, CancellationToken cancellationToken)
     {
-        var referral = await _db.Referrals.FirstOrDefaultAsync(r => r.Id == request.Id, cancellationToken)
-            ?? throw new NotFoundException(nameof(Referral), request.Id);
+        var exists = await _db.Referrals.AsNoTracking()
+            .AnyAsync(r => r.Id == request.Id, cancellationToken);
+        if (!exists)
+            throw new NotFoundException(nameof(Referral), request.Id);
 
-        var target = request.IsActive ? PlatformRecordStatus.Active : PlatformRecordStatus.Inactive;
-        if (referral.Status == target) return;
+        var now = DateTimeOffset.UtcNow;
+        var ov = await _db.ReferralLabOverrides
+            .FirstOrDefaultAsync(o => o.ReferralId == request.Id, cancellationToken);
 
-        referral.Status = target;
-        referral.UpdatedAt = DateTimeOffset.UtcNow;
+        if (ov is null)
+        {
+            ov = new ReferralLabOverride { ReferralId = request.Id, CreatedAt = now };
+            _db.ReferralLabOverrides.Add(ov);
+        }
+
+        ov.Status = request.IsActive ? PlatformRecordStatus.Active : PlatformRecordStatus.Inactive;
+        ov.UpdatedAt = now;
+
         await _db.SaveChangesAsync(cancellationToken);
     }
 }
 
 // =====================================================================
-// DELETE
+// DELETE  (removes the referral from THIS lab's list only; past orders keep the name)
 // =====================================================================
 public class DeleteReferralCommand : IRequest
 {
@@ -151,19 +179,24 @@ public class DeleteReferralCommandHandler : IRequestHandler<DeleteReferralComman
 
     public async Task Handle(DeleteReferralCommand request, CancellationToken cancellationToken)
     {
-        var referral = await _db.Referrals.FirstOrDefaultAsync(r => r.Id == request.Id, cancellationToken)
-            ?? throw new NotFoundException(nameof(Referral), request.Id);
+        var exists = await _db.Referrals.AsNoTracking()
+            .AnyAsync(r => r.Id == request.Id, cancellationToken);
+        if (!exists)
+            throw new NotFoundException(nameof(Referral), request.Id);
 
-        _db.Referrals.Remove(referral);
-        try
+        var now = DateTimeOffset.UtcNow;
+        var ov = await _db.ReferralLabOverrides
+            .FirstOrDefaultAsync(o => o.ReferralId == request.Id, cancellationToken);
+
+        if (ov is null)
         {
-            await _db.SaveChangesAsync(cancellationToken);
+            ov = new ReferralLabOverride { ReferralId = request.Id, CreatedAt = now };
+            _db.ReferralLabOverrides.Add(ov);
         }
-        catch (DbUpdateException)
-        {
-            throw new ConflictException(
-                $"{referral.FullName} is already used in orders or commissions, " +
-                "so it can't be deleted. Deactivate instead.");
-        }
+
+        ov.IsHidden = true;
+        ov.UpdatedAt = now;
+
+        await _db.SaveChangesAsync(cancellationToken);
     }
 }

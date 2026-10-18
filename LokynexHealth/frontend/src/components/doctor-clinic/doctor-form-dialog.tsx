@@ -69,6 +69,8 @@ function DoctorFormBody({
     const payload = {
       fullName: form.fullName.trim(),
       phone: form.phone.trim(),
+      // keep the existing WhatsApp number (this form has no field for it)
+      whatsappNumber: doctor?.whatsappNumber ?? undefined,
       email: form.email.trim() || undefined,
       address: form.address.trim() || undefined,
       specialization: form.specialization.trim() || undefined,
@@ -102,11 +104,11 @@ function DoctorFormBody({
               {getApiErrorMessage(mutation.error, "Could not save the doctor.")}
             </Alert>
           )}
-          {isEdit && (
-            <Alert severity="info" sx={{ py: 0 }}>
-              Doctors are shared by every lab — changes appear everywhere.
-            </Alert>
-          )}
+          <Alert severity="info" sx={{ py: 0 }}>
+            {isEdit
+              ? "Changes are saved for your lab only — other labs keep the original doctor details."
+              : "New doctors are added to the shared list, so every lab can use them."}
+          </Alert>
           <TextField
             label="Full Name"
             size="small"

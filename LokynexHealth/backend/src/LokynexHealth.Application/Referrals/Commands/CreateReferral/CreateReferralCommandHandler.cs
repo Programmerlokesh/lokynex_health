@@ -27,42 +27,65 @@ public class CreateReferralCommandHandler : IRequestHandler<CreateReferralComman
         var whatsapp = PhoneNormalizer.ToIndianMobile(request.WhatsappNumber);
         var email = Clean(request.Email);
 
-        // ---- Duplicate check 1: same phone number (global registry) ----
+        // ---- Duplicate check 1: same phone ----
         if (PhoneNormalizer.FormatInsensitiveLikePattern(phone) is { } pattern)
         {
-            var candidates = await _db.Referrals
+            // (a) the GLOBAL registry (what every lab shares)
+            var globalCandidates = await _db.GlobalReferrals
                 .AsNoTracking()
                 .Where(r => EF.Functions.Like(r.Phone, pattern))
-                .Select(r => new { r.FullName, r.Phone, r.Status })
+                .Select(r => new { r.Id, r.FullName, r.Phone })
                 .ToListAsync(cancellationToken);
 
-            var samePhone = candidates.FirstOrDefault(c => PhoneNormalizer.MatchKey(c.Phone) == phone);
-            if (samePhone is not null)
-            {
-                var state = samePhone.Status == PlatformRecordStatus.Active
-                    ? string.Empty
-                    : $" [{samePhone.Status}]";
+            var globalSame = globalCandidates.FirstOrDefault(c => PhoneNormalizer.MatchKey(c.Phone) == phone);
+            if (globalSame is not null)
+                return await ReuseOrConflictAsync(
+                    globalSame.Id,
+                    $"A referral with this phone number already exists: {globalSame.FullName} ({globalSame.Phone}).",
+                    cancellationToken);
+
+            // (b) numbers THIS lab edited on other referrals
+            var labCandidates = await _db.Referrals
+                .AsNoTracking()
+                .Where(r => EF.Functions.Like(r.Phone, pattern))
+                .Select(r => new { r.FullName, r.Phone })
+                .ToListAsync(cancellationToken);
+
+            var labSame = labCandidates.FirstOrDefault(c => PhoneNormalizer.MatchKey(c.Phone) == phone);
+            if (labSame is not null)
                 throw new ConflictException(
-                    $"A referral with this phone number already exists: {samePhone.FullName} ({samePhone.Phone}){state}.");
-            }
+                    $"A referral with this phone number already exists: {labSame.FullName} ({labSame.Phone}).");
         }
 
         // ---- Duplicate check 2: same email (case-insensitive) ----
         if (email is not null)
         {
             var emailPattern = SqlLike.Escape(email);
-            var sameEmail = await _db.Referrals
+
+            var globalSame = await _db.GlobalReferrals
+                .AsNoTracking()
+                .Where(r => r.Email != null && EF.Functions.ILike(r.Email, emailPattern))
+                .Select(r => new { r.Id, r.FullName })
+                .FirstOrDefaultAsync(cancellationToken);
+
+            if (globalSame is not null)
+                return await ReuseOrConflictAsync(
+                    globalSame.Id,
+                    $"A referral with email '{email}' already exists: {globalSame.FullName}.",
+                    cancellationToken);
+
+            var labSame = await _db.Referrals
                 .AsNoTracking()
                 .Where(r => r.Email != null && EF.Functions.ILike(r.Email, emailPattern))
                 .Select(r => r.FullName)
                 .FirstOrDefaultAsync(cancellationToken);
 
-            if (sameEmail is not null)
-                throw new ConflictException(
-                    $"A referral with email '{email}' already exists: {sameEmail}.");
+            if (labSame is not null)
+                throw new ConflictException($"A referral with email '{email}' already exists: {labSame}.");
         }
 
-        var referral = new Referral
+        // New referral goes to the GLOBAL registry -> every lab can see and use it.
+        var referral = new GlobalReferral
         {
             Id = Guid.NewGuid(),
             FullName = fullName,
@@ -74,9 +97,29 @@ public class CreateReferralCommandHandler : IRequestHandler<CreateReferralComman
             CreatedAt = DateTimeOffset.UtcNow
         };
 
-        _db.Referrals.Add(referral);
+        _db.GlobalReferrals.Add(referral);
         await _db.SaveChangesAsync(cancellationToken);
 
         return referral.Id;
+    }
+
+    /// <summary>
+    /// The referral already exists globally. If THIS lab had removed it earlier, bring it
+    /// back to this lab's list (Active) and reuse it; otherwise it is a real duplicate.
+    /// </summary>
+    private async Task<Guid> ReuseOrConflictAsync(Guid referralId, string conflictMessage, CancellationToken ct)
+    {
+        var hidden = await _db.ReferralLabOverrides
+            .FirstOrDefaultAsync(o => o.ReferralId == referralId && o.IsHidden, ct);
+
+        if (hidden is null)
+            throw new ConflictException(conflictMessage);
+
+        hidden.IsHidden = false;
+        hidden.Status = PlatformRecordStatus.Active;
+        hidden.UpdatedAt = DateTimeOffset.UtcNow;
+        await _db.SaveChangesAsync(ct);
+
+        return referralId;
     }
 }

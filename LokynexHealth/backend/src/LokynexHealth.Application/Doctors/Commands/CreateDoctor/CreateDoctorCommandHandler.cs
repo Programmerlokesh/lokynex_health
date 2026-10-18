@@ -22,50 +22,70 @@ public class CreateDoctorCommandHandler : IRequestHandler<CreateDoctorCommand, G
     public async Task<Guid> Handle(CreateDoctorCommand request, CancellationToken cancellationToken)
     {
         var fullName = request.FullName.Trim();
-        // Always stored as exactly 10 digits (the validator already rejected anything else).
         var phone = PhoneNormalizer.ToIndianMobile(request.Phone)
             ?? throw new ConflictException("Enter a valid 10-digit Indian mobile number.");
-        var whatsapp = PhoneNormalizer.ToIndianMobile(request.WhatsappNumber); // null when blank
+        var whatsapp = PhoneNormalizer.ToIndianMobile(request.WhatsappNumber);
         var email = Clean(request.Email);
 
-        // ---- Duplicate check 1: same phone number ----
-        // Doctors are a GLOBAL registry shared by every lab, so this checks all of them.
-        // Indexed LIKE pre-filter, then exact confirm in memory on the few candidates.
+        // ---- Duplicate check 1: same phone ----
         if (PhoneNormalizer.FormatInsensitiveLikePattern(phone) is { } pattern)
         {
-            var candidates = await _db.Doctors
+            // (a) the GLOBAL registry (what every lab shares)
+            var globalCandidates = await _db.GlobalDoctors
                 .AsNoTracking()
                 .Where(d => EF.Functions.Like(d.Phone, pattern))
-                .Select(d => new { d.FullName, d.Phone, d.Status })
+                .Select(d => new { d.Id, d.FullName, d.Phone })
                 .ToListAsync(cancellationToken);
 
-            var samePhone = candidates.FirstOrDefault(c => PhoneNormalizer.MatchKey(c.Phone) == phone);
-            if (samePhone is not null)
-            {
-                var state = samePhone.Status == PlatformRecordStatus.Active
-                    ? string.Empty
-                    : $" [{samePhone.Status}]";
+            var globalSame = globalCandidates.FirstOrDefault(c => PhoneNormalizer.MatchKey(c.Phone) == phone);
+            if (globalSame is not null)
+                return await ReuseOrConflictAsync(
+                    globalSame.Id,
+                    $"A doctor with this phone number already exists: {globalSame.FullName} ({globalSame.Phone}).",
+                    cancellationToken);
+
+            // (b) numbers THIS lab edited on other doctors
+            var labCandidates = await _db.Doctors
+                .AsNoTracking()
+                .Where(d => EF.Functions.Like(d.Phone, pattern))
+                .Select(d => new { d.FullName, d.Phone })
+                .ToListAsync(cancellationToken);
+
+            var labSame = labCandidates.FirstOrDefault(c => PhoneNormalizer.MatchKey(c.Phone) == phone);
+            if (labSame is not null)
                 throw new ConflictException(
-                    $"A doctor with this phone number already exists: {samePhone.FullName} ({samePhone.Phone}){state}.");
-            }
+                    $"A doctor with this phone number already exists: {labSame.FullName} ({labSame.Phone}).");
         }
 
         // ---- Duplicate check 2: same email (case-insensitive) ----
         if (email is not null)
         {
             var emailPattern = SqlLike.Escape(email);
-            var sameEmail = await _db.Doctors
+
+            var globalSame = await _db.GlobalDoctors
+                .AsNoTracking()
+                .Where(d => d.Email != null && EF.Functions.ILike(d.Email, emailPattern))
+                .Select(d => new { d.Id, d.FullName })
+                .FirstOrDefaultAsync(cancellationToken);
+
+            if (globalSame is not null)
+                return await ReuseOrConflictAsync(
+                    globalSame.Id,
+                    $"A doctor with email '{email}' already exists: {globalSame.FullName}.",
+                    cancellationToken);
+
+            var labSame = await _db.Doctors
                 .AsNoTracking()
                 .Where(d => d.Email != null && EF.Functions.ILike(d.Email, emailPattern))
                 .Select(d => d.FullName)
                 .FirstOrDefaultAsync(cancellationToken);
 
-            if (sameEmail is not null)
-                throw new ConflictException(
-                    $"A doctor with email '{email}' already exists: {sameEmail}.");
+            if (labSame is not null)
+                throw new ConflictException($"A doctor with email '{email}' already exists: {labSame}.");
         }
 
-        var doctor = new Doctor
+        // New doctor goes to the GLOBAL registry -> every lab can see and use it.
+        var doctor = new GlobalDoctor
         {
             Id = Guid.NewGuid(),
             FullName = fullName,
@@ -78,9 +98,29 @@ public class CreateDoctorCommandHandler : IRequestHandler<CreateDoctorCommand, G
             CreatedAt = DateTimeOffset.UtcNow
         };
 
-        _db.Doctors.Add(doctor);
+        _db.GlobalDoctors.Add(doctor);
         await _db.SaveChangesAsync(cancellationToken);
 
         return doctor.Id;
+    }
+
+    /// <summary>
+    /// The doctor already exists globally. If THIS lab had removed it earlier, bring it
+    /// back to this lab's list (Active) and reuse it; otherwise it is a real duplicate.
+    /// </summary>
+    private async Task<Guid> ReuseOrConflictAsync(Guid doctorId, string conflictMessage, CancellationToken ct)
+    {
+        var hidden = await _db.DoctorLabOverrides
+            .FirstOrDefaultAsync(o => o.DoctorId == doctorId && o.IsHidden, ct);
+
+        if (hidden is null)
+            throw new ConflictException(conflictMessage);
+
+        hidden.IsHidden = false;
+        hidden.Status = PlatformRecordStatus.Active;
+        hidden.UpdatedAt = DateTimeOffset.UtcNow;
+        await _db.SaveChangesAsync(ct);
+
+        return doctorId;
     }
 }

@@ -347,12 +347,19 @@ export function DirectoryTable({
         <DialogTitle sx={{ fontWeight: 700 }}>Delete {label}</DialogTitle>
         <DialogContent>
           <DialogContentText>
-            Permanently delete <strong>{deleting?.fullName}</strong>? This
-            cannot be undone.
-            {kind !== "technician" &&
-              ` ${label}s are shared by every lab, so this removes it for all labs.`}{" "}
-            If it is already used in orders, use the switch to deactivate
-            instead.
+            {kind === "technician" ? (
+              <>
+                Permanently delete <strong>{deleting?.fullName}</strong>? This
+                cannot be undone. If it is already used in orders, use the
+                switch to deactivate instead.
+              </>
+            ) : (
+              <>
+                Remove <strong>{deleting?.fullName}</strong> from your
+                lab&apos;s list? Other labs are not affected, and your past
+                orders will still show this {label.toLowerCase()}.
+              </>
+            )}
           </DialogContentText>
           {remove.isError && (
             <Alert severity="error" sx={{ mt: 2 }}>

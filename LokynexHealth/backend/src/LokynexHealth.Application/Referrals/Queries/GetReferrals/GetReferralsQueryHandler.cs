@@ -21,7 +21,9 @@ public class GetReferralsQueryHandler : IRequestHandler<GetReferralsQuery, Paged
         var pageNumber = Math.Max(1, request.PageNumber);
         var pageSize = Math.Clamp(request.PageSize, 1, 200);
 
-        var query = _db.Referrals.AsNoTracking().AsQueryable();
+        // This lab's effective referrals: global list + this lab's own edits,
+        // minus the ones this lab removed.
+        var query = _db.Referrals.AsNoTracking().Where(r => !r.IsHidden);
 
         if (Enum.TryParse<PlatformRecordStatus>(request.Status, true, out var status))
             query = query.Where(r => r.Status == status);
