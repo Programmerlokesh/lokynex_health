@@ -1,3 +1,4 @@
+using LokynexHealth.Application.Common;
 using LokynexHealth.Application.Common.Interfaces;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -7,14 +8,19 @@ namespace LokynexHealth.Application.Subscriptions.Queries.GetSubscriptions;
 public class GetSubscriptionsQueryHandler : IRequestHandler<GetSubscriptionsQuery, List<SubscriptionDto>>
 {
     private readonly IApplicationDbContext _db;
+    private readonly ICurrentUserService _user;
 
-    public GetSubscriptionsQueryHandler(IApplicationDbContext db)
+    public GetSubscriptionsQueryHandler(IApplicationDbContext db, ICurrentUserService user)
     {
         _db = db;
+        _user = user;
     }
 
     public async Task<List<SubscriptionDto>> Handle(GetSubscriptionsQuery request, CancellationToken cancellationToken)
     {
+        // null = SuperAdmin (all labs). Staff: only the labs they added.
+        var scope = await OwnerAccess.ScopedTenantIdsAsync(_db, _user, cancellationToken);
+
         var query =
             from s in _db.Subscriptions
             join p in _db.Plans on s.PlanId equals p.Id
@@ -22,6 +28,9 @@ public class GetSubscriptionsQueryHandler : IRequestHandler<GetSubscriptionsQuer
             join b in _db.TenantBranches on s.BranchId equals (Guid?)b.Id into branchJoin
             from b in branchJoin.DefaultIfEmpty()
             select new { s, PlanName = p.Name, TenantName = t.PrimaryBranchName, BranchName = (string?)b.BranchName };
+
+        if (scope is not null)
+            query = query.Where(x => scope.Contains(x.s.TenantId));
 
         if (request.TenantId.HasValue)
             query = query.Where(x => x.s.TenantId == request.TenantId.Value);

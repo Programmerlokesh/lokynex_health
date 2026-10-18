@@ -1,3 +1,4 @@
+using LokynexHealth.Api.Security;
 using LokynexHealth.Application.Labs.Commands.AddLabBranch;
 using LokynexHealth.Application.Labs.Commands.CreateLab;
 using LokynexHealth.Application.Labs.Commands.DeleteLabBranch;
@@ -12,14 +13,17 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace LokynexHealth.Api.Controllers;
 
-// Class level: SuperAdmin OR Owner may reach this controller. Every action
-// below that an Owner must NOT use carries its own [Authorize(Roles = "SuperAdmin")];
-// ASP.NET combines attributes with AND, so those actions are SuperAdmin-only.
-// An Owner can: create a lab, list the labs they added, open one of them.
-// An Owner can never edit/delete anything, and there is no "delete lab" at all.
+// Class level: SuperAdmin OR staff may reach this controller. A staff member needs
+// the "labs" panel, or "subscriptions"/"notifications" (their forms need the lab
+// dropdown — and a staff member only ever sees the labs THEY added).
+// Creating a lab needs the "labs" panel at Manage level.
+// Every action a staff member must NOT use carries its own
+// [Authorize(Roles = "SuperAdmin")]; ASP.NET combines attributes with AND, so
+// those actions are SuperAdmin-only. There is no "delete lab" at all.
 [ApiController]
 [Route("api/[controller]")]
 [Authorize(Roles = "SuperAdmin,Owner")]
+[PlatformPanel("labs|subscriptions|notifications")]
 public class LabsController : ControllerBase
 {
     private readonly IMediator _mediator;
@@ -30,6 +34,7 @@ public class LabsController : ControllerBase
     }
 
     [HttpPost]
+    [PlatformPanel("labs", write: true)]
     public async Task<IActionResult> Create([FromBody] CreateLabCommand command, CancellationToken ct)
     {
         var id = await _mediator.Send(command, ct);

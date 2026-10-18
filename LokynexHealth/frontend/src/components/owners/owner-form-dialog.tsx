@@ -4,7 +4,15 @@ import { useCreateOwner, useUpdateOwner } from "@/hooks/use-owners";
 import { getApiErrorMessage } from "@/lib/api-error";
 import { fileToAvatarDataUrl } from "@/lib/image-utils";
 import { toIndianMobile } from "@/lib/phone";
-import { OWNER_ROLES, OwnerDto } from "@/types/owner";
+import {
+  DEFAULT_STAFF_PERMISSIONS,
+  OWNER_ROLES,
+  OwnerDto,
+  STAFF_PANELS,
+  StaffAccessLevel,
+  StaffPermission,
+  accessLevelOf,
+} from "@/types/owner";
 import AddIcon from "@mui/icons-material/Add";
 import PhotoCameraOutlinedIcon from "@mui/icons-material/PhotoCameraOutlined";
 import {
@@ -17,9 +25,12 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  Divider,
   FormControlLabel,
   MenuItem,
   TextField,
+  ToggleButton,
+  ToggleButtonGroup,
   Typography,
   useMediaQuery,
   useTheme,
@@ -38,26 +49,37 @@ interface FormState {
   pincode: string;
   /** undefined = untouched, "" = removed, data URL = new picture */
   picture: string | undefined;
+  /** panel key -> access level */
+  access: Record<string, StaffAccessLevel>;
 }
 
-function initialState(owner?: OwnerDto): FormState {
+function initialAccess(staff?: OwnerDto): Record<string, StaffAccessLevel> {
+  const perms = staff ? (staff.permissions ?? []) : DEFAULT_STAFF_PERMISSIONS;
+  const out: Record<string, StaffAccessLevel> = {};
+  for (const p of STAFF_PANELS) out[p.key] = accessLevelOf(perms, p.key);
+  return out;
+}
+
+function initialState(staff?: OwnerDto): FormState {
   const same =
-    !owner || !owner.whatsappNumber || owner.whatsappNumber === owner.phone;
+    !staff || !staff.whatsappNumber || staff.whatsappNumber === staff.phone;
   return {
-    name: owner?.name ?? "",
-    role: owner?.role ?? "Marketing Team",
-    username: owner?.username ?? "",
+    name: staff?.name ?? "",
+    role: staff?.role ?? "Marketing Team",
+    username: staff?.username ?? "",
     password: "",
-    phone: owner?.phone ?? "",
-    whatsapp: owner?.whatsappNumber ?? "",
+    phone: staff?.phone ?? "",
+    whatsapp: staff?.whatsappNumber ?? "",
     sameAsPhone: same,
-    address: owner?.address ?? "",
-    pincode: owner?.pincode ?? "",
+    address: staff?.address ?? "",
+    pincode: staff?.pincode ?? "",
     picture: undefined,
+    access: initialAccess(staff),
   };
 }
 
 // Create (owner === undefined) and Edit share one form.
+// "owner" is the API name; the screen calls this person "Staff".
 export function OwnerFormDialog({
   open,
   onClose,
@@ -82,6 +104,9 @@ export function OwnerFormDialog({
   const set = <K extends keyof FormState>(key: K, value: FormState[K]) =>
     setForm((f) => ({ ...f, [key]: value }));
 
+  const setAccess = (panel: string, level: StaffAccessLevel) =>
+    setForm((f) => ({ ...f, access: { ...f.access, [panel]: level } }));
+
   const shownPicture =
     form.picture !== undefined
       ? form.picture
@@ -99,6 +124,16 @@ export function OwnerFormDialog({
         err instanceof Error ? err.message : "Could not use this image.",
       );
     }
+  }
+
+  function buildPermissions(): StaffPermission[] {
+    const out: StaffPermission[] = [];
+    for (const p of STAFF_PANELS) {
+      const level = form.access[p.key];
+      if (level === "view" || level === "manage")
+        out.push({ panel: p.key, level });
+    }
+    return out;
   }
 
   function handleSubmit(e: React.FormEvent) {
@@ -131,6 +166,7 @@ export function OwnerFormDialog({
       whatsappNumber: whatsapp || undefined,
       address: form.address.trim() || undefined,
       pincode: form.pincode.trim() || undefined,
+      permissions: buildPermissions(),
     };
     const onError = (err: unknown) => setError(getApiErrorMessage(err));
 
@@ -165,7 +201,7 @@ export function OwnerFormDialog({
       fullScreen={fullScreen}
     >
       <DialogTitle sx={{ fontWeight: 700 }}>
-        {isEdit ? "Edit Owner" : "Create Owner"}
+        {isEdit ? "Edit Staff" : "Create Staff"}
       </DialogTitle>
       <Box component="form" onSubmit={handleSubmit}>
         <DialogContent
@@ -318,13 +354,72 @@ export function OwnerFormDialog({
             slotProps={{ htmlInput: { inputMode: "numeric", maxLength: 6 } }}
             sx={{ maxWidth: { sm: 200 } }}
           />
+
+          <Divider />
+
+          {/* ---------- Panel access ---------- */}
+          <Box>
+            <Typography sx={{ fontWeight: 700 }}>Panel access</Typography>
+            <Typography variant="caption" color="text.secondary">
+              Choose which panels this staff member can open. Changes apply
+              immediately.
+            </Typography>
+          </Box>
+
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+            {STAFF_PANELS.map((p) => (
+              <Box
+                key={p.key}
+                sx={{
+                  display: "flex",
+                  flexDirection: { xs: "column", sm: "row" },
+                  alignItems: { xs: "stretch", sm: "center" },
+                  justifyContent: "space-between",
+                  gap: 1,
+                  p: 1.25,
+                  border: "1px solid",
+                  borderColor: "divider",
+                  borderRadius: 2,
+                }}
+              >
+                <Box sx={{ minWidth: 0 }}>
+                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                    {p.label}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    {p.hint}
+                  </Typography>
+                </Box>
+                <ToggleButtonGroup
+                  exclusive
+                  size="small"
+                  color="primary"
+                  value={form.access[p.key] ?? "none"}
+                  onChange={(_, v: StaffAccessLevel | null) => {
+                    if (v) setAccess(p.key, v);
+                  }}
+                  sx={{ flexShrink: 0 }}
+                >
+                  <ToggleButton value="none" sx={{ textTransform: "none" }}>
+                    No access
+                  </ToggleButton>
+                  <ToggleButton value="view" sx={{ textTransform: "none" }}>
+                    View
+                  </ToggleButton>
+                  <ToggleButton value="manage" sx={{ textTransform: "none" }}>
+                    Manage
+                  </ToggleButton>
+                </ToggleButtonGroup>
+              </Box>
+            ))}
+          </Box>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
           <Button onClick={onClose} disabled={isPending}>
             Cancel
           </Button>
           <Button type="submit" variant="contained" disabled={isPending}>
-            {isPending ? "Saving…" : isEdit ? "Save changes" : "Create owner"}
+            {isPending ? "Saving…" : isEdit ? "Save changes" : "Create staff"}
           </Button>
         </DialogActions>
       </Box>
@@ -343,7 +438,7 @@ export function CreateOwnerButton() {
         startIcon={<AddIcon />}
         onClick={() => setOpen(true)}
       >
-        New Owner
+        New Staff
       </Button>
       {open && <OwnerFormDialog open onClose={() => setOpen(false)} />}
     </>

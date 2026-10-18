@@ -30,7 +30,14 @@ const STATUS_COLOR: Record<
   Cancelled: "default",
 };
 
-export function SubscriptionsTable({ rows }: { rows: SubscriptionDto[] }) {
+// readOnly = a staff member with "View" access to Subscriptions: no edit.
+export function SubscriptionsTable({
+  rows,
+  readOnly = false,
+}: {
+  rows: SubscriptionDto[];
+  readOnly?: boolean;
+}) {
   const [editingSubscription, setEditingSubscription] =
     useState<SubscriptionDto | null>(null);
 
@@ -62,9 +69,11 @@ export function SubscriptionsTable({ rows }: { rows: SubscriptionDto[] }) {
               <TableCell sx={{ fontWeight: 600 }}>End</TableCell>
               <TableCell sx={{ fontWeight: 600 }}>Amount Paid</TableCell>
               <TableCell sx={{ fontWeight: 600 }}>Status</TableCell>
-              <TableCell sx={{ fontWeight: 600 }} align="right">
-                Actions
-              </TableCell>
+              {!readOnly && (
+                <TableCell sx={{ fontWeight: 600 }} align="right">
+                  Actions
+                </TableCell>
+              )}
             </TableRow>
           </TableHead>
           <TableBody>
@@ -112,28 +121,32 @@ export function SubscriptionsTable({ rows }: { rows: SubscriptionDto[] }) {
                     variant="outlined"
                   />
                 </TableCell>
-                <TableCell align="right">
-                  {/* Editable regardless of status — including after the
-                      subscription has already gone Active. */}
-                  <Tooltip title="Edit">
-                    <IconButton
-                      size="small"
-                      onClick={() => setEditingSubscription(row)}
-                    >
-                      <EditOutlinedIcon fontSize="small" />
-                    </IconButton>
-                  </Tooltip>
-                </TableCell>
+                {!readOnly && (
+                  <TableCell align="right">
+                    {/* Editable regardless of status — including after the
+                        subscription has already gone Active. */}
+                    <Tooltip title="Edit">
+                      <IconButton
+                        size="small"
+                        onClick={() => setEditingSubscription(row)}
+                      >
+                        <EditOutlinedIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                  </TableCell>
+                )}
               </motion.tr>
             ))}
           </TableBody>
         </Table>
       </TableContainer>
 
-      <EditSubscriptionDialog
-        subscription={editingSubscription}
-        onClose={() => setEditingSubscription(null)}
-      />
+      {!readOnly && (
+        <EditSubscriptionDialog
+          subscription={editingSubscription}
+          onClose={() => setEditingSubscription(null)}
+        />
+      )}
     </>
   );
 }

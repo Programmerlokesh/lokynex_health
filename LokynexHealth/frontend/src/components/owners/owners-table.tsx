@@ -3,7 +3,7 @@
 import { OwnerFormDialog } from "@/components/owners/owner-form-dialog";
 import { useSetOwnerStatus } from "@/hooks/use-owners";
 import { formatDateTime } from "@/lib/format";
-import { OwnerDto } from "@/types/owner";
+import { OwnerDto, panelLabel } from "@/types/owner";
 import BlockOutlinedIcon from "@mui/icons-material/BlockOutlined";
 import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutlined";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
@@ -36,18 +36,18 @@ import {
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-function OwnerActions({
-  owner,
+function StaffActions({
+  staff,
   onEdit,
   onToggle,
   onLedger,
 }: {
-  owner: OwnerDto;
+  staff: OwnerDto;
   onEdit: () => void;
   onToggle: () => void;
   onLedger: () => void;
 }) {
-  const active = owner.status === "Active";
+  const active = staff.status === "Active";
   return (
     <Stack direction="row" spacing={0.5}>
       <Tooltip title="Ledger & P&L">
@@ -55,8 +55,8 @@ function OwnerActions({
           <InsightsOutlinedIcon fontSize="small" />
         </IconButton>
       </Tooltip>
-      <Tooltip title="Edit">
-        <IconButton size="small" onClick={onEdit} aria-label="Edit owner">
+      <Tooltip title="Edit details & panel access">
+        <IconButton size="small" onClick={onEdit} aria-label="Edit staff">
           <EditOutlinedIcon fontSize="small" />
         </IconButton>
       </Tooltip>
@@ -65,7 +65,7 @@ function OwnerActions({
           size="small"
           color={active ? "error" : "success"}
           onClick={onToggle}
-          aria-label={active ? "Deactivate owner" : "Activate owner"}
+          aria-label={active ? "Deactivate staff" : "Activate staff"}
         >
           {active ? (
             <BlockOutlinedIcon fontSize="small" />
@@ -87,6 +87,31 @@ const statusChip = (status: string) => (
   />
 );
 
+function AccessChips({ staff }: { staff: OwnerDto }) {
+  const perms = staff.permissions ?? [];
+  if (perms.length === 0) {
+    return (
+      <Typography variant="caption" color="text.secondary">
+        No panel access
+      </Typography>
+    );
+  }
+  return (
+    <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
+      {perms.map((p) => (
+        <Chip
+          key={p.panel}
+          size="small"
+          variant="outlined"
+          color={p.level === "manage" ? "primary" : "default"}
+          label={`${panelLabel(p.panel)} · ${p.level === "manage" ? "Manage" : "View"}`}
+        />
+      ))}
+    </Box>
+  );
+}
+
+// "owner" is the API/DB name; on screen these people are called "Staff".
 export function OwnersTable({ rows }: { rows: OwnerDto[] }) {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
@@ -99,7 +124,7 @@ export function OwnersTable({ rows }: { rows: OwnerDto[] }) {
   if (rows.length === 0) {
     return (
       <Typography variant="body2" color="text.secondary">
-        No owners yet. Create one so your team can start adding labs.
+        No staff yet. Create one and choose which panels they can open.
       </Typography>
     );
   }
@@ -169,6 +194,12 @@ export function OwnersTable({ rows }: { rows: OwnerDto[] }) {
                   <Typography variant="body2">{o.labCount}</Typography>
                 </Box>
               </Stack>
+              <Box sx={{ mt: 1.25 }}>
+                <Typography variant="caption" color="text.secondary">
+                  Panel access
+                </Typography>
+                <AccessChips staff={o} />
+              </Box>
               <Stack
                 direction="row"
                 sx={{
@@ -180,8 +211,8 @@ export function OwnersTable({ rows }: { rows: OwnerDto[] }) {
                 <Typography variant="caption" color="text.secondary">
                   Since {formatDateTime(o.createdAt)}
                 </Typography>
-                <OwnerActions
-                  owner={o}
+                <StaffActions
+                  staff={o}
                   onEdit={() => setEditing(o)}
                   onToggle={() => setToggling(o)}
                   onLedger={() => openLedger(o)}
@@ -191,17 +222,20 @@ export function OwnersTable({ rows }: { rows: OwnerDto[] }) {
           ))}
         </Stack>
       ) : (
-        <TableContainer component={Paper} sx={{ borderRadius: 3 }}>
-          <Table size="small">
+        <TableContainer
+          component={Paper}
+          sx={{ borderRadius: 3, overflowX: "auto" }}
+        >
+          <Table size="small" sx={{ minWidth: 980 }}>
             <TableHead>
               <TableRow sx={{ bgcolor: "action.hover" }}>
                 {[
-                  "Owner",
+                  "Staff",
                   "Role",
                   "Login ID",
                   "Phone",
-                  "WhatsApp",
                   "Labs",
+                  "Panel access",
                   "Status",
                   "Created",
                 ].map((h) => (
@@ -237,13 +271,15 @@ export function OwnersTable({ rows }: { rows: OwnerDto[] }) {
                   <TableCell>{o.role}</TableCell>
                   <TableCell>{o.username}</TableCell>
                   <TableCell>{o.phone}</TableCell>
-                  <TableCell>{o.whatsappNumber || "—"}</TableCell>
                   <TableCell>{o.labCount}</TableCell>
+                  <TableCell sx={{ maxWidth: 320 }}>
+                    <AccessChips staff={o} />
+                  </TableCell>
                   <TableCell>{statusChip(o.status)}</TableCell>
                   <TableCell>{formatDateTime(o.createdAt)}</TableCell>
                   <TableCell align="right">
-                    <OwnerActions
-                      owner={o}
+                    <StaffActions
+                      staff={o}
                       onEdit={() => setEditing(o)}
                       onToggle={() => setToggling(o)}
                       onLedger={() => openLedger(o)}
@@ -267,13 +303,13 @@ export function OwnersTable({ rows }: { rows: OwnerDto[] }) {
 
       <Dialog open={!!toggling} onClose={() => setToggling(null)}>
         <DialogTitle sx={{ fontWeight: 700 }}>
-          {toggleActive ? "Deactivate owner?" : "Activate owner?"}
+          {toggleActive ? "Deactivate staff?" : "Activate staff?"}
         </DialogTitle>
         <DialogContent>
           <DialogContentText>
             {toggleActive
-              ? `${toggling?.name} will be signed out and will not be able to log in or add labs until you activate them again. Labs they already added are not affected.`
-              : `${toggling?.name} will be able to log in and add labs again.`}
+              ? `${toggling?.name} will be signed out and will not be able to log in until you activate them again. Labs they already added are not affected.`
+              : `${toggling?.name} will be able to log in again, with the same panel access as before.`}
           </DialogContentText>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>

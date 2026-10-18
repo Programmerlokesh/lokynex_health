@@ -22,7 +22,7 @@ public class GetOwnerByIdQuery : IRequest<OwnerDto>
     public Guid Id { get; set; }
 }
 
-/// <summary>The signed-in Owner's own profile (GET /api/owner/me).</summary>
+/// <summary>The signed-in staff member's own profile (GET /api/owner/me).</summary>
 public class GetMyOwnerProfileQuery : IRequest<OwnerDto> { }
 
 internal static class OwnerMapper
@@ -40,6 +40,7 @@ internal static class OwnerMapper
         ProfilePictureUrl = o.ProfilePictureUrl,
         Status = o.Status.ToString(),
         LabCount = labCount,
+        Permissions = StaffPanels.ToDto(o.Permissions),
         CreatedAt = o.CreatedAt,
         UpdatedAt = o.UpdatedAt
     };
@@ -72,7 +73,7 @@ public class GetOwnersQueryHandler : IRequestHandler<GetOwnersQuery, PagedResult
         var owners = await q.OrderByDescending(o => o.CreatedAt)
             .Skip((page - 1) * size).Take(size).ToListAsync(ct);
 
-        // ONE grouped query for every owner's lab count (no N+1).
+        // ONE grouped query for every staff member's lab count (no N+1).
         var ids = owners.Select(o => o.Id).ToList();
         var counts = await _db.Tenants.AsNoTracking()
             .Where(t => t.CreatedByOwnerId != null && ids.Contains(t.CreatedByOwnerId.Value))

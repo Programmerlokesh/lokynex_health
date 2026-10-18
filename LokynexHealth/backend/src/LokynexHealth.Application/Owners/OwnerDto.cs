@@ -13,6 +13,7 @@ public class OwnerDto
     public string? ProfilePictureUrl { get; set; }
     public string Status { get; set; } = default!;
     public int LabCount { get; set; }
+    public List<StaffPermissionDto> Permissions { get; set; } = new();
     public DateTimeOffset CreatedAt { get; set; }
     public DateTimeOffset? UpdatedAt { get; set; }
 }

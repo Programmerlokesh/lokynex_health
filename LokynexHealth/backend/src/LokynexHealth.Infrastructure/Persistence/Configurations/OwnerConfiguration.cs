@@ -18,6 +18,7 @@ public class OwnerConfiguration : IEntityTypeConfiguration<Owner>
         builder.Property(o => o.Phone).HasMaxLength(20).IsRequired();
         builder.Property(o => o.WhatsappNumber).HasMaxLength(20);
         builder.Property(o => o.Pincode).HasMaxLength(10);
+        builder.Property(o => o.Permissions).HasMaxLength(500).IsRequired();
         builder.Property(o => o.Status).HasColumnType("platform.record_status")
             .HasDefaultValue(Domain.Enums.PlatformRecordStatus.Active);
     }

@@ -20,6 +20,8 @@ public class CreateOwnerCommand : IRequest<Guid>, IOwnerFields
     public string? Address { get; set; }
     public string? Pincode { get; set; }
     public string? ProfilePictureUrl { get; set; }
+    /// <summary>Panels this staff member may open. Empty/null = none.</summary>
+    public List<StaffPermissionDto>? Permissions { get; set; }
 }
 
 /// <summary>Fields shared by create + update, so both use the same rules.</summary>
@@ -31,6 +33,7 @@ public interface IOwnerFields
     string? WhatsappNumber { get; }
     string? Pincode { get; }
     string? ProfilePictureUrl { get; }
+    List<StaffPermissionDto>? Permissions { get; }
 }
 
 public static class OwnerRules
@@ -48,6 +51,9 @@ public static class OwnerRules
         v.RuleFor(x => x.Pincode)
             .Must(p => string.IsNullOrWhiteSpace(p) || (p.Trim().Length == 6 && p.Trim().All(char.IsDigit)))
             .WithMessage("Pincode must be 6 digits.");
+        v.RuleFor(x => x.Permissions)
+            .Must(list => list is null || list.All(StaffPanels.IsValid))
+            .WithMessage("Choose a valid panel and access level.");
         // ~400 KB of base64 is far above a 192px avatar and stops abuse.
         v.RuleFor(x => x.ProfilePictureUrl).MaximumLength(400_000)
             .WithMessage("Profile picture is too large.");
@@ -83,7 +89,7 @@ public class CreateOwnerCommandHandler : IRequestHandler<CreateOwnerCommand, Gui
         var username = r.Username.Trim();
 
         // The single login page tries every account kind, so a login ID must be
-        // unique across owners, SuperAdmins, lab admins and lab users.
+        // unique across staff, SuperAdmins, lab admins and lab users.
         var taken =
             await _db.Owners.AnyAsync(o => o.Username == username, ct) ||
             await _db.SuperAdmins.AnyAsync(s => s.Username == username, ct) ||
@@ -103,6 +109,7 @@ public class CreateOwnerCommandHandler : IRequestHandler<CreateOwnerCommand, Gui
             Address = string.IsNullOrWhiteSpace(r.Address) ? null : r.Address.Trim(),
             Pincode = string.IsNullOrWhiteSpace(r.Pincode) ? null : r.Pincode.Trim(),
             ProfilePictureUrl = string.IsNullOrWhiteSpace(r.ProfilePictureUrl) ? null : r.ProfilePictureUrl,
+            Permissions = StaffPanels.Serialize(r.Permissions),
             Status = PlatformRecordStatus.Active,
             CreatedBy = _currentUser.UserId,
             CreatedAt = DateTimeOffset.UtcNow

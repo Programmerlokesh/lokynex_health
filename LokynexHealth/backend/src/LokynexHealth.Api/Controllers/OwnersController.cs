@@ -1,3 +1,4 @@
+using LokynexHealth.Api.Security;
 using LokynexHealth.Application.OwnerLedger;
 using LokynexHealth.Application.Owners;
 using MediatR;
@@ -6,61 +7,60 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace LokynexHealth.Api.Controllers;
 
-/// <summary>SuperAdmin manages owners: create, edit, activate/deactivate (never delete),
-/// and read any owner's ledger.</summary>
+/// <summary>Everything the signed-in staff member can do about themselves: profile
+/// (always) + own ledger (needs the "ledger" panel; Manage to add/edit/delete).
+/// Handlers re-check that the staff member is still Active.</summary>
 [ApiController]
-[Route("api/[controller]")]
-[Authorize(Roles = "SuperAdmin")]
-public class OwnersController : ControllerBase
+[Route("api/owner")]
+[Authorize(Roles = "Owner")]
+public class OwnerPortalController : ControllerBase
 {
     private readonly IMediator _mediator;
-    public OwnersController(IMediator mediator) => _mediator = mediator;
+    public OwnerPortalController(IMediator mediator) => _mediator = mediator;
 
-    [HttpPost]
-    public async Task<IActionResult> Create([FromBody] CreateOwnerCommand command, CancellationToken ct)
+    // No panel needed: this is how the console learns which panels are open.
+    [HttpGet("me")]
+    public async Task<IActionResult> Me(CancellationToken ct)
+        => Ok(await _mediator.Send(new GetMyOwnerProfileQuery(), ct));
+
+    [HttpGet("ledger/analytics")]
+    [PlatformPanel("ledger")]
+    public async Task<IActionResult> Analytics([FromQuery] GetOwnerLedgerAnalyticsQuery query, CancellationToken ct)
     {
-        var id = await _mediator.Send(command, ct);
-        return CreatedAtAction(nameof(GetById), new { id }, new { id });
+        query.OwnerId = null; // staff only ever see their own ledger
+        return Ok(await _mediator.Send(query, ct));
     }
 
-    [HttpGet]
-    public async Task<IActionResult> GetAll([FromQuery] GetOwnersQuery query, CancellationToken ct)
-        => Ok(await _mediator.Send(query, ct));
+    [HttpGet("ledger/entries")]
+    [PlatformPanel("ledger")]
+    public async Task<IActionResult> Entries([FromQuery] GetOwnerLedgerEntriesQuery query, CancellationToken ct)
+    {
+        query.OwnerId = null;
+        return Ok(await _mediator.Send(query, ct));
+    }
 
-    [HttpGet("{id:guid}")]
-    public async Task<IActionResult> GetById(Guid id, CancellationToken ct)
-        => Ok(await _mediator.Send(new GetOwnerByIdQuery { Id = id }, ct));
+    [HttpPost("ledger")]
+    [PlatformPanel("ledger", write: true)]
+    public async Task<IActionResult> Record([FromBody] RecordOwnerLedgerEntryCommand command, CancellationToken ct)
+    {
+        var id = await _mediator.Send(command, ct);
+        return Ok(new { id });
+    }
 
-    [HttpPut("{id:guid}")]
-    public async Task<IActionResult> Update(Guid id, [FromBody] UpdateOwnerCommand command, CancellationToken ct)
+    [HttpPut("ledger/{id:guid}")]
+    [PlatformPanel("ledger", write: true)]
+    public async Task<IActionResult> Update(Guid id, [FromBody] UpdateOwnerLedgerEntryCommand command, CancellationToken ct)
     {
         command.Id = id;
         await _mediator.Send(command, ct);
         return NoContent();
     }
 
-    public class SetStatusBody { public string Status { get; set; } = default!; }
-
-    [HttpPatch("{id:guid}/status")]
-    public async Task<IActionResult> SetStatus(Guid id, [FromBody] SetStatusBody body, CancellationToken ct)
+    [HttpDelete("ledger/{id:guid}")]
+    [PlatformPanel("ledger", write: true)]
+    public async Task<IActionResult> Delete(Guid id, CancellationToken ct)
     {
-        await _mediator.Send(new SetOwnerStatusCommand { Id = id, Status = body.Status }, ct);
+        await _mediator.Send(new DeleteOwnerLedgerEntryCommand { Id = id }, ct);
         return NoContent();
-    }
-
-    // ---------- read-only view of an owner's ledger ----------
-
-    [HttpGet("{id:guid}/ledger/analytics")]
-    public async Task<IActionResult> LedgerAnalytics(Guid id, [FromQuery] GetOwnerLedgerAnalyticsQuery query, CancellationToken ct)
-    {
-        query.OwnerId = id;
-        return Ok(await _mediator.Send(query, ct));
-    }
-
-    [HttpGet("{id:guid}/ledger/entries")]
-    public async Task<IActionResult> LedgerEntries(Guid id, [FromQuery] GetOwnerLedgerEntriesQuery query, CancellationToken ct)
-    {
-        query.OwnerId = id;
-        return Ok(await _mediator.Send(query, ct));
     }
 }

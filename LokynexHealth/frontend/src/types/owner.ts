@@ -1,4 +1,4 @@
-// Roles a SuperAdmin can give an Owner (people who sell the software).
+// Roles a SuperAdmin can give a staff member (people who work under the SuperAdmin).
 // Keep in sync with OwnerRoles.cs on the backend.
 export const OWNER_ROLES = [
   "CEO",
@@ -8,6 +8,64 @@ export const OWNER_ROLES = [
   "Other",
 ] as const;
 
+// ---------------- Staff panel access ----------------
+// Keep the panel keys in sync with StaffPanels.cs on the backend.
+export type StaffAccessLevel = "none" | "view" | "manage";
+
+export interface StaffPermission {
+  panel: string;
+  level: "view" | "manage";
+}
+
+export const STAFF_PANELS = [
+  {
+    key: "labs",
+    label: "Labs",
+    hint: "View = see the labs they added. Manage = can also create new labs.",
+  },
+  {
+    key: "plans",
+    label: "Plans",
+    hint: "View = see all plans. Manage = create, edit and delete plans.",
+  },
+  {
+    key: "subscriptions",
+    label: "Subscriptions",
+    hint: "Only for labs they added. Manage = create and edit subscriptions.",
+  },
+  {
+    key: "notifications",
+    label: "Notifications",
+    hint: "Only for labs they added. Manage = send notifications.",
+  },
+  {
+    key: "ledger",
+    label: "Ledger & P&L",
+    hint: "Their own ledger. Manage = add, edit and delete entries.",
+  },
+] as const;
+
+export type StaffPanelKey = (typeof STAFF_PANELS)[number]["key"];
+
+// What a new staff member starts with (same as before this feature existed).
+export const DEFAULT_STAFF_PERMISSIONS: StaffPermission[] = [
+  { panel: "labs", level: "manage" },
+  { panel: "ledger", level: "manage" },
+];
+
+export function accessLevelOf(
+  perms: StaffPermission[] | null | undefined,
+  panel: string,
+): StaffAccessLevel {
+  const hit = perms?.find((p) => p.panel === panel);
+  return hit ? hit.level : "none";
+}
+
+export function panelLabel(panel: string): string {
+  return STAFF_PANELS.find((p) => p.key === panel)?.label ?? panel;
+}
+
+// ---------------- Staff (API name: owner) ----------------
 export interface OwnerDto {
   id: string;
   name: string;
@@ -21,6 +79,8 @@ export interface OwnerDto {
   /** "Active" | "Inactive" */
   status: string;
   labCount: number;
+  /** Panels the SuperAdmin opened for this staff member. */
+  permissions: StaffPermission[];
   createdAt: string;
   updatedAt?: string | null;
 }
@@ -35,6 +95,7 @@ export interface CreateOwnerRequest {
   address?: string;
   pincode?: string;
   profilePictureUrl?: string;
+  permissions?: StaffPermission[];
 }
 
 export interface UpdateOwnerRequest {
@@ -48,9 +109,11 @@ export interface UpdateOwnerRequest {
   profilePictureUrl?: string | null;
   /** Leave empty to keep the current password. */
   newPassword?: string;
+  /** Full list of panels; replaces the old list. */
+  permissions?: StaffPermission[];
 }
 
-// ---------------- Owner ledger / P&L ----------------
+// ---------------- Staff ledger / P&L ----------------
 
 export type LedgerEntryType =
   | "Income"

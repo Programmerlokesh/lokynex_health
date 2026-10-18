@@ -21,6 +21,8 @@ public class UpdateOwnerCommand : IRequest, IOwnerFields
     public string? ProfilePictureUrl { get; set; }
     /// <summary>Empty = keep the current password.</summary>
     public string? NewPassword { get; set; }
+    /// <summary>null = keep the current panel access, otherwise replace it entirely.</summary>
+    public List<StaffPermissionDto>? Permissions { get; set; }
 }
 
 public class UpdateOwnerCommandValidator : AbstractValidator<UpdateOwnerCommand>
@@ -59,6 +61,8 @@ public class UpdateOwnerCommandHandler : IRequestHandler<UpdateOwnerCommand>
             owner.ProfilePictureUrl = r.ProfilePictureUrl == "" ? null : r.ProfilePictureUrl;
         if (!string.IsNullOrEmpty(r.NewPassword))
             owner.PasswordHash = _hasher.HashPassword(r.NewPassword);
+        if (r.Permissions is not null)
+            owner.Permissions = StaffPanels.Serialize(r.Permissions);
         owner.UpdatedAt = DateTimeOffset.UtcNow;
 
         await _db.SaveChangesAsync(ct);

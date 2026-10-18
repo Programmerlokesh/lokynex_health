@@ -1,3 +1,4 @@
+using LokynexHealth.Application.Common;
 using LokynexHealth.Application.Common.Exceptions;
 using LokynexHealth.Application.Common.Interfaces;
 using LokynexHealth.Domain.Entities;
@@ -10,14 +11,21 @@ namespace LokynexHealth.Application.Subscriptions.Commands.CreateSubscription;
 public class CreateSubscriptionCommandHandler : IRequestHandler<CreateSubscriptionCommand, Guid>
 {
     private readonly IApplicationDbContext _db;
+    private readonly ICurrentUserService _user;
 
-    public CreateSubscriptionCommandHandler(IApplicationDbContext db)
+    public CreateSubscriptionCommandHandler(IApplicationDbContext db, ICurrentUserService user)
     {
         _db = db;
+        _user = user;
     }
 
     public async Task<Guid> Handle(CreateSubscriptionCommand request, CancellationToken cancellationToken)
     {
+        // Staff may only bill labs they added (a foreign lab looks like "not found").
+        var scope = await OwnerAccess.ScopedTenantIdsAsync(_db, _user, cancellationToken);
+        if (scope is not null && !scope.Contains(request.TenantId))
+            throw new NotFoundException(nameof(Tenant), request.TenantId);
+
         var tenantExists = await _db.Tenants.AnyAsync(t => t.Id == request.TenantId, cancellationToken);
         if (!tenantExists) throw new NotFoundException(nameof(Tenant), request.TenantId);
 

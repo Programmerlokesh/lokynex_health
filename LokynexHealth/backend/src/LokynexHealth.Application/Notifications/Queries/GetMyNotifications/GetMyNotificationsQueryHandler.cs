@@ -1,61 +1,44 @@
-using LokynexHealth.Application.Common.Exceptions;
+using LokynexHealth.Application.Common;
 using LokynexHealth.Application.Common.Interfaces;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
-namespace LokynexHealth.Application.Notifications.Queries.GetMyNotifications;
+namespace LokynexHealth.Application.Notifications.Queries.GetNotifications;
 
-public class GetMyNotificationsQueryHandler
-    : IRequestHandler<GetMyNotificationsQuery, MyNotificationsDto>
+public class GetNotificationsQueryHandler : IRequestHandler<GetNotificationsQuery, List<NotificationDto>>
 {
     private readonly IApplicationDbContext _db;
-    private readonly ICurrentUserService _currentUser;
+    private readonly ICurrentUserService _user;
 
-    public GetMyNotificationsQueryHandler(IApplicationDbContext db, ICurrentUserService currentUser)
+    public GetNotificationsQueryHandler(IApplicationDbContext db, ICurrentUserService user)
     {
         _db = db;
-        _currentUser = currentUser;
+        _user = user;
     }
 
-    public async Task<MyNotificationsDto> Handle(
-        GetMyNotificationsQuery request,
-        CancellationToken cancellationToken)
+    public async Task<List<NotificationDto>> Handle(GetNotificationsQuery request, CancellationToken cancellationToken)
     {
-        var tenantId = _currentUser.TenantId;
+        var query = _db.Notifications.AsQueryable();
 
-        if (tenantId is null)
-            throw new UnauthorizedException("This account is not linked to a lab.");
+        // Staff only see notifications sent to labs they added (never broadcasts).
+        var scope = await OwnerAccess.ScopedTenantIdsAsync(_db, _user, cancellationToken);
+        if (scope is not null)
+            query = query.Where(n => n.TenantId != null && scope.Contains(n.TenantId.Value));
 
-        // A lab's inbox = messages addressed to it + platform-wide broadcasts.
-        // The tenant filter is applied here rather than trusted from the caller,
-        // so no lab can read another lab's renewal notices.
-        var query = _db.Notifications
-            .Where(n => n.TenantId == tenantId.Value || n.TenantId == null);
+        if (request.TenantId.HasValue)
+            query = query.Where(n => n.TenantId == null || n.TenantId == request.TenantId.Value);
 
-        if (request.UnreadOnly)
-            query = query.Where(n => !n.IsRead);
-
-        var take = Math.Clamp(request.Take, 1, 200);
-
-        var items = await query
+        return await query
             .OrderByDescending(n => n.CreatedAt)
-            .Take(take)
-            .Select(n => new MyNotificationItemDto
+            .Select(n => new NotificationDto
             {
                 Id = n.Id,
+                TenantId = n.TenantId,
                 Title = n.Title,
                 Message = n.Message,
                 IsRead = n.IsRead,
-                IsBroadcast = n.TenantId == null,
                 CreatedAt = n.CreatedAt
             })
             .ToListAsync(cancellationToken);
-
-        var unreadCount = await _db.Notifications
-            .CountAsync(
-                n => (n.TenantId == tenantId.Value || n.TenantId == null) && !n.IsRead,
-                cancellationToken);
-
-        return new MyNotificationsDto { UnreadCount = unreadCount, Items = items };
     }
 }

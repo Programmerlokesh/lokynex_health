@@ -1,5 +1,6 @@
 "use client";
 
+import { OwnerLedgerView } from "@/components/owner-ledger/owner-ledger-view";
 import { CreateOwnerButton } from "@/components/owners/owner-form-dialog";
 import { OwnersTable } from "@/components/owners/owners-table";
 import { PlatformShell } from "@/components/platform/platform-shell";
@@ -20,18 +21,22 @@ import {
   useSubscriptions,
 } from "@/hooks/use-super-admin";
 import { useSuperAdminAuthGuard } from "@/hooks/use-superadmin-auth-guard";
+import { getApiErrorMessage } from "@/lib/api-error";
 import { glassPanelSx, iconTileSx, railItemSx } from "@/lib/home-theme";
 import { useSuperAdminAuthStore } from "@/store/superadmin-auth-store";
 import BadgeOutlinedIcon from "@mui/icons-material/BadgeOutlined";
 import CreditCardOutlinedIcon from "@mui/icons-material/CreditCardOutlined";
+import InsightsOutlinedIcon from "@mui/icons-material/InsightsOutlined";
 import NotificationsNoneOutlinedIcon from "@mui/icons-material/NotificationsNoneOutlined";
 import ScienceOutlinedIcon from "@mui/icons-material/ScienceOutlined";
 import SearchIcon from "@mui/icons-material/Search";
 import WorkspacePremiumOutlinedIcon from "@mui/icons-material/WorkspacePremiumOutlined";
 import {
+  Alert,
   Box,
   CircularProgress,
   InputAdornment,
+  MenuItem,
   TextField,
   Typography,
 } from "@mui/material";
@@ -39,7 +44,13 @@ import type { SvgIconProps } from "@mui/material/SvgIcon";
 import { useRouter } from "next/navigation";
 import { useState, type ComponentType } from "react";
 
-type TabKey = "labs" | "owners" | "plans" | "subscriptions" | "notifications";
+type TabKey =
+  | "labs"
+  | "staff"
+  | "plans"
+  | "subscriptions"
+  | "notifications"
+  | "ledger";
 
 const TABS: {
   key: TabKey;
@@ -47,7 +58,7 @@ const TABS: {
   icon: ComponentType<SvgIconProps>;
 }[] = [
   { key: "labs", label: "Labs", icon: ScienceOutlinedIcon },
-  { key: "owners", label: "Owners", icon: BadgeOutlinedIcon },
+  { key: "staff", label: "Staff", icon: BadgeOutlinedIcon },
   { key: "plans", label: "Plans", icon: WorkspacePremiumOutlinedIcon },
   {
     key: "subscriptions",
@@ -59,12 +70,18 @@ const TABS: {
     label: "Notifications",
     icon: NotificationsNoneOutlinedIcon,
   },
+  { key: "ledger", label: "Ledger & P&L", icon: InsightsOutlinedIcon },
 ];
 
 const spinner = (
   <Box sx={{ display: "flex", justifyContent: "center", py: 6 }}>
     <CircularProgress size={28} />
   </Box>
+);
+
+// A failed request used to look like an empty list. Show the real reason.
+const errorNote = (error: unknown) => (
+  <Alert severity="error">{getApiErrorMessage(error)}</Alert>
 );
 
 export default function SuperAdminDashboardPage() {
@@ -74,22 +91,43 @@ export default function SuperAdminDashboardPage() {
   const logout = useSuperAdminAuthStore((s) => s.logout);
 
   const [tab, setTab] = useState<TabKey>("labs");
-  const [ownerSearch, setOwnerSearch] = useState("");
-  const debouncedOwnerSearch = useDebounce(ownerSearch, 400);
+  const [staffSearch, setStaffSearch] = useState("");
+  const debouncedStaffSearch = useDebounce(staffSearch, 400);
+  const [ledgerStaffId, setLedgerStaffId] = useState("");
 
-  const { data: labs, isLoading: labsLoading } = useLabs({});
-  const { data: owners, isLoading: ownersLoading } = useOwners({
-    search: debouncedOwnerSearch.trim() || undefined,
+  const { data: labs, isLoading: labsLoading, error: labsError } = useLabs({});
+  const {
+    data: staff,
+    isLoading: staffLoading,
+    error: staffError,
+  } = useOwners({
+    search: debouncedStaffSearch.trim() || undefined,
   });
-  const { data: plans, isLoading: plansLoading } = usePlans();
-  const { data: subscriptions, isLoading: subscriptionsLoading } =
-    useSubscriptions({});
-  const { data: notifications, isLoading: notificationsLoading } =
-    useNotifications({});
+  // Full staff list (no search filter) — feeds the Ledger & P&L picker.
+  const { data: allStaff } = useOwners({});
+  const {
+    data: plans,
+    isLoading: plansLoading,
+    error: plansError,
+  } = usePlans();
+  const {
+    data: subscriptions,
+    isLoading: subscriptionsLoading,
+    error: subscriptionsError,
+  } = useSubscriptions({});
+  const {
+    data: notifications,
+    isLoading: notificationsLoading,
+    error: notificationsError,
+  } = useNotifications({});
 
   if (!isAuthenticated) return null;
 
   const active = TABS.find((t) => t.key === tab)!;
+
+  const staffList = allStaff?.items ?? [];
+  const ledgerId = ledgerStaffId || staffList[0]?.id || "";
+  const ledgerStaff = staffList.find((s) => s.id === ledgerId);
 
   return (
     <PlatformShell
@@ -184,22 +222,28 @@ export default function SuperAdminDashboardPage() {
               {active.label}
             </Typography>
             {tab === "labs" && <CreateLabDialog />}
-            {tab === "owners" && <CreateOwnerButton />}
+            {tab === "staff" && <CreateOwnerButton />}
             {tab === "plans" && <CreatePlanDialog />}
             {tab === "subscriptions" && <CreateSubscriptionDialog />}
             {tab === "notifications" && <SendNotificationDialog />}
           </Box>
 
           {tab === "labs" &&
-            (labsLoading ? spinner : <LabsTable rows={labs?.items ?? []} />)}
+            (labsError ? (
+              errorNote(labsError)
+            ) : labsLoading ? (
+              spinner
+            ) : (
+              <LabsTable rows={labs?.items ?? []} />
+            ))}
 
-          {tab === "owners" && (
+          {tab === "staff" && (
             <>
               <TextField
                 size="small"
-                placeholder="Search owner by name, login ID or phone…"
-                value={ownerSearch}
-                onChange={(e) => setOwnerSearch(e.target.value)}
+                placeholder="Search staff by name, login ID or phone…"
+                value={staffSearch}
+                onChange={(e) => setStaffSearch(e.target.value)}
                 slotProps={{
                   input: {
                     startAdornment: (
@@ -210,27 +254,73 @@ export default function SuperAdminDashboardPage() {
                   },
                 }}
               />
-              {ownersLoading ? (
+              {staffError ? (
+                errorNote(staffError)
+              ) : staffLoading ? (
                 spinner
               ) : (
-                <OwnersTable rows={owners?.items ?? []} />
+                <OwnersTable rows={staff?.items ?? []} />
               )}
             </>
           )}
 
           {tab === "plans" &&
-            (plansLoading ? spinner : <PlansTable rows={plans ?? []} />)}
+            (plansError ? (
+              errorNote(plansError)
+            ) : plansLoading ? (
+              spinner
+            ) : (
+              <PlansTable rows={plans ?? []} />
+            ))}
+
           {tab === "subscriptions" &&
-            (subscriptionsLoading ? (
+            (subscriptionsError ? (
+              errorNote(subscriptionsError)
+            ) : subscriptionsLoading ? (
               spinner
             ) : (
               <SubscriptionsTable rows={subscriptions ?? []} />
             ))}
+
           {tab === "notifications" &&
-            (notificationsLoading ? (
+            (notificationsError ? (
+              errorNote(notificationsError)
+            ) : notificationsLoading ? (
               spinner
             ) : (
               <NotificationsTable rows={notifications ?? []} />
+            ))}
+
+          {tab === "ledger" &&
+            (staffList.length === 0 ? (
+              <Typography variant="body2" color="text.secondary">
+                No staff yet. Create a staff member first — then you can see
+                their Ledger & P&L here.
+              </Typography>
+            ) : (
+              <>
+                <TextField
+                  select
+                  size="small"
+                  label="Staff member"
+                  value={ledgerId}
+                  onChange={(e) => setLedgerStaffId(e.target.value)}
+                  sx={{ maxWidth: { sm: 360 } }}
+                >
+                  {staffList.map((s) => (
+                    <MenuItem key={s.id} value={s.id}>
+                      {s.name} · {s.role}
+                      {s.status !== "Active" ? " (inactive)" : ""}
+                    </MenuItem>
+                  ))}
+                </TextField>
+                <OwnerLedgerView
+                  key={ledgerId}
+                  ownerId={ledgerId}
+                  ownerName={ledgerStaff?.name}
+                  readOnly
+                />
+              </>
             ))}
         </Box>
       </Box>

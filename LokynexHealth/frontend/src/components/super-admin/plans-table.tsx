@@ -21,7 +21,14 @@ import {
 import { motion } from "framer-motion";
 import { useState } from "react";
 
-export function PlansTable({ rows }: { rows: PlanDto[] }) {
+// readOnly = a staff member with "View" access to Plans: no edit / delete.
+export function PlansTable({
+  rows,
+  readOnly = false,
+}: {
+  rows: PlanDto[];
+  readOnly?: boolean;
+}) {
   const [editingPlan, setEditingPlan] = useState<PlanDto | null>(null);
   const deletePlan = useDeletePlan();
 
@@ -63,9 +70,11 @@ export function PlansTable({ rows }: { rows: PlanDto[] }) {
               <TableCell sx={{ fontWeight: 600 }}>Max Users</TableCell>
               <TableCell sx={{ fontWeight: 600 }}>Max Branches</TableCell>
               <TableCell sx={{ fontWeight: 600 }}>Status</TableCell>
-              <TableCell sx={{ fontWeight: 600 }} align="right">
-                Actions
-              </TableCell>
+              {!readOnly && (
+                <TableCell sx={{ fontWeight: 600 }} align="right">
+                  Actions
+                </TableCell>
+              )}
             </TableRow>
           </TableHead>
           <TableBody>
@@ -96,33 +105,40 @@ export function PlansTable({ rows }: { rows: PlanDto[] }) {
                     variant="outlined"
                   />
                 </TableCell>
-                <TableCell align="right">
-                  <Tooltip title="Edit">
-                    <IconButton
-                      size="small"
-                      onClick={() => setEditingPlan(row)}
-                    >
-                      <EditOutlinedIcon fontSize="small" />
-                    </IconButton>
-                  </Tooltip>
-                  <Tooltip title="Delete">
-                    <IconButton
-                      size="small"
-                      color="error"
-                      onClick={() => handleDelete(row)}
-                      disabled={deletePlan.isPending}
-                    >
-                      <DeleteOutlineIcon fontSize="small" />
-                    </IconButton>
-                  </Tooltip>
-                </TableCell>
+                {!readOnly && (
+                  <TableCell align="right">
+                    <Tooltip title="Edit">
+                      <IconButton
+                        size="small"
+                        onClick={() => setEditingPlan(row)}
+                      >
+                        <EditOutlinedIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                    <Tooltip title="Delete">
+                      <IconButton
+                        size="small"
+                        color="error"
+                        onClick={() => handleDelete(row)}
+                        disabled={deletePlan.isPending}
+                      >
+                        <DeleteOutlineIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                  </TableCell>
+                )}
               </motion.tr>
             ))}
           </TableBody>
         </Table>
       </TableContainer>
 
-      <EditPlanDialog plan={editingPlan} onClose={() => setEditingPlan(null)} />
+      {!readOnly && (
+        <EditPlanDialog
+          plan={editingPlan}
+          onClose={() => setEditingPlan(null)}
+        />
+      )}
     </>
   );
 }
