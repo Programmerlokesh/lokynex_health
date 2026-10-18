@@ -349,4 +349,3 @@ export function CreateOwnerButton() {
     </>
   );
 }
-owners - table.tsx;

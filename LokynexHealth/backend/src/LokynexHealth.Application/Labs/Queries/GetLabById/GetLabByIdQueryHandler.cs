@@ -1,3 +1,4 @@
+using LokynexHealth.Application.Common;
 using LokynexHealth.Application.Common.Exceptions;
 using LokynexHealth.Application.Common.Interfaces;
 using LokynexHealth.Application.Labs.Common;
@@ -15,10 +16,6 @@ public class GetLabByIdQueryHandler : IRequestHandler<GetLabByIdQuery, LabDetail
     {
         _db = db;
         _currentUser = currentUser;
-    }
-    public GetLabByIdQueryHandler(IApplicationDbContext db)
-    {
-        _db = db;
     }
 
     public async Task<LabDetailDto> Handle(GetLabByIdQuery request, CancellationToken cancellationToken)
