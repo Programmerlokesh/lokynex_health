@@ -164,12 +164,21 @@ function DepartmentTile({
 
 export function DepartmentList({
   selectedId,
+  visibleIds,
   onSelect,
   onDeleted,
+  onCreated,
+  onOpenSelector,
 }: {
   selectedId: string | null;
+  /** Only departments whose id is in here are shown (the lab's own selection). */
+  visibleIds: ReadonlySet<string>;
   onSelect: (id: string) => void;
   onDeleted?: (id: string) => void;
+  /** Called with the new department's id, so the page can show it right away. */
+  onCreated?: (id: string) => void;
+  /** Opens the "Select departments" popup. */
+  onOpenSelector?: () => void;
 }) {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"), { noSsr: true });
@@ -202,9 +211,10 @@ export function DepartmentList({
   const items = useMemo<DeptItem[]>(
     () =>
       (departments ?? [])
+        .filter((dept) => visibleIds.has(dept.id))
         .map((dept) => ({ dept, meta: getDeptMeta(dept.name) }))
         .sort((a, b) => a.dept.name.localeCompare(b.dept.name)),
-    [departments],
+    [departments, visibleIds],
   );
 
   const counts = useMemo(() => {
@@ -252,8 +262,9 @@ export function DepartmentList({
     if (!name) return;
     setAddError(null);
     createDepartment.mutate(name, {
-      onSuccess: () => {
+      onSuccess: (created) => {
         setAddOpen(false);
+        onCreated?.(created.id); // a new department must not vanish from the page
         setMessage({
           severity: "success",
           text: `Department "${name}" created.`,
@@ -318,7 +329,7 @@ export function DepartmentList({
             Departments
           </Typography>
           <Typography variant="caption" color="text.secondary">
-            {items.length} total · tap one to see its tests
+            {items.length} selected · tap one to see its tests
           </Typography>
         </Box>
         <Button
@@ -443,9 +454,31 @@ export function DepartmentList({
           ))}
         </Box>
       ) : items.length === 0 ? (
-        <Typography variant="body2" color="text.secondary" sx={{ py: 2 }}>
-          No departments yet. Press “Department” to add the first one.
-        </Typography>
+        (departments?.length ?? 0) > 0 ? (
+          <Box
+            sx={{
+              py: 2,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "flex-start",
+              gap: 1,
+            }}
+          >
+            <Typography variant="body2" color="text.secondary">
+              No department selected. Choose the departments your lab needs —
+              only those will be shown here.
+            </Typography>
+            {onOpenSelector && (
+              <Button variant="outlined" size="small" onClick={onOpenSelector}>
+                Select departments
+              </Button>
+            )}
+          </Box>
+        ) : (
+          <Typography variant="body2" color="text.secondary" sx={{ py: 2 }}>
+            No departments yet. Press “Department” to add the first one.
+          </Typography>
+        )
       ) : filtered.length === 0 ? (
         <Typography variant="body2" color="text.secondary" sx={{ py: 2 }}>
           No department matches “{query}”.

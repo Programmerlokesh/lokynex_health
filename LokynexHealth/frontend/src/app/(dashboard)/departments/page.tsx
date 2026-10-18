@@ -3,17 +3,21 @@
 import { CreateTestDialog } from "@/components/departments/create-test-dialog";
 import { DepartmentList } from "@/components/departments/department-list";
 import { getDeptMeta } from "@/components/departments/department-meta";
+import { DepartmentSelectDialog } from "@/components/departments/department-select-dialog";
 import { EditTestDialog } from "@/components/departments/edit-test-dialog";
 import { TestsTable } from "@/components/departments/tests-table";
 import { TestTubeIcon } from "@/components/icons/lab-icons";
 import { brand } from "@/components/providers/mui-theme-provider";
+import { useDepartmentSelection } from "@/hooks/use-department-selection";
 import { useDepartments, useTests } from "@/hooks/use-departments";
 import { TestDto } from "@/types/department";
+import PlaylistAddCheckIcon from "@mui/icons-material/PlaylistAddCheck";
 import SearchIcon from "@mui/icons-material/Search";
 import {
   Alert,
   alpha,
   Box,
+  Button,
   Chip,
   InputAdornment,
   Paper,
@@ -27,6 +31,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 export default function DepartmentsPage() {
   const [selectedDeptId, setSelectedDeptId] = useState<string | null>(null);
   const [editingTest, setEditingTest] = useState<TestDto | null>(null);
+  const [selectorOpen, setSelectorOpen] = useState(false);
   const [page, setPage] = useState(0); // MUI pagination is 0-based
   const [pageSize, setPageSize] = useState(25);
   const [searchInput, setSearchInput] = useState("");
@@ -35,21 +40,35 @@ export default function DepartmentsPage() {
 
   const { data: departments } = useDepartments();
 
-  // Only the department the user picked. Nothing is selected on first load,
-  // so no tests are shown until a department is chosen. Derived — no effect.
+  // The departments this lab chose to use. Everything else stays hidden.
+  const {
+    selectedIds,
+    toggle: toggleDepartment,
+    setMany: setManyDepartments,
+    select: selectDepartment,
+  } = useDepartmentSelection();
+
+  const visibleDepartments = useMemo(
+    () => (departments ?? []).filter((d) => selectedIds.has(d.id)),
+    [departments, selectedIds],
+  );
+
+  // Only the department the user picked (and only among the chosen ones).
+  // Nothing is selected on first load, so no tests are shown until a
+  // department is chosen. Derived — no effect.
   const activeDept = useMemo(() => {
-    if (!departments || !selectedDeptId) return null;
-    return departments.find((d) => d.id === selectedDeptId) ?? null;
-  }, [departments, selectedDeptId]);
+    if (!selectedDeptId) return null;
+    return visibleDepartments.find((d) => d.id === selectedDeptId) ?? null;
+  }, [visibleDepartments, selectedDeptId]);
   const activeId = activeDept?.id ?? null;
 
   const totalTests = useMemo(
-    () => (departments ?? []).reduce((sum, d) => sum + d.testCount, 0),
-    [departments],
+    () => visibleDepartments.reduce((sum, d) => sum + d.testCount, 0),
+    [visibleDepartments],
   );
   const activeCount = useMemo(
-    () => (departments ?? []).filter((d) => d.status === "Active").length,
-    [departments],
+    () => visibleDepartments.filter((d) => d.status === "Active").length,
+    [visibleDepartments],
   );
 
   // debounce the search box
@@ -91,6 +110,7 @@ export default function DepartmentsPage() {
   }
 
   const meta = activeDept ? getDeptMeta(activeDept.name) : null;
+  const hasDepartments = (departments?.length ?? 0) > 0;
 
   return (
     <Box
@@ -121,7 +141,10 @@ export default function DepartmentsPage() {
         </Typography>
         {departments && (
           <Box sx={{ display: "flex", gap: 0.75, flexWrap: "wrap" }}>
-            <Chip size="small" label={`${departments.length} departments`} />
+            <Chip
+              size="small"
+              label={`${visibleDepartments.length} departments`}
+            />
             <Chip size="small" label={`${totalTests} tests`} />
             <Chip
               size="small"
@@ -131,16 +154,31 @@ export default function DepartmentsPage() {
             />
           </Box>
         )}
+        {/* right-hand corner: choose which departments this lab uses */}
+        <Button
+          variant="outlined"
+          size="small"
+          startIcon={<PlaylistAddCheckIcon />}
+          onClick={() => setSelectorOpen(true)}
+          disabled={!departments}
+          sx={{ flexShrink: 0 }}
+        >
+          Select departments
+          {departments ? ` (${visibleDepartments.length})` : ""}
+        </Button>
       </Box>
 
-      {/* 1. department picker */}
+      {/* 1. department picker — only the departments the lab chose */}
       <Paper sx={{ p: { xs: 1.5, sm: 2.5 } }}>
         <DepartmentList
           selectedId={activeId}
+          visibleIds={selectedIds}
           onSelect={handleSelectDepartment}
           onDeleted={(id) => {
             if (id === selectedDeptId) setSelectedDeptId(null);
           }}
+          onCreated={selectDepartment}
+          onOpenSelector={() => setSelectorOpen(true)}
         />
       </Paper>
 
@@ -164,9 +202,11 @@ export default function DepartmentsPage() {
             }}
           >
             <Typography variant="body2" color="text.secondary">
-              {departments && departments.length > 0
-                ? "Select a department above to see its tests."
-                : "Add a department first, then its tests will show up here."}
+              {!hasDepartments
+                ? "Add a department first, then its tests will show up here."
+                : visibleDepartments.length === 0
+                  ? "Select the departments your lab needs (top right) to see them here."
+                  : "Select a department above to see its tests."}
             </Typography>
             <CreateTestDialog departmentId={null} />
           </Box>
@@ -223,6 +263,7 @@ export default function DepartmentsPage() {
                 </Box>
               </Box>
 
+              {/* search box + add a new test */}
               <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                 <TextField
                   size="small"
@@ -296,6 +337,16 @@ export default function DepartmentsPage() {
       </Paper>
 
       <EditTestDialog test={editingTest} onClose={() => setEditingTest(null)} />
+
+      {/* popup: tick the departments this lab needs; "Close" is at the bottom */}
+      <DepartmentSelectDialog
+        open={selectorOpen}
+        onClose={() => setSelectorOpen(false)}
+        departments={departments ?? []}
+        selectedIds={selectedIds}
+        onToggle={toggleDepartment}
+        onSetMany={setManyDepartments}
+      />
     </Box>
   );
 }
