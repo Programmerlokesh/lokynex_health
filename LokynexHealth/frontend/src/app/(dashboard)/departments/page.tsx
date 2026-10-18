@@ -4,6 +4,7 @@ import { CreateTestDialog } from "@/components/departments/create-test-dialog";
 import { DepartmentList } from "@/components/departments/department-list";
 import { getDeptMeta } from "@/components/departments/department-meta";
 import { DepartmentSelectDialog } from "@/components/departments/department-select-dialog";
+import { DeptIconBadge } from "@/components/departments/dept-icon-badge";
 import { EditTestDialog } from "@/components/departments/edit-test-dialog";
 import { TestsTable } from "@/components/departments/tests-table";
 import { TestTubeIcon } from "@/components/icons/lab-icons";
@@ -11,6 +12,7 @@ import { brand } from "@/components/providers/mui-theme-provider";
 import { useDepartmentSelection } from "@/hooks/use-department-selection";
 import { useDepartments, useTests } from "@/hooks/use-departments";
 import { TestDto } from "@/types/department";
+import CloseIcon from "@mui/icons-material/Close";
 import PlaylistAddCheckIcon from "@mui/icons-material/PlaylistAddCheck";
 import SearchIcon from "@mui/icons-material/Search";
 import {
@@ -19,6 +21,7 @@ import {
   Box,
   Button,
   Chip,
+  IconButton,
   InputAdornment,
   Paper,
   Skeleton,
@@ -231,21 +234,11 @@ export default function DepartmentsPage() {
                 }}
               >
                 {meta && (
-                  <Box
-                    sx={{
-                      width: 42,
-                      height: 42,
-                      flexShrink: 0,
-                      borderRadius: "12px",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      color: meta.color,
-                      bgcolor: alpha(meta.color, 0.14),
-                    }}
-                  >
-                    <meta.Icon size={22} strokeWidth={2} />
-                  </Box>
+                  <DeptIconBadge
+                    Icon={meta.Icon}
+                    color={meta.color}
+                    size={44}
+                  />
                 )}
                 <Box sx={{ minWidth: 0 }}>
                   <Typography variant="h6" sx={{ lineHeight: 1.2 }} noWrap>
@@ -264,42 +257,73 @@ export default function DepartmentsPage() {
               </Box>
 
               {/* search box + add a new test */}
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1.25 }}>
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 1.25,
+                  width: { xs: "100%", md: "auto" },
+                  flexShrink: 0,
+                }}
+              >
                 <TextField
                   size="small"
-                  placeholder="Search tests..."
+                  placeholder="Search tests by name..."
                   value={searchInput}
                   onChange={(e) => setSearchInput(e.target.value)}
                   slotProps={{
+                    htmlInput: { "aria-label": "Search tests" },
                     input: {
                       startAdornment: (
                         <InputAdornment position="start">
-                          <SearchIcon
-                            fontSize="small"
-                            sx={{ color: brand.blue }}
-                          />
+                          <SearchIcon sx={{ color: brand.blue }} />
                         </InputAdornment>
                       ),
+                      endAdornment: searchInput ? (
+                        <InputAdornment position="end">
+                          <IconButton
+                            size="small"
+                            aria-label="Clear search"
+                            onClick={() => setSearchInput("")}
+                            edge="end"
+                            sx={{
+                              minWidth: "32px !important",
+                              minHeight: "32px !important",
+                            }}
+                          >
+                            <CloseIcon fontSize="small" />
+                          </IconButton>
+                        </InputAdornment>
+                      ) : undefined,
                     },
                   }}
                   sx={{
-                    flex: 1,
+                    // NOTE: don't use `flex: 1` here — it sets flex-basis to 0
+                    // and the box collapses. Give it a real width instead.
+                    flex: { xs: "1 1 auto", md: "0 0 auto" },
+                    width: { xs: "auto", md: 340 },
                     minWidth: 0,
-                    width: { md: 280 },
-                    flexGrow: { xs: 1, md: 0 },
                     "& .MuiOutlinedInput-root": {
                       height: 44,
                       borderRadius: "12px",
                       bgcolor: "background.paper",
+                      fontSize: 14.5,
                       transition: "box-shadow .2s, border-color .2s",
-                      "& fieldset": { borderColor: "divider" },
+                      boxShadow: `0 2px 6px -2px ${alpha(brand.navy, 0.12)}`,
+                      "& fieldset": {
+                        borderColor: alpha(brand.blue, 0.28),
+                        borderWidth: 1.5,
+                      },
                       "&:hover fieldset": {
-                        borderColor: alpha(brand.blue, 0.55),
+                        borderColor: alpha(brand.blue, 0.6),
                       },
                       "&.Mui-focused": {
-                        boxShadow: `0 0 0 4px ${alpha(brand.blue, 0.14)}`,
+                        boxShadow: `0 0 0 4px ${alpha(brand.blue, 0.15)}`,
                       },
-                      "&.Mui-focused fieldset": { borderColor: brand.blue },
+                      "&.Mui-focused fieldset": {
+                        borderColor: brand.blue,
+                        borderWidth: 1.5,
+                      },
                     },
                   }}
                 />

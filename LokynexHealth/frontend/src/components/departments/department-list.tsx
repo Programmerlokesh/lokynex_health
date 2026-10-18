@@ -48,6 +48,7 @@ import {
   DeptMeta,
   getDeptMeta,
 } from "./department-meta";
+import { DeptIconBadge } from "./dept-icon-badge";
 
 type GroupFilter = DeptGroupId | "all";
 
@@ -98,28 +99,20 @@ function DepartmentTile({
           border: "1.5px solid",
           borderColor: selected ? color : "divider",
           bgcolor: selected ? alpha(color, 0.1) : "background.paper",
-          opacity: inactive ? 0.62 : 1,
+          boxShadow: selected ? `0 10px 24px -8px ${alpha(color, 0.6)}` : "none",
+          opacity: inactive && !selected ? 0.7 : 1,
+          transform: selected ? "translateY(-1px)" : "none",
           transition:
-            "border-color .15s, background-color .15s, transform .15s",
-          "&:hover": { borderColor: color, bgcolor: alpha(color, 0.06) },
+            "border-color .18s, background-color .18s, box-shadow .18s, transform .18s",
+          "&:hover": {
+            borderColor: color,
+            bgcolor: alpha(color, selected ? 0.14 : 0.06),
+            boxShadow: `0 8px 20px -8px ${alpha(color, 0.5)}`,
+          },
           "&:active": { transform: "scale(0.985)" },
         }}
       >
-        <Box
-          sx={{
-            width: { xs: 32, sm: 38 },
-            height: { xs: 32, sm: 38 },
-            flexShrink: 0,
-            borderRadius: "10px",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            color,
-            bgcolor: alpha(color, selected ? 0.22 : 0.14),
-          }}
-        >
-          <Icon size={19} strokeWidth={2} />
-        </Box>
+        <DeptIconBadge Icon={Icon} color={color} size={38} />
         <Box sx={{ minWidth: 0, width: "100%" }}>
           <Typography
             variant="body2"
@@ -494,13 +487,14 @@ export function DepartmentList({
                 sm: "repeat(auto-fill, minmax(190px, 1fr))",
               },
               // when everything is shown, scroll inside the box — not the page
+              // (extra padding + negative margin so tile shadows aren't clipped)
               ...(expanded && collapsible
                 ? {
                     maxHeight: "min(52vh, 440px)",
                     overflowY: "auto",
                     overscrollBehavior: "contain",
-                    pr: 0.5,
-                    py: 0.25,
+                    p: 0.75,
+                    m: -0.75,
                   }
                 : {}),
             }}
