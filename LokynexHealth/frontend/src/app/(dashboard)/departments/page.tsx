@@ -35,14 +35,11 @@ export default function DepartmentsPage() {
 
   const { data: departments } = useDepartments();
 
-  // The chosen department, or (until the user picks one) the first by name,
-  // so the tests panel is never empty. Derived — no effect needed.
+  // Only the department the user picked. Nothing is selected on first load,
+  // so no tests are shown until a department is chosen. Derived — no effect.
   const activeDept = useMemo(() => {
-    if (!departments || departments.length === 0) return null;
-    return (
-      departments.find((d) => d.id === selectedDeptId) ??
-      [...departments].sort((a, b) => a.name.localeCompare(b.name))[0]
-    );
+    if (!departments || !selectedDeptId) return null;
+    return departments.find((d) => d.id === selectedDeptId) ?? null;
   }, [departments, selectedDeptId]);
   const activeId = activeDept?.id ?? null;
 
@@ -156,13 +153,23 @@ export default function DepartmentsPage() {
         }}
       >
         {!activeDept ? (
-          <Typography
-            variant="body2"
-            color="text.secondary"
-            sx={{ py: 3, textAlign: "center" }}
+          <Box
+            sx={{
+              py: 3,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: 1.5,
+              textAlign: "center",
+            }}
           >
-            Add a department first, then its tests will show up here.
-          </Typography>
+            <Typography variant="body2" color="text.secondary">
+              {departments && departments.length > 0
+                ? "Select a department above to see its tests."
+                : "Add a department first, then its tests will show up here."}
+            </Typography>
+            <CreateTestDialog departmentId={null} />
+          </Box>
         ) : (
           <>
             <Box
