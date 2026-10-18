@@ -32,6 +32,9 @@ const files =
         "021_build_panel_and_test_formats.sql",
         "026_seed_missing_formats_and_other_tests.sql",
         "027_seed_all_other_pathology_tests.sql",
+        // Imaging (X-Ray, CT, MRI, USG ...), Heart & Brain, Procedures departments.
+        // This file lives in the backend Scripts folder (it is also used for new labs).
+        "../LokynexHealth/backend/src/LokynexHealth.Infrastructure/Persistence/Scripts/SeedTests07_ImagingAndOtherDepartments.sql",
       ];
 
 // ONE connection = ONE session, so the temp tables the scripts create survive.
