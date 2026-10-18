@@ -1,4 +1,3 @@
-import { brand } from "@/components/providers/mui-theme-provider";
 import {
   Bone,
   Brain,
@@ -37,11 +36,11 @@ export interface DeptGroup {
 
 /** Filter chips shown above the department tiles (empty groups are hidden). */
 export const DEPT_GROUPS: DeptGroup[] = [
-  { id: "pathology", label: "Pathology", color: brand.teal },
-  { id: "imaging", label: "Imaging", color: brand.purple },
-  { id: "heart-brain", label: "Heart & Brain", color: "#E11D48" },
-  { id: "procedures", label: "Procedures", color: brand.orange },
-  { id: "other", label: "Other", color: brand.blue },
+  { id: "pathology", label: "Pathology", color: "#00C2A8" },
+  { id: "imaging", label: "Imaging", color: "#8B5CF6" },
+  { id: "heart-brain", label: "Heart & Brain", color: "#F43F5E" },
+  { id: "procedures", label: "Procedures", color: "#FF7A1A" },
+  { id: "other", label: "Other", color: "#2F8BFF" },
 ];
 
 const GROUP_BY_ID = Object.fromEntries(

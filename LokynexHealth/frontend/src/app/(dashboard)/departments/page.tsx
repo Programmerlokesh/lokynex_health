@@ -264,7 +264,7 @@ export default function DepartmentsPage() {
               </Box>
 
               {/* search box + add a new test */}
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1.25 }}>
                 <TextField
                   size="small"
                   placeholder="Search tests..."
@@ -274,7 +274,10 @@ export default function DepartmentsPage() {
                     input: {
                       startAdornment: (
                         <InputAdornment position="start">
-                          <SearchIcon fontSize="small" />
+                          <SearchIcon
+                            fontSize="small"
+                            sx={{ color: brand.blue }}
+                          />
                         </InputAdornment>
                       ),
                     },
@@ -282,8 +285,22 @@ export default function DepartmentsPage() {
                   sx={{
                     flex: 1,
                     minWidth: 0,
-                    width: { md: 260 },
+                    width: { md: 280 },
                     flexGrow: { xs: 1, md: 0 },
+                    "& .MuiOutlinedInput-root": {
+                      height: 44,
+                      borderRadius: "12px",
+                      bgcolor: "background.paper",
+                      transition: "box-shadow .2s, border-color .2s",
+                      "& fieldset": { borderColor: "divider" },
+                      "&:hover fieldset": {
+                        borderColor: alpha(brand.blue, 0.55),
+                      },
+                      "&.Mui-focused": {
+                        boxShadow: `0 0 0 4px ${alpha(brand.blue, 0.14)}`,
+                      },
+                      "&.Mui-focused fieldset": { borderColor: brand.blue },
+                    },
                   }}
                 />
                 <Box sx={{ flexShrink: 0 }}>
@@ -338,7 +355,7 @@ export default function DepartmentsPage() {
 
       <EditTestDialog test={editingTest} onClose={() => setEditingTest(null)} />
 
-      {/* popup: tick the departments this lab needs; "Close" is at the bottom */}
+      {/* popup: pick the departments this lab needs; "Close" is at the bottom */}
       <DepartmentSelectDialog
         open={selectorOpen}
         onClose={() => setSelectorOpen(false)}
