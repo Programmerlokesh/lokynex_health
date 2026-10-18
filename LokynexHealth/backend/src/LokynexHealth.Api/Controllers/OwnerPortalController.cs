@@ -23,6 +23,15 @@ public class OwnerPortalController : ControllerBase
     public async Task<IActionResult> Me(CancellationToken ct)
         => Ok(await _mediator.Send(new GetMyOwnerProfileQuery(), ct));
 
+    // Staff edit their OWN details (name, phone, address, photo, password).
+    // Role / Login ID / panel access / status are SuperAdmin-only and not accepted here.
+    [HttpPut("me")]
+    public async Task<IActionResult> UpdateMe([FromBody] UpdateMyOwnerProfileCommand command, CancellationToken ct)
+    {
+        await _mediator.Send(command, ct);
+        return NoContent();
+    }
+
     [HttpGet("ledger/analytics")]
     [PlatformPanel("ledger")]
     public async Task<IActionResult> Analytics([FromQuery] GetOwnerLedgerAnalyticsQuery query, CancellationToken ct)

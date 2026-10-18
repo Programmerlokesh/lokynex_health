@@ -8,6 +8,7 @@ import {
   getOwnersApi,
   recordOwnerLedgerEntryApi,
   setOwnerStatusApi,
+  updateMyOwnerProfileApi,
   updateOwnerApi,
   updateOwnerLedgerEntryApi,
 } from "@/lib/api/owners";
@@ -16,6 +17,7 @@ import {
   OwnerLedgerEntriesParams,
   OwnerLedgerFilters,
   SaveOwnerLedgerEntryRequest,
+  UpdateMyOwnerProfileRequest,
   UpdateOwnerRequest,
 } from "@/types/owner";
 import {
@@ -78,6 +80,15 @@ export function useMyOwnerProfile(enabled = true) {
     queryKey: ["owner-me"],
     queryFn: getMyOwnerProfileApi,
     enabled,
+  });
+}
+
+export function useUpdateMyOwnerProfile() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: UpdateMyOwnerProfileRequest) =>
+      updateMyOwnerProfileApi(data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["owner-me"] }),
   });
 }
 

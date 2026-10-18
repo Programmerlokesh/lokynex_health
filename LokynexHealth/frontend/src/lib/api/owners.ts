@@ -7,6 +7,7 @@ import {
   OwnerLedgerEntriesParams,
   OwnerLedgerFilters,
   SaveOwnerLedgerEntryRequest,
+  UpdateMyOwnerProfileRequest,
   UpdateOwnerRequest,
 } from "@/types/owner";
 import { PagedResult } from "@/types/user";
@@ -52,6 +53,12 @@ export async function setOwnerStatusApi(
 export async function getMyOwnerProfileApi(): Promise<OwnerDto> {
   const res = await api.get<OwnerDto>("/owner/me");
   return res.data;
+}
+
+export async function updateMyOwnerProfileApi(
+  data: UpdateMyOwnerProfileRequest,
+): Promise<void> {
+  await api.put("/owner/me", data);
 }
 
 // ---------- Ledger (Owner uses /owner/ledger, SuperAdmin /Owners/{id}/ledger) ----------

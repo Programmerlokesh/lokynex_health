@@ -1,6 +1,7 @@
 "use client";
 
 import { OwnerLedgerView } from "@/components/owner-ledger/owner-ledger-view";
+import { MyProfileDialog } from "@/components/owners/my-profile-dialog";
 import { PlatformShell } from "@/components/platform/platform-shell";
 import { CreateLabDialog } from "@/components/super-admin/create-lab-dialog";
 import { LabsTable } from "@/components/super-admin/labs-table";
@@ -11,9 +12,17 @@ import { formatDateTime } from "@/lib/format";
 import { glassPanelSx, iconTileSx, railItemSx } from "@/lib/home-theme";
 import { useOwnerAuthStore } from "@/store/owner-auth-store";
 import AccountCircleOutlinedIcon from "@mui/icons-material/AccountCircleOutlined";
+import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import InsightsOutlinedIcon from "@mui/icons-material/InsightsOutlined";
 import ScienceOutlinedIcon from "@mui/icons-material/ScienceOutlined";
-import { Avatar, Box, Chip, CircularProgress, Typography } from "@mui/material";
+import {
+  Avatar,
+  Box,
+  Button,
+  Chip,
+  CircularProgress,
+  Typography,
+} from "@mui/material";
 import type { SvgIconProps } from "@mui/material/SvgIcon";
 import { useRouter } from "next/navigation";
 import { useState, type ComponentType } from "react";
@@ -31,6 +40,7 @@ const TABS: {
 
 function ProfileCard() {
   const { data: me, isLoading } = useMyOwnerProfile();
+  const [editing, setEditing] = useState(false);
   if (isLoading || !me) {
     return (
       <Box sx={{ display: "flex", justifyContent: "center", py: 6 }}>
@@ -67,6 +77,15 @@ function ProfileCard() {
             variant="outlined"
           />
         </Box>
+        <Button
+          variant="outlined"
+          size="small"
+          startIcon={<EditOutlinedIcon />}
+          onClick={() => setEditing(true)}
+          sx={{ ml: "auto", flexShrink: 0 }}
+        >
+          Edit profile
+        </Button>
       </Box>
       <Box
         sx={{
@@ -98,8 +117,12 @@ function ProfileCard() {
         ))}
       </Box>
       <Typography variant="caption" color="text.secondary">
-        To change your details or password, ask the SuperAdmin.
+        Your role, Login ID and panel access can only be changed by the
+        SuperAdmin.
       </Typography>
+      {editing && (
+        <MyProfileDialog open onClose={() => setEditing(false)} me={me} />
+      )}
     </Box>
   );
 }

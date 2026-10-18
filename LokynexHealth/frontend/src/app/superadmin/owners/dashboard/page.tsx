@@ -1,6 +1,7 @@
 "use client";
 
 import { OwnerLedgerView } from "@/components/owner-ledger/owner-ledger-view";
+import { MyProfileDialog } from "@/components/owners/my-profile-dialog";
 import { PlatformShell } from "@/components/platform/platform-shell";
 import { CreateLabDialog } from "@/components/super-admin/create-lab-dialog";
 import { CreatePlanDialog } from "@/components/super-admin/create-plan-dialog";
@@ -25,6 +26,7 @@ import { useOwnerAuthStore } from "@/store/owner-auth-store";
 import { accessLevelOf, panelLabel } from "@/types/owner";
 import AccountCircleOutlinedIcon from "@mui/icons-material/AccountCircleOutlined";
 import CreditCardOutlinedIcon from "@mui/icons-material/CreditCardOutlined";
+import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import InsightsOutlinedIcon from "@mui/icons-material/InsightsOutlined";
 import NotificationsNoneOutlinedIcon from "@mui/icons-material/NotificationsNoneOutlined";
 import ScienceOutlinedIcon from "@mui/icons-material/ScienceOutlined";
@@ -33,6 +35,7 @@ import {
   Alert,
   Avatar,
   Box,
+  Button,
   Chip,
   CircularProgress,
   Typography,
@@ -194,6 +197,7 @@ function LedgerPanel({ manage }: { manage: boolean }) {
 
 function ProfilePanel() {
   const { data: me, isLoading, error } = useMyOwnerProfile();
+  const [editing, setEditing] = useState(false);
   if (error) return <ErrorNote error={error} />;
   if (isLoading || !me) return <Loading />;
 
@@ -231,6 +235,15 @@ function ProfilePanel() {
             variant="outlined"
           />
         </Box>
+        <Button
+          variant="outlined"
+          size="small"
+          startIcon={<EditOutlinedIcon />}
+          onClick={() => setEditing(true)}
+          sx={{ ml: "auto", flexShrink: 0 }}
+        >
+          Edit profile
+        </Button>
       </Box>
       <Box
         sx={{
@@ -284,8 +297,12 @@ function ProfilePanel() {
       </Box>
 
       <Typography variant="caption" color="text.secondary">
-        To change your details, password or panel access, ask the SuperAdmin.
+        Your role, Login ID and panel access can only be changed by the
+        SuperAdmin.
       </Typography>
+      {editing && (
+        <MyProfileDialog open onClose={() => setEditing(false)} me={me} />
+      )}
     </Box>
   );
 }

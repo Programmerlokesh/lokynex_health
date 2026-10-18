@@ -113,6 +113,20 @@ export interface UpdateOwnerRequest {
   permissions?: StaffPermission[];
 }
 
+/** Staff editing their OWN profile (PUT /owner/me). No role / permissions / status. */
+export interface UpdateMyOwnerProfileRequest {
+  name: string;
+  phone: string;
+  whatsappNumber?: string;
+  address?: string;
+  pincode?: string;
+  /** null/undefined = keep, "" = remove, data URL = replace */
+  profilePictureUrl?: string | null;
+  /** Needed only when newPassword is set. */
+  currentPassword?: string;
+  newPassword?: string;
+}
+
 // ---------------- Staff ledger / P&L ----------------
 
 export type LedgerEntryType =
