@@ -1,3 +1,4 @@
+using LokynexHealth.Application.Auth.Commands.OwnerLogin;
 using LokynexHealth.Application.Auth.Commands.Login;
 using LokynexHealth.Application.Auth.Commands.SuperAdminLogin;
 using LokynexHealth.Application.Auth.Commands.TenantAdminLogin;
@@ -107,6 +108,34 @@ public class UnifiedLoginCommandHandler : IRequestHandler<UnifiedLoginCommand, U
         catch (Exception ex)
         {
             _logger.LogError(ex, "SuperAdmin lookup failed during unified login.");
+            infrastructureError ??= ex;
+        }
+
+        // ---------- 4) Owner (staff who sell the software) ----------
+        try
+        {
+            var owner = await _mediator.Send(
+                new OwnerLoginCommand { Username = request.Username, Password = request.Password },
+                cancellationToken);
+
+            return new UnifiedLoginResult
+            {
+                AccountType = "Owner",
+                Token = owner.Token,
+                UserId = owner.OwnerId,
+                Name = owner.Name,
+                Role = owner.Role,
+                LabName = null,
+                ExpiresAt = owner.ExpiresAt
+            };
+        }
+        catch (UnauthorizedException ex)
+        {
+            if (ex.Message != GenericFailure) failureMessage = ex.Message;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Owner lookup failed during unified login.");
             infrastructureError ??= ex;
         }
 

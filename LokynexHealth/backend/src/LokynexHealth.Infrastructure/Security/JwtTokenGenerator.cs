@@ -81,6 +81,39 @@ public class JwtTokenGenerator : IJwtTokenGenerator
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
 
+    public string GenerateOwnerToken(Guid ownerId, string username, string name, string role)
+    {
+        var secret = _configuration["Jwt:Secret"]!;
+        var issuer = _configuration["Jwt:Issuer"]!;
+        var audience = _configuration["Jwt:Audience"]!;
+        var expiryMinutes = int.Parse(_configuration["Jwt:ExpiryMinutes"] ?? "60");
+
+        var claims = new List<Claim>
+        {
+            new(JwtRegisteredClaimNames.Sub, ownerId.ToString()),
+            new(ClaimTypes.NameIdentifier, ownerId.ToString()),
+            new(ClaimTypes.Name, name),
+            new(ClaimTypes.Role, "Owner"),
+            new("token_type", "Owner"),
+            new("owner_role", role),
+            new("owner_username", username),
+            new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+        };
+
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret));
+        var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+        var token = new JwtSecurityToken(
+            issuer: issuer,
+            audience: audience,
+            claims: claims,
+            expires: DateTime.UtcNow.AddMinutes(expiryMinutes),
+            signingCredentials: credentials
+        );
+
+        return new JwtSecurityTokenHandler().WriteToken(token);
+    }
+
     public string GenerateTenantAdminToken(Guid tenantId, string username, string name, string schemaName, string labCode)
     {
         var secret = _configuration["Jwt:Secret"]!;

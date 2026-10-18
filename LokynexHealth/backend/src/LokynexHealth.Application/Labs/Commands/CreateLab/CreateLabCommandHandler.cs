@@ -1,3 +1,4 @@
+using LokynexHealth.Application.Common;
 using System.Text;
 using System.Text.RegularExpressions;
 using LokynexHealth.Application.Common.Exceptions;
@@ -31,7 +32,12 @@ public class CreateLabCommandHandler : IRequestHandler<CreateLabCommand, Guid>
 
     public async Task<Guid> Handle(CreateLabCommand request, CancellationToken cancellationToken)
     {
-        var usernameExists = await _db.Tenants.AnyAsync(t => t.AdminUsername == request.AdminUsername, cancellationToken);
+        // Who is adding this lab? An Owner (must be Active) or the SuperAdmin.
+        var creator = await ResolveCreatorAsync(cancellationToken);
+
+        var usernameExists =
+            await _db.Tenants.AnyAsync(t => t.AdminUsername == request.AdminUsername, cancellationToken) ||
+            await _db.Owners.AnyAsync(o => o.Username == request.AdminUsername, cancellationToken);
         if (usernameExists)
             throw new ConflictException($"Admin username '{request.AdminUsername}' already in use.");
 
@@ -75,6 +81,10 @@ public class CreateLabCommandHandler : IRequestHandler<CreateLabCommand, Guid>
                 : request.CompanyType.Trim(),
             UserLimit = request.UserLimit,
             Status = PlatformRecordStatus.Active,
+            CreatedBy = creator.SuperAdminId,          // FK -> super_admins, so SuperAdmin only
+            CreatedByOwnerId = creator.OwnerId,
+            CreatedByName = creator.Name,
+            CreatedByRole = creator.Role,
             CreatedAt = DateTimeOffset.UtcNow
         };
 
@@ -117,6 +127,25 @@ public class CreateLabCommandHandler : IRequestHandler<CreateLabCommand, Guid>
         }
 
         return tenant.Id;
+    }
+
+    private async Task<(Guid? OwnerId, Guid? SuperAdminId, string Name, string Role)> ResolveCreatorAsync(
+        CancellationToken ct)
+    {
+        if (_currentUser.TokenType == OwnerAccess.OwnerToken)
+        {
+            var owner = await OwnerAccess.RequireActiveOwnerAsync(_db, _currentUser, ct);
+            return (owner.Id, null, owner.Name, owner.Role);
+        }
+
+        var id = _currentUser.UserId;
+        if (_currentUser.TokenType == OwnerAccess.SuperAdminToken && id.HasValue)
+        {
+            var name = await _db.SuperAdmins.Where(s => s.Id == id.Value)
+                .Select(s => s.Name).FirstOrDefaultAsync(ct);
+            return (null, id, name ?? "SuperAdmin", "SuperAdmin");
+        }
+        return (null, null, "SuperAdmin", "SuperAdmin");
     }
 
     private static async Task<string> GenerateUniqueValueAsync(

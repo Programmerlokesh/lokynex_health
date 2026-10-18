@@ -10,6 +10,7 @@ import {
 import { brand } from "@/components/providers/mui-theme-provider";
 import { unifiedLoginApi } from "@/lib/api/auth";
 import { useAuthStore } from "@/store/auth-store";
+import { useOwnerAuthStore } from "@/store/owner-auth-store";
 import { useSuperAdminAuthStore } from "@/store/superadmin-auth-store";
 import {
   Alert,
@@ -64,16 +65,30 @@ export default function LoginPage() {
   const loginMutation = useMutation({
     mutationFn: unifiedLoginApi,
     onSuccess: (result) => {
-      if (result.accountType === "SuperAdmin") {
-        // A SuperAdmin must never carry a lab session: wipe any lab
-        // session + cookie left over in this browser first.
+      // Three separate sessions (lab / SuperAdmin / Owner) — signing in as one
+      // always wipes the other two left over in this browser.
+      const clearLab = () => {
         useAuthStore.getState().logout();
         document.cookie = "lokynex-token=; path=/; max-age=0";
+      };
+
+      if (result.accountType === "SuperAdmin") {
+        clearLab();
+        useOwnerAuthStore.getState().logout();
         setSuperAdminAuth(result.token, result.name);
         router.push("/superadmin/dashboard");
-      } else {
-        // ...and a lab user must never carry a SuperAdmin session.
+      } else if (result.accountType === "Owner") {
+        clearLab();
         useSuperAdminAuthStore.getState().logout();
+        useOwnerAuthStore.getState().setAuth(result.token, {
+          id: result.userId,
+          name: result.name,
+          role: result.role,
+        });
+        router.push("/owner/dashboard");
+      } else {
+        useSuperAdminAuthStore.getState().logout();
+        useOwnerAuthStore.getState().logout();
         setAuth(result.token, {
           userId: result.userId,
           name: result.name,

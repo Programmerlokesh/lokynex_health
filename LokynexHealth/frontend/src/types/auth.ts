@@ -18,7 +18,7 @@ export interface LoginResponse {
 // The SERVER decides which kind of account signed in, so the browser never
 // has to "try lab first, then SuperAdmin".
 export interface UnifiedLoginResponse {
-  accountType: "Lab" | "SuperAdmin";
+  accountType: "Lab" | "SuperAdmin" | "Owner";
   token: string;
   userId: string;
   name: string;

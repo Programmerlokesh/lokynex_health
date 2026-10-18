@@ -29,5 +29,11 @@ public class Tenant : BaseEntity
     public PlatformRecordStatus Status { get; set; } = PlatformRecordStatus.Active;
     public Guid? CreatedBy { get; set; }
 
+    /// <summary>Set when an Owner (not the SuperAdmin) added this lab.</summary>
+    public Guid? CreatedByOwnerId { get; set; }
+    /// <summary>Snapshot of who added the lab (shown next to the lab).</summary>
+    public string? CreatedByName { get; set; }
+    public string? CreatedByRole { get; set; }
+
     public ICollection<TenantBranch> ExtendBranches { get; set; } = new List<TenantBranch>();
 }

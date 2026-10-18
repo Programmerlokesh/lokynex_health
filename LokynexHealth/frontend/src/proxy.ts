@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 // "/r" = public report page opened from the QR code (no login)
-const PUBLIC_PREFIXES = ["/login", "/superadmin", "/r"];
+const PUBLIC_PREFIXES = ["/login", "/superadmin", "/owner", "/r"];
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;

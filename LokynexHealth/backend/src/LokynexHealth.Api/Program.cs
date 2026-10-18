@@ -206,7 +206,9 @@ builder.Services.AddAuthorization(options =>
 {
     options.DefaultPolicy = new AuthorizationPolicyBuilder()
         .RequireAuthenticatedUser()
-        .RequireAssertion(ctx => !ctx.User.HasClaim("token_type", "SuperAdmin"))
+               // SuperAdmin AND Owner tokens can never touch a lab's own endpoints.
+        .RequireAssertion(ctx => !ctx.User.HasClaim("token_type", "SuperAdmin")
+                              && !ctx.User.HasClaim("token_type", "Owner"))
         .Build();
 });
 

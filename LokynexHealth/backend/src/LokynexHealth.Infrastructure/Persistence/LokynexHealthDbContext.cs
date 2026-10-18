@@ -50,6 +50,8 @@ public class LokynexHealthDbContext : DbContext, IApplicationDbContext
     public DbSet<TenantBranch> TenantBranches => Set<TenantBranch>();
     public DbSet<Subscription> Subscriptions => Set<Subscription>();
     public DbSet<Notification> Notifications => Set<Notification>();
+    public DbSet<Owner> Owners => Set<Owner>();
+    public DbSet<OwnerLedgerEntry> OwnerLedgerEntries => Set<OwnerLedgerEntry>();
 
     // ---- structured blood reports ----
     public DbSet<TestParameter> TestParameters => Set<TestParameter>();

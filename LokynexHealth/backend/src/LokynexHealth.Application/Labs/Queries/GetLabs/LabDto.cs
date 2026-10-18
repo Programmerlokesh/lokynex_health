@@ -13,6 +13,12 @@ public class LabDto
     public string Status { get; set; } = default!;
     public DateTimeOffset CreatedAt { get; set; }
 
+    /// <summary>Who added this lab (name + role) — CreatedAt is "when".</summary>
+    public string AddedByName { get; set; } = "SuperAdmin";
+    public string AddedByRole { get; set; } = "SuperAdmin";
+    /// <summary>"Owner" or "SuperAdmin"</summary>
+    public string AddedByType { get; set; } = "SuperAdmin";
+
     /// <summary>Null when the lab has never been given a subscription.</summary>
     public LabSubscriptionSummary? Subscription { get; set; }
 }

@@ -48,6 +48,8 @@ public interface IApplicationDbContext
     DbSet<TenantBranch> TenantBranches { get; }
     DbSet<Subscription> Subscriptions { get; }
     DbSet<Notification> Notifications { get; }
+    DbSet<Owner> Owners { get; }
+    DbSet<OwnerLedgerEntry> OwnerLedgerEntries { get; }
     DbSet<ReportTemplate> ReportTemplates { get; }
     DbSet<ReportDocument> ReportDocuments { get; }
 

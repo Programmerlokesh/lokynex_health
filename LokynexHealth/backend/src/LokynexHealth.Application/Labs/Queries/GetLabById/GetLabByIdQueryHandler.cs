@@ -9,7 +9,13 @@ namespace LokynexHealth.Application.Labs.Queries.GetLabById;
 public class GetLabByIdQueryHandler : IRequestHandler<GetLabByIdQuery, LabDetailDto>
 {
     private readonly IApplicationDbContext _db;
+    private readonly ICurrentUserService _currentUser;
 
+    public GetLabByIdQueryHandler(IApplicationDbContext db, ICurrentUserService currentUser)
+    {
+        _db = db;
+        _currentUser = currentUser;
+    }
     public GetLabByIdQueryHandler(IApplicationDbContext db)
     {
         _db = db;
@@ -23,6 +29,14 @@ public class GetLabByIdQueryHandler : IRequestHandler<GetLabByIdQuery, LabDetail
 
         if (tenant is null)
             throw new NotFoundException("Lab", request.Id);
+
+        // An Owner may only open a lab they added (same answer as "not found").
+        if (_currentUser.TokenType == OwnerAccess.OwnerToken)
+        {
+            var owner = await OwnerAccess.RequireActiveOwnerAsync(_db, _currentUser, cancellationToken);
+            if (tenant.CreatedByOwnerId != owner.Id)
+                throw new NotFoundException("Lab", request.Id);
+        }
 
         // Loaded separately rather than as a navigation property: Subscription has
         // no Tenant nav, and this keeps the query to one extra round trip.

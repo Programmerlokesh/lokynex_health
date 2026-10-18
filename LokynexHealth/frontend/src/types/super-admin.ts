@@ -24,6 +24,11 @@ export interface LabDto {
   userLimit: number;
   status: string;
   createdAt: string;
+  /** Who added this lab, e.g. "Rahul Das" (Owner) or the SuperAdmin's name. */
+  addedByName: string;
+  /** Owner's role (CEO / Manager ...) or "SuperAdmin". */
+  addedByRole: string;
+  addedByType: "SuperAdmin" | "Owner";
   subscription: LabSubscriptionSummary | null;
 }
 

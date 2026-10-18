@@ -1,3 +1,4 @@
+using LokynexHealth.Application.Common;
 using LokynexHealth.Application.Common.Interfaces;
 using LokynexHealth.Application.Common.Models;
 using LokynexHealth.Application.Labs.Common;
@@ -9,15 +10,24 @@ namespace LokynexHealth.Application.Labs.Queries.GetLabs;
 public class GetLabsQueryHandler : IRequestHandler<GetLabsQuery, PagedResult<LabDto>>
 {
     private readonly IApplicationDbContext _db;
+    private readonly ICurrentUserService _currentUser;
 
-    public GetLabsQueryHandler(IApplicationDbContext db)
+    public GetLabsQueryHandler(IApplicationDbContext db, ICurrentUserService currentUser)
     {
         _db = db;
+        _currentUser = currentUser;
     }
 
     public async Task<PagedResult<LabDto>> Handle(GetLabsQuery request, CancellationToken cancellationToken)
     {
         var query = _db.Tenants.AsQueryable();
+
+        // An Owner only ever sees the labs THEY added.
+        if (_currentUser.TokenType == OwnerAccess.OwnerToken)
+        {
+            var owner = await OwnerAccess.RequireActiveOwnerAsync(_db, _currentUser, cancellationToken);
+            query = query.Where(t => t.CreatedByOwnerId == owner.Id);
+        }
 
         if (!string.IsNullOrWhiteSpace(request.Search))
         {
@@ -28,9 +38,6 @@ public class GetLabsQueryHandler : IRequestHandler<GetLabsQuery, PagedResult<Lab
         var totalCount = await query.CountAsync(cancellationToken);
 
         // Materialize FIRST — then map Status.ToString() in memory (LINQ-to-Objects).
-        // The .ToString() inside a .Select() that runs before .ToListAsync() gets
-        // translated to SQL and breaks native Postgres enums — the recurring bug
-        // already fixed across GetTechniciansQueryHandler, GetPlansQueryHandler, etc.
         var tenantEntities = await query
             .OrderByDescending(t => t.CreatedAt)
             .Skip((request.PageNumber - 1) * request.PageSize)
@@ -65,6 +72,9 @@ public class GetLabsQueryHandler : IRequestHandler<GetLabsQuery, PagedResult<Lab
             UserLimit = t.UserLimit,
             Status = t.Status.ToString(),
             CreatedAt = t.CreatedAt,
+            AddedByName = t.CreatedByName ?? "SuperAdmin",
+            AddedByRole = t.CreatedByRole ?? "SuperAdmin",
+            AddedByType = t.CreatedByOwnerId.HasValue ? "Owner" : "SuperAdmin",
             Subscription = subscriptionsByTenant.TryGetValue(t.Id, out var rows)
                 ? LabSubscriptionCalculator.Build(rows, planNames, today)
                 : null

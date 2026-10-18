@@ -2,6 +2,7 @@
 
 import { LabDetailDialog } from "@/components/super-admin/lab-detail-dialog";
 import { SubscriptionChip } from "@/components/super-admin/subscription-status";
+import { formatDateTime } from "@/lib/format";
 import { LabDto } from "@/types/super-admin";
 import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
 import {
@@ -34,7 +35,15 @@ const STATUS_COLOR: Record<
   Inactive: "error",
 };
 
-export function LabsTable({ rows }: { rows: LabDto[] }) {
+// readOnly = Owner view: can see the labs they added, but not open the
+// edit/branch/subscription dialog (the API would reject it anyway).
+export function LabsTable({
+  rows,
+  readOnly = false,
+}: {
+  rows: LabDto[];
+  readOnly?: boolean;
+}) {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const [selectedLabId, setSelectedLabId] = useState<string | null>(null);
@@ -60,8 +69,12 @@ export function LabsTable({ rows }: { rows: LabDto[] }) {
             >
               <Card
                 variant="outlined"
-                sx={{ p: 2, borderRadius: 3, cursor: "pointer" }}
-                onClick={() => setSelectedLabId(row.id)}
+                sx={{
+                  p: 2,
+                  borderRadius: 3,
+                  cursor: readOnly ? "default" : "pointer",
+                }}
+                onClick={readOnly ? undefined : () => setSelectedLabId(row.id)}
               >
                 <Stack
                   direction="row"
@@ -113,6 +126,15 @@ export function LabsTable({ rows }: { rows: LabDto[] }) {
                   </Typography>
                   <SubscriptionChip subscription={row.subscription} />
                 </Box>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  component="div"
+                  sx={{ mt: 1.5 }}
+                >
+                  Added by <b>{row.addedByName}</b> ({row.addedByRole}) ·{" "}
+                  {formatDateTime(row.createdAt)}
+                </Typography>
               </Card>
             </motion.div>
           ))}
@@ -132,10 +154,12 @@ export function LabsTable({ rows }: { rows: LabDto[] }) {
                 <TableCell sx={{ fontWeight: 600 }}>User Limit</TableCell>
                 <TableCell sx={{ fontWeight: 600 }}>Status</TableCell>
                 <TableCell sx={{ fontWeight: 600 }}>Subscription</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>Created</TableCell>
-                <TableCell sx={{ fontWeight: 600 }} align="right">
-                  Actions
-                </TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>Added by</TableCell>
+                {!readOnly && (
+                  <TableCell sx={{ fontWeight: 600 }} align="right">
+                    Actions
+                  </TableCell>
+                )}
               </TableRow>
             </TableHead>
             <TableBody>
@@ -163,19 +187,30 @@ export function LabsTable({ rows }: { rows: LabDto[] }) {
                   <TableCell>
                     <SubscriptionChip subscription={row.subscription} />
                   </TableCell>
-                  <TableCell>
-                    {new Date(row.createdAt).toLocaleDateString()}
+                  <TableCell sx={{ minWidth: 180 }}>
+                    <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                      {row.addedByName}
+                    </Typography>
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      component="div"
+                    >
+                      {row.addedByRole} · {formatDateTime(row.createdAt)}
+                    </Typography>
                   </TableCell>
-                  <TableCell align="right">
-                    <Tooltip title="View / Edit details">
-                      <IconButton
-                        size="small"
-                        onClick={() => setSelectedLabId(row.id)}
-                      >
-                        <VisibilityOutlinedIcon fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                  </TableCell>
+                  {!readOnly && (
+                    <TableCell align="right">
+                      <Tooltip title="View / Edit details">
+                        <IconButton
+                          size="small"
+                          onClick={() => setSelectedLabId(row.id)}
+                        >
+                          <VisibilityOutlinedIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                    </TableCell>
+                  )}
                 </motion.tr>
               ))}
             </TableBody>
@@ -183,11 +218,13 @@ export function LabsTable({ rows }: { rows: LabDto[] }) {
         </TableContainer>
       )}
 
-      <LabDetailDialog
-        labId={selectedLabId}
-        open={!!selectedLabId}
-        onClose={() => setSelectedLabId(null)}
-      />
+      {!readOnly && (
+        <LabDetailDialog
+          labId={selectedLabId}
+          open={!!selectedLabId}
+          onClose={() => setSelectedLabId(null)}
+        />
+      )}
     </>
   );
 }
