@@ -12,6 +12,7 @@ import { CreateLabDialog } from "@/components/super-admin/create-lab-dialog";
 import { CreatePlanDialog } from "@/components/super-admin/create-plan-dialog";
 import { CreateSubscriptionDialog } from "@/components/super-admin/create-subscription-dialog";
 import { LabsTable } from "@/components/super-admin/labs-table";
+import { SuperAdminProfilePanel } from "@/components/super-admin/my-profile-panel";
 import { NotificationsTable } from "@/components/super-admin/notifications-table";
 import { PlansTable } from "@/components/super-admin/plans-table";
 import { SendNotificationDialog } from "@/components/super-admin/send-notification-dialog";
@@ -28,6 +29,7 @@ import { useSuperAdminAuthGuard } from "@/hooks/use-superadmin-auth-guard";
 import { getApiErrorMessage } from "@/lib/api-error";
 import { glassPanelSx, iconTileSx, railItemSx } from "@/lib/home-theme";
 import { useSuperAdminAuthStore } from "@/store/superadmin-auth-store";
+import AccountCircleOutlinedIcon from "@mui/icons-material/AccountCircleOutlined";
 import BadgeOutlinedIcon from "@mui/icons-material/BadgeOutlined";
 import CreditCardOutlinedIcon from "@mui/icons-material/CreditCardOutlined";
 import InsightsOutlinedIcon from "@mui/icons-material/InsightsOutlined";
@@ -56,7 +58,8 @@ type TabKey =
   | "plans"
   | "subscriptions"
   | "notifications"
-  | "ledger";
+  | "ledger"
+  | "profile";
 
 const TABS: {
   key: TabKey;
@@ -78,6 +81,7 @@ const TABS: {
     icon: NotificationsNoneOutlinedIcon,
   },
   { key: "ledger", label: "Ledger & P&L", icon: InsightsOutlinedIcon },
+  { key: "profile", label: "My Profile", icon: AccountCircleOutlinedIcon },
 ];
 
 const spinner = (
@@ -300,6 +304,8 @@ export default function SuperAdminDashboardPage() {
             ) : (
               <NotificationsTable rows={notifications ?? []} />
             ))}
+
+          {tab === "profile" && <SuperAdminProfilePanel />}
 
           {tab === "ledger" &&
             (staffList.length === 0 ? (

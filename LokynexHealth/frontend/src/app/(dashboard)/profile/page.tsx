@@ -175,7 +175,9 @@ export default function ProfilePage() {
         My Profile
       </Typography>
 
-      <Card sx={{ borderRadius: 3, boxShadow: 1, maxWidth: 640, width: "100%" }}>
+      <Card
+        sx={{ borderRadius: 3, boxShadow: 1, maxWidth: 640, width: "100%" }}
+      >
         <CardContent sx={{ p: { xs: 2.5, sm: 3.5 } }}>
           <Box
             sx={{
@@ -371,11 +373,7 @@ export default function ProfilePage() {
             <Typography variant="h6" sx={{ fontWeight: 700, mb: 0.5 }}>
               Change Password
             </Typography>
-            <Typography
-              variant="body2"
-              color="text.secondary"
-              sx={{ mb: 2.5 }}
-            >
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2.5 }}>
               Enter your current password, then choose a new one (minimum 8
               characters).
             </Typography>
@@ -413,6 +411,7 @@ export default function ProfilePage() {
                   autoComplete="new-password"
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
+                  slotProps={{ input: { endAdornment: passwordAdornment } }}
                 />
                 <TextField
                   label="Confirm New Password"
@@ -423,6 +422,7 @@ export default function ProfilePage() {
                   autoComplete="new-password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
+                  slotProps={{ input: { endAdornment: passwordAdornment } }}
                 />
               </Box>
 
@@ -463,9 +463,7 @@ export default function ProfilePage() {
                   disabled={changePassword.isPending}
                   sx={{ width: { xs: "100%", sm: "auto" } }}
                 >
-                  {changePassword.isPending
-                    ? "Updating..."
-                    : "Update Password"}
+                  {changePassword.isPending ? "Updating..." : "Update Password"}
                 </Button>
               </Box>
             </Box>
