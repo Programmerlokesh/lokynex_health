@@ -2,9 +2,17 @@
 
 import { PageTitle } from "@/components/clinic/clinic-shell";
 import { useToast } from "@/components/clinic/clinic-ui";
+import { RxLayoutSettings } from "@/components/clinic/prescription/rx-layout-settings";
 import { useClinicMe, useClinicSettingsMutations } from "@/hooks/use-clinic";
 import { getApiErrorMessage } from "@/lib/api-error";
+import {
+  DEFAULT_LAYOUT,
+  parseRxLayout,
+  serializeRxLayout,
+  type RxLayout,
+} from "@/lib/clinic/rx-layout";
 import { fileToAvatarDataUrl } from "@/lib/image-utils";
+import type { ClinicMe } from "@/types/clinic";
 import {
   Alert,
   Avatar,
@@ -14,7 +22,7 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 const SWATCHES = [
   "#0E7C86",
@@ -42,6 +50,9 @@ export default function ClinicSettingsPage() {
     accentColor: "#0E7C86",
     logoUrl: "",
   });
+  const [layout, setLayout] = useState<RxLayout>(() =>
+    structuredClone(DEFAULT_LAYOUT),
+  );
   const [pw, setPw] = useState({ current: "", next: "" });
   const loaded = useRef(false);
 
@@ -59,7 +70,37 @@ export default function ClinicSettingsPage() {
       accentColor: me.accentColor,
       logoUrl: me.logoUrl ?? "",
     });
+    setLayout(parseRxLayout(me.rxLayout));
   }, [me]);
+
+  // Clinic as currently typed on this page, so the layout preview updates live.
+  const previewClinic = useMemo<ClinicMe | null>(
+    () =>
+      me
+        ? {
+            ...me,
+            tagline: f.tagline,
+            address: f.address,
+            phone: f.phone,
+            email: f.email,
+            pincode: f.pincode,
+            registrationNo: f.registrationNo,
+            footerNote: f.footerNote,
+            accentColor: f.accentColor,
+            logoUrl: f.logoUrl || null,
+          }
+        : null,
+    [me, f],
+  );
+
+  const save = () =>
+    profile.mutate(
+      { ...f, rxLayout: serializeRxLayout(layout) },
+      {
+        onSuccess: () => toast("Settings saved"),
+        onError: (e) => toast(getApiErrorMessage(e), "error"),
+      },
+    );
 
   const set = (k: keyof typeof f, v: string) => setF((p) => ({ ...p, [k]: v }));
   const txt = (
@@ -96,7 +137,7 @@ export default function ClinicSettingsPage() {
         title="Clinic settings"
         subtitle="What is printed on every prescription"
       />
-      <Box sx={{ display: "grid", gap: 2, maxWidth: 820 }}>
+      <Box sx={{ display: "grid", gap: 2, maxWidth: 1180 }}>
         <Paper
           variant="outlined"
           sx={{
@@ -104,6 +145,8 @@ export default function ClinicSettingsPage() {
             borderRadius: 4,
             display: "grid",
             gap: 1.5,
+            maxWidth: 820,
+            width: "100%",
           }}
         >
           {!me?.isAdmin && (
@@ -229,12 +272,7 @@ export default function ClinicSettingsPage() {
               <Button
                 variant="contained"
                 disabled={profile.isPending}
-                onClick={() =>
-                  profile.mutate(f, {
-                    onSuccess: () => toast("Settings saved"),
-                    onError: (e) => toast(getApiErrorMessage(e), "error"),
-                  })
-                }
+                onClick={save}
               >
                 Save settings
               </Button>
@@ -249,6 +287,40 @@ export default function ClinicSettingsPage() {
             borderRadius: 4,
             display: "grid",
             gap: 1.5,
+          }}
+        >
+          <Box>
+            <Typography sx={{ fontWeight: 800 }}>
+              Prescription layout
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              Pick how your prescriptions look. The preview updates as you
+              change things, and the same layout is used for print, PDF and
+              WhatsApp.
+            </Typography>
+          </Box>
+          {previewClinic && (
+            <RxLayoutSettings
+              layout={layout}
+              onChange={setLayout}
+              clinic={previewClinic}
+              disabled={!me?.isAdmin}
+              saving={profile.isPending}
+              onSave={save}
+              onError={(m) => toast(m, "error")}
+            />
+          )}
+        </Paper>
+
+        <Paper
+          variant="outlined"
+          sx={{
+            p: { xs: 1.5, sm: 2.5 },
+            borderRadius: 4,
+            display: "grid",
+            gap: 1.5,
+            maxWidth: 820,
+            width: "100%",
           }}
         >
           <Typography sx={{ fontWeight: 800 }}>Change my password</Typography>

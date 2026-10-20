@@ -28,6 +28,9 @@ public class Clinic : BaseEntity
     public string Pincode { get; set; } = default!;
     public string? RegistrationNo { get; set; }
 
+    /// <summary>JSON: prescription layout (default / personal pad with header+footer / custom). Images are data URLs.</summary>
+    public string? RxLayout { get; set; }
+
     /// <summary>Small compressed image stored as a data URL (printed on the prescription).</summary>
     public string? LogoUrl { get; set; }
     public string? FooterNote { get; set; }

@@ -85,6 +85,8 @@ export interface ClinicMe {
   registrationNo?: string | null;
   logoUrl?: string | null;
   footerNote?: string | null;
+  /** JSON string — see lib/clinic/rx-layout.ts */
+  rxLayout?: string | null;
   accentColor: string;
   actorName: string;
   actorUsername: string;
@@ -104,6 +106,7 @@ export interface UpdateClinicProfileRequest {
   registrationNo?: string;
   logoUrl?: string;
   footerNote?: string;
+  rxLayout?: string;
   accentColor: string;
 }
 

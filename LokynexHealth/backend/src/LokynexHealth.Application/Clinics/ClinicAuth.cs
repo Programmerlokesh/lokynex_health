@@ -112,6 +112,7 @@ public class ClinicMeDto
     public string? RegistrationNo { get; set; }
     public string? LogoUrl { get; set; }
     public string? FooterNote { get; set; }
+    public string? RxLayout { get; set; }
     public string AccentColor { get; set; } = default!;
     public string ActorName { get; set; } = default!;
     public string ActorUsername { get; set; } = default!;
@@ -150,6 +151,7 @@ public class GetClinicMeQueryHandler : IRequestHandler<GetClinicMeQuery, ClinicM
             RegistrationNo = c.RegistrationNo,
             LogoUrl = c.LogoUrl,
             FooterNote = c.FooterNote,
+            RxLayout = c.RxLayout,
             AccentColor = c.AccentColor,
             UserLimit = c.UserLimit,
             UserCount = userCount
@@ -189,8 +191,22 @@ public class UpdateClinicProfileCommand : IRequest
     /// <summary>Data URL (image/jpeg|png|webp), or empty to remove the logo.</summary>
     public string? LogoUrl { get; set; }
     public string? FooterNote { get; set; }
+    /// <summary>JSON describing the prescription layout. Null/empty = clinic default.</summary>
+    public string? RxLayout { get; set; }
     public string AccentColor { get; set; } = "#0E7C86";
 }
+
+    private static bool IsValidLayoutJson(string? json)
+    {
+        if (string.IsNullOrWhiteSpace(json)) return true;
+        if (json.Length > RxLayoutRules.MaxChars) return false;
+        try { using var _ = System.Text.Json.JsonDocument.Parse(json); return true; }
+        catch (System.Text.Json.JsonException) { return false; }
+    }
+
+    public UpdateClinicProfileCommandValidator()
+    {
+
 
 public class UpdateClinicProfileCommandValidator : AbstractValidator<UpdateClinicProfileCommand>
 {
@@ -204,10 +220,11 @@ public class UpdateClinicProfileCommandValidator : AbstractValidator<UpdateClini
         RuleFor(x => x.RegistrationNo).MaximumLength(60);
         RuleFor(x => x.FooterNote).MaximumLength(300);
         RuleFor(x => x.AccentColor).Matches("^#[0-9A-Fa-f]{6}$").WithMessage("Colour must look like #0E7C86.");
-        RuleFor(x => x.LogoUrl).Must(l => string.IsNullOrEmpty(l) || (l.StartsWith("data:image/") && l.Length <= 400_000))
-            .WithMessage("Logo must be a small JPG, PNG or WEBP image.");
+        RuleFor(x => x.RxLayout).Must(IsValidLayoutJson)
+            .WithMessage("Prescription layout is invalid or too large (header/footer images must be small).");
     }
 }
+
 
 public class UpdateClinicProfileCommandHandler : IRequestHandler<UpdateClinicProfileCommand>
 {

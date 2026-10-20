@@ -22,7 +22,8 @@ public class ClinicConfiguration : IEntityTypeConfiguration<Clinic>
         b.Property(x => x.Email).HasMaxLength(150).IsRequired();
         b.Property(x => x.Pincode).HasMaxLength(10).IsRequired();
         b.Property(x => x.RegistrationNo).HasMaxLength(60);
-        b.Property(x => x.FooterNote).HasMaxLength(300);
+             b.Property(x => x.FooterNote).HasMaxLength(300);
+        b.Property(x => x.RxLayout);
         b.Property(x => x.AccentColor).HasMaxLength(9).IsRequired();
         b.Property(x => x.AdminName).HasMaxLength(150).IsRequired();
         b.Property(x => x.AdminPhone).HasMaxLength(20).IsRequired();

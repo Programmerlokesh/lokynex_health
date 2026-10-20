@@ -1,6 +1,7 @@
 import { buildReportPdf } from "@/lib/blood-report/pdf";
 import { escapeHtml as esc } from "@/lib/report-editor/sanitize";
 import type { ClinicMe, Prescription } from "@/types/clinic";
+import { DEFAULT_LAYOUT, parseRxLayout, type RxLayout } from "./rx-layout";
 
 // ---------------------------------------------------------------------------
 // Prescription layout. ONE source of truth for the on-screen preview, the
@@ -13,6 +14,12 @@ export interface RxParts {
   headerHtml: string;
   bodyHtml: string;
   footerHtml: string;
+  /** Blank space (mm) left for a pre-printed pad header/footer (PDF engine). */
+  headerMm?: number;
+  footerMm?: number;
+  /** On-screen only: shows a labelled placeholder where the pad's header/footer sits. */
+  previewHeaderHtml?: string;
+  previewFooterHtml?: string;
 }
 
 const CSS = `
@@ -65,6 +72,9 @@ const CSS = `
 .rx-sigsub{font-size:9.5px;color:#6b7684}
 .rx-fbar{display:flex;flex-wrap:wrap;justify-content:center;gap:4px 14px;font-size:10px;color:#5b6675;padding-top:6px;border-top:1px dashed #cfd6de}
 .rx-rxno{font-size:9.5px;color:#8a95a3;text-align:right;margin-top:2px}
+.rx-head.rx-center{flex-direction:column;align-items:center;text-align:center}
+.rx-center .rx-brand{flex-direction:column;gap:6px}.rx-center .rx-doc{text-align:center;max-width:none}
+.rx-band img{display:block;width:100%;max-height:70mm;object-fit:contain}
 @media (max-width:640px){.rx-pt{grid-template-columns:repeat(2,1fr)}.rx-tests{grid-template-columns:1fr}}
 `;
 
@@ -81,8 +91,20 @@ function vars(accent: string): string {
   return `--a:${safe};--a-soft:rgba(${r},${g},${b},.12);--a-soft2:rgba(${r},${g},${b},.05);--a-line:rgba(${r},${g},${b},.30)`;
 }
 
-const wrap = (inner: string, accent: string) =>
-  `<style>${CSS}</style><div class="rx" style="${vars(accent)}">${inner}</div>`;
+/** Scales every font-size in the stylesheet (used by the "Custom" layout's text size). */
+const scaledCss = (k: number) =>
+  k === 1
+    ? CSS
+    : CSS.replace(
+        /font-size:([\d.]+)px/g,
+        (_, n) => `font-size:${+(parseFloat(n) * k).toFixed(2)}px`,
+      );
+
+const wrap = (inner: string, accent: string, k = 1) =>
+  `<style>${scaledCss(k)}</style><div class="rx" style="${vars(accent)}">${inner}</div>`;
+
+const placeholder = (label: string, mm: number) =>
+  `<div style="height:${mm}mm;border:1.5px dashed #b6c0cc;border-radius:8px;display:flex;align-items:center;justify-content:center;font:600 11px 'Segoe UI',Arial,sans-serif;color:#8a95a3;background:repeating-linear-gradient(45deg,#fafbfc,#fafbfc 8px,#f3f5f8 8px,#f3f5f8 16px)">${esc(label)} · ${mm} mm</div>`;
 
 export function fmtRxDate(ymd: string | null | undefined): string {
   if (!ymd) return "";
@@ -101,32 +123,48 @@ const has = (s?: string | null) => !!s && s.trim() !== "";
 const field = (k: string, v: string, cls = "") =>
   `<div class="${cls}"><div class="rx-k">${esc(k)}</div><div class="rx-v">${esc(v || "—")}</div></div>`;
 
-export function buildRxParts(rx: Prescription, clinic: ClinicMe): RxParts {
-  const accent = clinic.accentColor;
+export function buildRxParts(
+  rx: Prescription,
+  clinic: ClinicMe,
+  layoutOverride?: RxLayout,
+): RxParts {
+  const layout = layoutOverride ?? parseRxLayout(clinic.rxLayout);
+  const isCustom = layout.mode === "custom";
+  const isPad = layout.mode === "letterhead";
+  const c = isCustom ? layout.custom : DEFAULT_LAYOUT.custom;
+  const accent = isCustom && c.accent ? c.accent : clinic.accentColor;
+  const k = isCustom
+    ? ({ small: 0.9, normal: 1, large: 1.12 } as const)[c.fontSize]
+    : 1;
 
   // ---------------- header ----------------
   const addr = [clinic.address, clinic.pincode].filter(has).join(" - ");
   const contact = [clinic.phone && `Ph: ${clinic.phone}`, clinic.email]
     .filter(Boolean)
     .join("  |  ");
-  const headerHtml = wrap(
-    `<div class="rx-head">
+  const standardHeader = wrap(
+    `<div class="rx-head${c.headerStyle === "centered" ? " rx-center" : ""}">
        <div class="rx-brand">
-         ${clinic.logoUrl ? `<img class="rx-logo" src="${esc(clinic.logoUrl)}" alt="" />` : ""}
+         ${c.showLogo && clinic.logoUrl ? `<img class="rx-logo" src="${esc(clinic.logoUrl)}" alt="" />` : ""}
          <div style="min-width:0">
            <div class="rx-clinic">${esc(clinic.clinicName)}</div>
-           ${has(clinic.tagline) ? `<div class="rx-tag">${esc(clinic.tagline!)}</div>` : ""}
-           <div class="rx-addr">${esc(addr)}${contact ? `<br/>${esc(contact)}` : ""}</div>
+           ${c.showTagline && has(clinic.tagline) ? `<div class="rx-tag">${esc(clinic.tagline!)}</div>` : ""}
+           ${c.showClinicContact ? `<div class="rx-addr">${esc(addr)}${contact ? `<br/>${esc(contact)}` : ""}</div>` : ""}
          </div>
        </div>
-       <div class="rx-doc">
+       ${
+         c.showDoctorBlock
+           ? `<div class="rx-doc">
          <div class="rx-doc-name">${esc(doctorTitle(rx.doctorName))}</div>
          ${has(rx.doctorQualification) ? `<div class="rx-doc-q">${esc(rx.doctorQualification!)}</div>` : ""}
          ${has(rx.doctorSpecialization) ? `<div class="rx-doc-s">${esc(rx.doctorSpecialization!)}</div>` : ""}
          ${has(rx.doctorRegNo) ? `<div class="rx-doc-r">Reg. No: ${esc(rx.doctorRegNo!)}</div>` : ""}
-       </div>
+       </div>`
+           : ""
+       }
      </div>`,
     accent,
+    k,
   );
 
   // ---------------- body ----------------
@@ -207,7 +245,7 @@ export function buildRxParts(rx: Prescription, clinic: ClinicMe): RxParts {
        ${field("Referred by", rx.referral ?? "")}
        ${address ? field("Address", address, "rx-span2") : ""}
      </div>
-     ${vitalChips ? `<div class="rx-vitals" data-keep>${vitalChips}</div>` : ""}
+     ${c.showVitals && vitalChips ? `<div class="rx-vitals" data-keep>${vitalChips}</div>` : ""}
      ${textBlock("Chief complaints", rx.chiefComplaints)}
      ${textBlock("Diagnosis", rx.diagnosis)}
      ${medicineBlock}
@@ -215,37 +253,103 @@ export function buildRxParts(rx: Prescription, clinic: ClinicMe): RxParts {
      ${textBlock("Advice", rx.generalAdvice)}
      ${follow}`,
     accent,
+    k,
   );
 
   // ---------------- footer ----------------
-  const footerHtml = wrap(
-    `<div class="rx-foot">
-       <div class="rx-sign">
-         <div class="rx-note">${has(clinic.footerNote) ? esc(clinic.footerNote!) : ""}</div>
-         <div class="rx-sigbox"><div style="height:34px"></div>
+  const showSign = c.showSignature;
+  const showNote = c.showFooterNote && has(clinic.footerNote);
+  const standardFooter =
+    showSign || showNote || c.showFooterBar
+      ? wrap(
+          `<div class="rx-foot">
+       ${
+         showSign || showNote
+           ? `<div class="rx-sign">
+         <div class="rx-note">${showNote ? esc(clinic.footerNote!) : ""}</div>
+         ${
+           showSign
+             ? `<div class="rx-sigbox"><div style="height:34px"></div>
            <div class="rx-sigline">${esc(doctorTitle(rx.doctorName))}</div>
-           <div class="rx-sigsub">Signature &amp; seal</div></div>
-       </div>
-       <div class="rx-fbar">
+           <div class="rx-sigsub">Signature &amp; seal</div></div>`
+             : ""
+         }
+       </div>`
+           : ""
+       }
+       ${
+         c.showFooterBar
+           ? `<div class="rx-fbar">
          <span>${esc(clinic.clinicName)}</span>
          ${has(clinic.registrationNo) ? `<span>Clinic Reg. ${esc(clinic.registrationNo!)}</span>` : ""}
          ${clinic.phone ? `<span>${esc(clinic.phone)}</span>` : ""}
          ${clinic.email ? `<span>${esc(clinic.email)}</span>` : ""}
-       </div>
+       </div>`
+           : ""
+       }
      </div>`,
-    accent,
-  );
+          accent,
+          k,
+        )
+      : "";
 
-  return { headerHtml, bodyHtml, footerHtml };
+  // ---------------- personal pre-printed pad ----------------
+  if (isPad) {
+    const lh = layout.letterhead;
+    const hImg = lh.headerMode === "image" && lh.headerImage;
+    const fImg = lh.footerMode === "image" && lh.footerImage;
+    const hSpace = lh.headerMode === "space" && lh.headerMm > 0;
+    const fSpace = lh.footerMode === "space" && lh.footerMm > 0;
+    const band = (src: string) =>
+      wrap(
+        `<div class="rx-band"><img src="${esc(src)}" alt="" /></div>`,
+        accent,
+      );
+    const spacer = (mm: number) => `<div style="height:${mm}mm"></div>`;
+
+    return {
+      headerHtml: hImg
+        ? band(lh.headerImage)
+        : hSpace
+          ? spacer(lh.headerMm)
+          : "",
+      bodyHtml,
+      footerHtml: fImg
+        ? band(lh.footerImage)
+        : fSpace
+          ? spacer(lh.footerMm)
+          : "",
+      headerMm: hSpace ? lh.headerMm : 0,
+      footerMm: fSpace ? lh.footerMm : 0,
+      previewHeaderHtml: hSpace
+        ? placeholder("Your pre-printed header space", lh.headerMm)
+        : undefined,
+      previewFooterHtml: fSpace
+        ? placeholder("Your pre-printed footer space", lh.footerMm)
+        : undefined,
+    };
+  }
+
+  return {
+    headerHtml: standardHeader,
+    bodyHtml,
+    footerHtml: standardFooter,
+  };
 }
 
 /** The whole prescription as one block of HTML (used by the on-screen preview). */
 export const rxPreviewHtml = (p: RxParts) =>
-  p.headerHtml + p.bodyHtml + p.footerHtml;
+  (p.previewHeaderHtml ?? p.headerHtml) +
+  p.bodyHtml +
+  (p.previewFooterHtml ?? p.footerHtml);
 
 /** PDF with header + footer on every page (re-uses the lab report PDF engine). */
 export function rxToPdf(parts: RxParts): Promise<Blob> {
-  return buildReportPdf({ ...parts, headerMm: 0, footerMm: 0 });
+  return buildReportPdf({
+    ...parts,
+    headerMm: parts.headerMm ?? 0,
+    footerMm: parts.footerMm ?? 0,
+  });
 }
 
 /** Browser print. thead/tfoot repeat on every printed page, rows never split. */
