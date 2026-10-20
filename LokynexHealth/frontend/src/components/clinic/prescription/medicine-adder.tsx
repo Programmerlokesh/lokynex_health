@@ -76,12 +76,13 @@ function ByName({ onAdd }: { onAdd: (i: RxItem) => void }) {
           size="small"
           placeholder="Type a medicine name, then pick it (Enter adds it as typed)"
           slotProps={{
+            ...params.slotProps,
             input: {
-              ...params.InputProps,
+              ...params.slotProps.input,
               endAdornment: (
                 <>
                   {isFetching ? <CircularProgress size={16} /> : null}
-                  {params.InputProps.endAdornment}
+                  {params.slotProps.input.endAdornment}
                 </>
               ),
             },
