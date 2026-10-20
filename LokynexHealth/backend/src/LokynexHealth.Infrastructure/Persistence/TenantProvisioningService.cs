@@ -11,48 +11,23 @@ public class TenantProvisioningService : ITenantProvisioningService
 {
     private const string ResourcePrefix = "LokynexHealth.Infrastructure.Persistence.Scripts.";
 
-    // Order matters: base tables first, then blood-report formats (014) and
-    // machine / chemical info (015), then the per-lab doctor/referral overrides.
-    // All run as ONE script, so a failure in any part rolls the whole lab
-    // provisioning back instead of leaving half a schema.
-    private static readonly string[] ScriptFiles =
-    {
-        "TenantSchemaTemplate.sql",
-        "BloodReportFormats.sql",
-        "BloodReportMachineChemical.sql",
-        "BloodReportOptions.sql",
-        "DirectoryOverrides.sql"
-    };
+    // Embedded copies of the two files in the /database folder:
+    //   database/002_tenant_schema.sql           -> Scripts/TenantSchema.sql
+    //   database/003_departments_and_tests.sql   -> Scripts/DepartmentsAndTests.sql
+    // Order matters: the schema first, then the test catalog.
+    // Everything runs as ONE script (one implicit transaction), so a failure in any
+    // part rolls the whole lab provisioning back, including the CREATE SCHEMA.
+    private const string TenantSchemaFile = "TenantSchema.sql";
+    private const string DepartmentsAndTestsFile = "DepartmentsAndTests.sql";
 
-    // Test catalog (departments + tests + report formats). Same content as
-    // database/019, 017, 020, 021, 026, 027. ORDER MATTERS (020 expects 017's
-    // formats first). Every script is safe to re-run and never overwrites
-    // anything the lab edited, so a new lab starts with the full catalog and
-    // nobody has to run these by hand in the Neon SQL editor.
-    private static readonly string[] SeedFiles =
-    {
-        "SeedTests01_BloodTests.sql",
-        "SeedTests02_BloodFormats.sql",
-        "SeedTests03_SopPack.sql",
-        "SeedTests04_PanelFormats.sql",
-        "SeedTests05_OtherTests.sql",
-        "SeedTests06_MoreTests.sql",
-        "SeedTests07_ImagingAndOtherDepartments.sql"
-    };
-
-    // The seed scripts loop over EVERY lab schema. During provisioning we only
-    // want the NEW schema (the first entry of search_path), so the loop filter
-    // gets one extra condition.
-    private const string SeedSchemaFilter =
-        "NOT IN ('public', 'platform', 'information_schema', 'pg_catalog')";
-    private const string SeedSchemaFilterScoped =
-        "NOT IN ('public', 'platform', 'information_schema', 'pg_catalog') AND i.table_schema = current_schema()";
-
-    // The standalone SQL files start with "SET search_path TO lab_demo, public;".
+    // The standalone SQL files may contain "SET search_path TO lab_demo, public;".
     // Remove it here: the schema of the NEW lab is set once at the top instead.
     private static readonly Regex SearchPathStatement = new(
         @"^[ \t]*SET[ \t]+search_path[ \t]+TO[^;\r\n]*;",
         RegexOptions.Multiline | RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+    private static readonly Regex ValidSchemaName = new(
+        "^[a-z][a-z0-9_]{2,62}$", RegexOptions.Compiled);
 
     private readonly IConfiguration _configuration;
 
@@ -63,40 +38,44 @@ public class TenantProvisioningService : ITenantProvisioningService
 
     public async Task ProvisionTenantSchemaAsync(string schemaName, CancellationToken cancellationToken)
     {
-        if (!System.Text.RegularExpressions.Regex.IsMatch(schemaName, "^[a-z][a-z0-9_]{2,62}$"))
+        if (!ValidSchemaName.IsMatch(schemaName))
             throw new ArgumentException("Invalid schema name.", nameof(schemaName));
 
         var connectionString = _configuration.GetConnectionString("TenantDb");
 
-        var script = new StringBuilder();
-        script.Append($"SET search_path TO \"{schemaName}\", public;\n");
-        foreach (var file in ScriptFiles)
-        {
-            var sql = await ReadEmbeddedScriptAsync(file, cancellationToken);
-            script.Append(SearchPathStatement.Replace(sql, string.Empty));
-            script.Append("\n;\n");
-        }
+        var tenantSchemaSql = Normalize(await ReadEmbeddedScriptAsync(TenantSchemaFile, cancellationToken));
+        var catalogSql = Normalize(await ReadEmbeddedScriptAsync(DepartmentsAndTestsFile, cancellationToken));
 
-        foreach (var file in SeedFiles)
-        {
-            var sql = await ReadEmbeddedScriptAsync(file, cancellationToken);
-            sql = SearchPathStatement.Replace(sql, string.Empty);
-            // normalise Windows line endings and limit the seed to the new schema
-            sql = sql.Replace("\r\n", "\n").Replace(SeedSchemaFilter, SeedSchemaFilterScoped);
-            script.Append(sql);
-            script.Append("\n;\n");
-        }
+        var script = new StringBuilder();
+
+        // 1) create + point the session at the new lab schema
+        script.Append($"CREATE SCHEMA IF NOT EXISTS \"{schemaName}\";\n");
+        script.Append($"SET search_path TO \"{schemaName}\", public;\n");
+
+        // 2) tables, enums, triggers, views of one lab
+        script.Append(tenantSchemaSql);
+        script.Append("\n;\n");
+
+        // 3) test catalog. 003 loops over EVERY lab schema unless this setting is set,
+        //    so limit it to the new schema only (the existing labs are never touched).
+        script.Append($"SELECT set_config('lokynex.only_schema', '{schemaName}', false);\n");
+        script.Append(catalogSql);
+        script.Append("\n;\n");
+
+        // 4) clean up the session before it goes back to the connection pool
+        script.Append("SELECT set_config('lokynex.only_schema', '', false);\n");
+        script.Append("RESET search_path;\n");
 
         await using var connection = new NpgsqlConnection(connectionString);
         await connection.OpenAsync(cancellationToken);
-
-        await using var createSchemaCmd = new NpgsqlCommand($"CREATE SCHEMA IF NOT EXISTS \"{schemaName}\";", connection);
-        await createSchemaCmd.ExecuteNonQueryAsync(cancellationToken);
 
         await using var scriptCmd = new NpgsqlCommand(script.ToString(), connection);
         scriptCmd.CommandTimeout = 600; // the test catalog seed adds a few seconds
         await scriptCmd.ExecuteNonQueryAsync(cancellationToken);
     }
+
+    private static string Normalize(string sql) =>
+        SearchPathStatement.Replace(sql.Replace("\r\n", "\n"), string.Empty);
 
     private static async Task<string> ReadEmbeddedScriptAsync(string fileName, CancellationToken cancellationToken)
     {

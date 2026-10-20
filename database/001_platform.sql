@@ -73,6 +73,21 @@ CREATE TABLE IF NOT EXISTS platform.owners (
     updated_at          TIMESTAMPTZ
 );
 
+-- Panel permissions of a staff member, stored as "labs:manage,plans:view,...".
+-- The backend (Owner.Permissions) reads this column, so it must exist.
+-- An older database gets it added here; staff that already existed keep their
+-- old behaviour (create labs + own ledger) ONLY the first time the column is added.
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_schema = 'platform' AND table_name = 'owners' AND column_name = 'permissions'
+    ) THEN
+        ALTER TABLE platform.owners ADD COLUMN permissions VARCHAR(500) NOT NULL DEFAULT '';
+        UPDATE platform.owners SET permissions = 'labs:manage,ledger:manage';
+    END IF;
+END $$;
+
 -- ---------- PLANS ----------
 CREATE TABLE IF NOT EXISTS platform.plans (
     id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
