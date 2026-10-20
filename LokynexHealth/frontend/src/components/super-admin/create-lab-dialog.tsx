@@ -1,5 +1,6 @@
 "use client";
 
+import { PasswordTextField } from "@/components/ui/password-field";
 import { useCreateLab } from "@/hooks/use-super-admin";
 import { getApiErrorMessage } from "@/lib/api-error";
 import { ExtendBranchInput } from "@/types/super-admin";
@@ -146,7 +147,10 @@ export function CreateLabDialog() {
           >
             {createLab.isError && (
               <Alert severity="error">
-                {getApiErrorMessage(createLab.error, "Could not create the lab.")}
+                {getApiErrorMessage(
+                  createLab.error,
+                  "Could not create the lab.",
+                )}
               </Alert>
             )}
 
@@ -169,7 +173,13 @@ export function CreateLabDialog() {
               value={primaryBranchAddress}
               onChange={(e) => setPrimaryBranchAddress(e.target.value)}
             />
-            <Box sx={{ display: "flex", flexDirection: { xs: "column", sm: "row" }, gap: 2 }}>
+            <Box
+              sx={{
+                display: "flex",
+                flexDirection: { xs: "column", sm: "row" },
+                gap: 2,
+              }}
+            >
               <TextField
                 label="Branch Phone"
                 size="small"
@@ -211,7 +221,13 @@ export function CreateLabDialog() {
               value={adminName}
               onChange={(e) => setAdminName(e.target.value)}
             />
-           <Box sx={{ display: "flex", flexDirection: { xs: "column", sm: "row" }, gap: 2 }}>
+            <Box
+              sx={{
+                display: "flex",
+                flexDirection: { xs: "column", sm: "row" },
+                gap: 2,
+              }}
+            >
               <TextField
                 label="Admin Phone"
                 size="small"
@@ -231,7 +247,13 @@ export function CreateLabDialog() {
                 onChange={(e) => setAdminEmail(e.target.value)}
               />
             </Box>
-            <Box sx={{ display: "flex", flexDirection: { xs: "column", sm: "row" }, gap: 2 }}>
+            <Box
+              sx={{
+                display: "flex",
+                flexDirection: { xs: "column", sm: "row" },
+                gap: 2,
+              }}
+            >
               <TextField
                 label="Admin Username"
                 size="small"
@@ -240,9 +262,8 @@ export function CreateLabDialog() {
                 value={adminUsername}
                 onChange={(e) => setAdminUsername(e.target.value)}
               />
-              <TextField
+              <PasswordTextField
                 label="Admin Password"
-                type="password"
                 size="small"
                 fullWidth
                 required
@@ -281,7 +302,8 @@ export function CreateLabDialog() {
               <Box
                 key={i}
                 sx={{
-                  border: 1, borderColor: "divider",
+                  border: 1,
+                  borderColor: "divider",
                   borderRadius: 2,
                   p: 1.5,
                   display: "flex",

@@ -1,6 +1,7 @@
 "use client";
 
 import { StatusChip } from "@/components/clinic/clinic-ui";
+import { PasswordTextField } from "@/components/ui/password-field";
 import {
   useClinicAdminMutations,
   useClinicDetail,
@@ -356,10 +357,9 @@ function EditClinicDialog({
               Reset admin password (username: {data?.adminUsername})
             </Typography>
             <Box sx={{ display: "flex", gap: 1 }}>
-              <TextField
+              <PasswordTextField
                 size="small"
                 fullWidth
-                type="password"
                 label="New password (min 8)"
                 value={pw}
                 onChange={(e) => setPw(e.target.value)}

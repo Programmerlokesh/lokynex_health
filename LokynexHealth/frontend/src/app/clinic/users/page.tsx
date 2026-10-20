@@ -8,6 +8,7 @@ import {
   useDialogFullScreen,
   useToast,
 } from "@/components/clinic/clinic-ui";
+import { PasswordTextField } from "@/components/ui/password-field";
 import {
   useClinicMe,
   useClinicRolesMeta,
@@ -259,10 +260,9 @@ function UserDialog({
             />
           )}
           {!user && (
-            <TextField
+            <PasswordTextField
               size="small"
               label="Password * (min 8)"
-              type="password"
               value={f.password}
               onChange={(e) => set("password", e.target.value)}
               autoComplete="new-password"
@@ -308,10 +308,9 @@ function ResetPasswordDialog({
         Reset password — {user.name}
       </DialogTitle>
       <DialogContent sx={{ pt: "8px !important" }}>
-        <TextField
+        <PasswordTextField
           fullWidth
           size="small"
-          type="password"
           label="New password (min 8)"
           value={pw}
           onChange={(e) => setPw(e.target.value)}

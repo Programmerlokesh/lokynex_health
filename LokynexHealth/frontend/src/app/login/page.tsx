@@ -48,7 +48,13 @@ function getLoginErrorMessage(error: unknown): string {
       return data?.errors?.[0] ?? "Invalid username or password.";
     }
     if (error.response.status >= 500) {
-      return "Server error. Please try again in a moment.";
+      // Show the real reason from the API when it sent one (for example
+      // "The database is missing a table or column ..."), so the problem
+      // can be found instead of a vague message.
+      const detail = data?.errors?.[0];
+      return detail
+        ? `Server error: ${detail}`
+        : "Server error. Please try again in a moment.";
     }
   }
   return "Something went wrong. Please try again.";

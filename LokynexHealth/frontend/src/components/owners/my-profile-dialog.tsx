@@ -1,5 +1,6 @@
 "use client";
 
+import { PasswordTextField } from "@/components/ui/password-field";
 import { useUpdateMyOwnerProfile } from "@/hooks/use-owners";
 import { getApiErrorMessage } from "@/lib/api-error";
 import { fileToAvatarDataUrl } from "@/lib/image-utils";
@@ -267,18 +268,16 @@ export function MyProfileDialog({
               gap: 2,
             }}
           >
-            <TextField
+            <PasswordTextField
               label="Current password"
-              type="password"
               size="small"
               value={currentPassword}
               onChange={(e) => setCurrentPassword(e.target.value)}
               fullWidth
               autoComplete="current-password"
             />
-            <TextField
+            <PasswordTextField
               label="New password"
-              type="password"
               size="small"
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}

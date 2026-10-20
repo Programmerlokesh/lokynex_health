@@ -3,6 +3,7 @@
 import { PageTitle } from "@/components/clinic/clinic-shell";
 import { useToast } from "@/components/clinic/clinic-ui";
 import { RxLayoutSettings } from "@/components/clinic/prescription/rx-layout-settings";
+import { PasswordTextField } from "@/components/ui/password-field";
 import { useClinicMe, useClinicSettingsMutations } from "@/hooks/use-clinic";
 import { getApiErrorMessage } from "@/lib/api-error";
 import {
@@ -331,9 +332,8 @@ export default function ClinicSettingsPage() {
               gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
             }}
           >
-            <TextField
+            <PasswordTextField
               size="small"
-              type="password"
               label="Current password"
               value={pw.current}
               onChange={(e) =>
@@ -341,9 +341,8 @@ export default function ClinicSettingsPage() {
               }
               autoComplete="current-password"
             />
-            <TextField
+            <PasswordTextField
               size="small"
-              type="password"
               label="New password (min 8)"
               value={pw.next}
               onChange={(e) => setPw((p) => ({ ...p, next: e.target.value }))}

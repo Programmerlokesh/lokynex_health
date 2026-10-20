@@ -1,5 +1,6 @@
 "use client";
 
+import { PasswordTextField } from "@/components/ui/password-field";
 import { useResetUserPassword } from "@/hooks/use-users";
 import {
   Alert,
@@ -10,7 +11,6 @@ import {
   DialogContent,
   DialogContentText,
   DialogTitle,
-  TextField,
   useMediaQuery,
   useTheme,
 } from "@mui/material";
@@ -78,9 +78,8 @@ export function ResetPasswordDialog({
             </Alert>
           )}
 
-          <TextField
+          <PasswordTextField
             label="New Password"
-            type="password"
             size="small"
             fullWidth
             required

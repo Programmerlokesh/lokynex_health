@@ -56,13 +56,24 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, LoginResult>
         // in the connection string). current_schema() returns that schema's name at
         // the DB level, so we can look up "whose lab is this" without needing any
         // extra config wiring — a single scalar raw-SQL query, no enum, no fuss.
-        var labName = await _db.Database
-            .SqlQuery<string>($@"
-                SELECT primary_branch_name
-                FROM platform.tenants
-                WHERE schema_name = current_schema()
-                LIMIT 1")
-            .FirstOrDefaultAsync(cancellationToken);
+        // The lab name is only cosmetic (Topbar). It must NEVER be able to break a
+        // login, so any failure here just means "no lab name". EF Core's
+        // SqlQuery<string> also requires the single column to be called "Value".
+        string? labName = null;
+        try
+        {
+            labName = await _db.Database
+                .SqlQuery<string>($@"
+                    SELECT primary_branch_name AS ""Value""
+                    FROM platform.tenants
+                    WHERE schema_name = current_schema()
+                    LIMIT 1")
+                .FirstOrDefaultAsync(cancellationToken);
+        }
+        catch
+        {
+            // ignore — login continues without a lab name
+        }
 
         return new LoginResult
         {

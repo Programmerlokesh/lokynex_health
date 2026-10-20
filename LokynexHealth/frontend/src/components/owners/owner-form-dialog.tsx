@@ -1,5 +1,6 @@
 "use client";
 
+import { PasswordTextField } from "@/components/ui/password-field";
 import { useCreateOwner, useUpdateOwner } from "@/hooks/use-owners";
 import { getApiErrorMessage } from "@/lib/api-error";
 import { fileToAvatarDataUrl } from "@/lib/image-utils";
@@ -292,9 +293,8 @@ export function OwnerFormDialog({
               autoComplete="off"
               helperText={isEdit ? "Login ID cannot be changed" : undefined}
             />
-            <TextField
+            <PasswordTextField
               label={isEdit ? "New password (optional)" : "Password"}
-              type="password"
               size="small"
               value={form.password}
               onChange={(e) => set("password", e.target.value)}

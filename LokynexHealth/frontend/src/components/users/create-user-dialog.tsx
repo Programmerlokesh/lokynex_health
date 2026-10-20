@@ -1,5 +1,6 @@
 "use client";
 
+import { PasswordTextField } from "@/components/ui/password-field";
 import { PermissionGrid } from "@/components/users/permission-grid";
 import { useBranches } from "@/hooks/use-branches";
 import { useRoles } from "@/hooks/use-roles";
@@ -142,9 +143,8 @@ export function CreateUserDialog() {
                 required
                 fullWidth
               />
-              <TextField
+              <PasswordTextField
                 label="Password"
-                type="password"
                 size="small"
                 value={form.password}
                 onChange={(e) => setForm({ ...form, password: e.target.value })}
