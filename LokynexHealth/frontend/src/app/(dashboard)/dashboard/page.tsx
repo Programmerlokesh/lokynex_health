@@ -150,6 +150,15 @@ const ITEMS: {
     moduleName: "OrderListAndReports",
   },
   {
+    label: "Report Pad",
+    href: "/reports/report-pad",
+    tag: "Reports",
+    path: "reports › report-pad",
+    group: "reports",
+    icon: ReportIcon,
+    moduleName: "OrderListAndReports",
+  },
+  {
     label: "Commission Setup",
     href: "/commission-setup",
     tag: "Reports",

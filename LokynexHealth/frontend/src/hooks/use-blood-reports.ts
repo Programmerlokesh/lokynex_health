@@ -1,5 +1,6 @@
 import {
   getBloodReportFormApi,
+  getLabReportSettingsApi,
   logReportDeliveryApi,
   saveBloodReportApi,
   saveLabReportSettingsApi,
@@ -35,9 +36,25 @@ export function useSaveBloodReport() {
   });
 }
 
+/** Lab header / footer / blank space / signature (the "Report Pad"). */
+export function useLabReportSettings() {
+  return useQuery({
+    queryKey: ["lab-report-settings"],
+    queryFn: getLabReportSettingsApi,
+    staleTime: 0,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: false,
+  });
+}
+
 export function useSaveLabReportSettings() {
+  const qc = useQueryClient();
   return useMutation({
     mutationFn: (data: LabReportSettingsDto) => saveLabReportSettingsApi(data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["lab-report-settings"] });
+      qc.invalidateQueries({ queryKey: ["blood-report-form"] });
+    },
   });
 }
 

@@ -26,6 +26,13 @@ export async function saveBloodReportApi(
   return res.data;
 }
 
+export async function getLabReportSettingsApi(): Promise<LabReportSettingsDto> {
+  const res = await apiClient.get<LabReportSettingsDto>(
+    "/BloodReports/settings",
+  );
+  return res.data;
+}
+
 export async function saveLabReportSettingsApi(
   data: LabReportSettingsDto,
 ): Promise<void> {

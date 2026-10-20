@@ -25,7 +25,7 @@ public class ReportTemplatesController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateReportTemplateCommand command, CancellationToken ct)
     {
-        command.CreatedBy = _currentUser.UserId;
+        command.CreatedBy = _currentUser.ActorUserId();
         var id = await _mediator.Send(command, ct);
         return CreatedAtAction(nameof(Create), new { id }, new { id });
     }
@@ -40,7 +40,7 @@ public class ReportTemplatesController : ControllerBase
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(Guid id, CancellationToken ct)
     {
-        await _mediator.Send(new DeleteReportTemplateCommand { Id = id, DeletedBy = _currentUser.UserId ?? Guid.Empty }, ct);
+        await _mediator.Send(new DeleteReportTemplateCommand { Id = id, DeletedBy = _currentUser.ActorUserId() }, ct);
         return NoContent();
     }
 }

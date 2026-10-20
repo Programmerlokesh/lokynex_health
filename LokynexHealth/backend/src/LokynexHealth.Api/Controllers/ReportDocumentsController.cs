@@ -31,7 +31,7 @@ public class ReportDocumentsController : ControllerBase
     [HttpPost("generate")]
     public async Task<IActionResult> Generate([FromBody] GenerateReportDocumentCommand command, CancellationToken ct)
     {
-        command.CreatedBy = _currentUser.UserId;
+        command.CreatedBy = _currentUser.ActorUserId();
         var id = await _mediator.Send(command, ct);
         return CreatedAtAction(nameof(Generate), new { id }, new { id });
     }
@@ -40,7 +40,7 @@ public class ReportDocumentsController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateReportDocumentCommand command, CancellationToken ct)
     {
-        command.CreatedBy = _currentUser.UserId;
+        command.CreatedBy = _currentUser.ActorUserId();
         var id = await _mediator.Send(command, ct);
         return CreatedAtAction(nameof(GetById), new { id }, new { id });
     }
@@ -49,7 +49,7 @@ public class ReportDocumentsController : ControllerBase
     public async Task<IActionResult> Update(Guid id, [FromBody] UpdateReportDocumentCommand command, CancellationToken ct)
     {
         command.Id = id;
-        command.UpdatedBy = _currentUser.UserId;
+        command.UpdatedBy = _currentUser.ActorUserId();
         await _mediator.Send(command, ct);
         return NoContent();
     }
@@ -57,7 +57,7 @@ public class ReportDocumentsController : ControllerBase
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Delete(Guid id, CancellationToken ct)
     {
-        await _mediator.Send(new DeleteReportDocumentCommand { Id = id, DeletedBy = _currentUser.UserId ?? Guid.Empty }, ct);
+        await _mediator.Send(new DeleteReportDocumentCommand { Id = id, DeletedBy = _currentUser.ActorUserId() }, ct);
         return NoContent();
     }
 
