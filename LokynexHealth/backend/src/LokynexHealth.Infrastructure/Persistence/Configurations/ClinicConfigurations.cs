@@ -70,6 +70,8 @@ public class ClinicDoctorConfiguration : IEntityTypeConfiguration<ClinicDoctor>
         b.Property(x => x.Email).HasMaxLength(150);
         b.Property(x => x.Status).HasMaxLength(20).IsRequired();
         b.HasIndex(x => new { x.ClinicId, x.Status });
+        // Tells EF that a doctor depends on its clinic, so the clinic row is inserted FIRST.
+        b.HasOne<Clinic>().WithMany().HasForeignKey(x => x.ClinicId).OnDelete(DeleteBehavior.Cascade);
     }
 }
 
