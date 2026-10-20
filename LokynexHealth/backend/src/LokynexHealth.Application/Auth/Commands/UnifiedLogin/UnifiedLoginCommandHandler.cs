@@ -2,6 +2,7 @@ using LokynexHealth.Application.Auth.Commands.OwnerLogin;
 using LokynexHealth.Application.Auth.Commands.Login;
 using LokynexHealth.Application.Auth.Commands.SuperAdminLogin;
 using LokynexHealth.Application.Auth.Commands.TenantAdminLogin;
+using LokynexHealth.Application.Clinics;
 using LokynexHealth.Application.Common.Exceptions;
 using MediatR;
 using Microsoft.Extensions.Logging;
@@ -136,6 +137,38 @@ public class UnifiedLoginCommandHandler : IRequestHandler<UnifiedLoginCommand, U
         catch (Exception ex)
         {
             _logger.LogError(ex, "Owner lookup failed during unified login.");
+            infrastructureError ??= ex;
+        }
+
+        // ---------- 5) Doctor Clinic (clinic admin first, then clinic staff) ----------
+        try
+        {
+            var clinic = await _mediator.Send(
+                new ClinicLoginCommand { Username = request.Username, Password = request.Password },
+                cancellationToken);
+
+            return new UnifiedLoginResult
+            {
+                AccountType = "Clinic",
+                Token = clinic.Token,
+                UserId = clinic.UserId,
+                Name = clinic.Name,
+                Role = clinic.Role,
+                LabName = null,
+                Permissions = clinic.Permissions,
+                ExpiresAt = clinic.ExpiresAt,
+                ClinicId = clinic.ClinicId,
+                ClinicName = clinic.ClinicName,
+                IsClinicAdmin = clinic.IsAdmin
+            };
+        }
+        catch (UnauthorizedException ex)
+        {
+            if (ex.Message != GenericFailure) failureMessage = ex.Message;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Clinic lookup failed during unified login.");
             infrastructureError ??= ex;
         }
 

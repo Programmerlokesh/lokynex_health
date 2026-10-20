@@ -10,6 +10,7 @@ import {
 import { brand } from "@/components/providers/mui-theme-provider";
 import { unifiedLoginApi } from "@/lib/api/auth";
 import { useAuthStore } from "@/store/auth-store";
+import { useClinicAuthStore } from "@/store/clinic-auth-store";
 import { useOwnerAuthStore } from "@/store/owner-auth-store";
 import { useSuperAdminAuthStore } from "@/store/superadmin-auth-store";
 import {
@@ -72,13 +73,29 @@ export default function LoginPage() {
         document.cookie = "lokynex-token=; path=/; max-age=0";
       };
 
-      if (result.accountType === "SuperAdmin") {
+      if (result.accountType === "Clinic") {
         clearLab();
+        useSuperAdminAuthStore.getState().logout();
+        useOwnerAuthStore.getState().logout();
+        useClinicAuthStore.getState().setAuth(result.token, {
+          id: result.userId,
+          name: result.name,
+          role: result.role,
+          clinicId: result.clinicId ?? "",
+          clinicName: result.clinicName ?? "",
+          isAdmin: !!result.isClinicAdmin,
+          permissions: result.permissions ?? [],
+        });
+        router.push("/clinic/dashboard");
+      } else if (result.accountType === "SuperAdmin") {
+        clearLab();
+        useClinicAuthStore.getState().logout();
         useOwnerAuthStore.getState().logout();
         setSuperAdminAuth(result.token, result.name);
         router.push("/superadmin/dashboard");
       } else if (result.accountType === "Owner") {
         clearLab();
+        useClinicAuthStore.getState().logout();
         useSuperAdminAuthStore.getState().logout();
         useOwnerAuthStore.getState().setAuth(result.token, {
           id: result.userId,
@@ -87,6 +104,7 @@ export default function LoginPage() {
         });
         router.push("/owner/dashboard");
       } else {
+        useClinicAuthStore.getState().logout();
         useSuperAdminAuthStore.getState().logout();
         useOwnerAuthStore.getState().logout();
         setAuth(result.token, {

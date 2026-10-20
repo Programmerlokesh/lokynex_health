@@ -27,4 +27,10 @@ public interface ICurrentUserService
 
     /// <summary>Convenience for TokenType == "TenantAdmin".</summary>
     bool IsTenantAdmin { get; }
+
+    /// <summary>Doctor Clinic: the clinic this caller belongs to ("clinic_id" claim). Null for every other token type.</summary>
+    Guid? ClinicId { get; }
+
+    /// <summary>True for the clinic's main admin account (token_type = ClinicAdmin).</summary>
+    bool IsClinicAdmin { get; }
 }

@@ -4,6 +4,10 @@ import { OwnerLedgerView } from "@/components/owner-ledger/owner-ledger-view";
 import { CreateOwnerButton } from "@/components/owners/owner-form-dialog";
 import { OwnersTable } from "@/components/owners/owners-table";
 import { PlatformShell } from "@/components/platform/platform-shell";
+import {
+  ClinicsAdminPanel,
+  CreateClinicDialog,
+} from "@/components/super-admin/clinics-admin";
 import { CreateLabDialog } from "@/components/super-admin/create-lab-dialog";
 import { CreatePlanDialog } from "@/components/super-admin/create-plan-dialog";
 import { CreateSubscriptionDialog } from "@/components/super-admin/create-subscription-dialog";
@@ -27,6 +31,7 @@ import { useSuperAdminAuthStore } from "@/store/superadmin-auth-store";
 import BadgeOutlinedIcon from "@mui/icons-material/BadgeOutlined";
 import CreditCardOutlinedIcon from "@mui/icons-material/CreditCardOutlined";
 import InsightsOutlinedIcon from "@mui/icons-material/InsightsOutlined";
+import LocalHospitalOutlinedIcon from "@mui/icons-material/LocalHospitalOutlined";
 import NotificationsNoneOutlinedIcon from "@mui/icons-material/NotificationsNoneOutlined";
 import ScienceOutlinedIcon from "@mui/icons-material/ScienceOutlined";
 import SearchIcon from "@mui/icons-material/Search";
@@ -46,6 +51,7 @@ import { useState, type ComponentType } from "react";
 
 type TabKey =
   | "labs"
+  | "clinics"
   | "staff"
   | "plans"
   | "subscriptions"
@@ -58,6 +64,7 @@ const TABS: {
   icon: ComponentType<SvgIconProps>;
 }[] = [
   { key: "labs", label: "Labs", icon: ScienceOutlinedIcon },
+  { key: "clinics", label: "Doctor Clinics", icon: LocalHospitalOutlinedIcon },
   { key: "staff", label: "Staff", icon: BadgeOutlinedIcon },
   { key: "plans", label: "Plans", icon: WorkspacePremiumOutlinedIcon },
   {
@@ -222,6 +229,7 @@ export default function SuperAdminDashboardPage() {
               {active.label}
             </Typography>
             {tab === "labs" && <CreateLabDialog />}
+            {tab === "clinics" && <CreateClinicDialog />}
             {tab === "staff" && <CreateOwnerButton />}
             {tab === "plans" && <CreatePlanDialog />}
             {tab === "subscriptions" && <CreateSubscriptionDialog />}
@@ -236,6 +244,8 @@ export default function SuperAdminDashboardPage() {
             ) : (
               <LabsTable rows={labs?.items ?? []} />
             ))}
+
+          {tab === "clinics" && <ClinicsAdminPanel />}
 
           {tab === "staff" && (
             <>

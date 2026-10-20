@@ -206,10 +206,18 @@ builder.Services.AddAuthorization(options =>
 {
     options.DefaultPolicy = new AuthorizationPolicyBuilder()
         .RequireAuthenticatedUser()
-               // SuperAdmin AND Owner tokens can never touch a lab's own endpoints.
+        // SuperAdmin, Owner AND Doctor-Clinic tokens can never touch a lab's own endpoints.
         .RequireAssertion(ctx => !ctx.User.HasClaim("token_type", "SuperAdmin")
-                              && !ctx.User.HasClaim("token_type", "Owner"))
+                              && !ctx.User.HasClaim("token_type", "Owner")
+                              && !ctx.User.HasClaim("token_type", "ClinicAdmin")
+                              && !ctx.User.HasClaim("token_type", "ClinicUser"))
         .Build();
+
+    // Doctor Clinic area: ONLY clinic tokens pass. Lab / SuperAdmin / Owner tokens are rejected.
+    options.AddPolicy("Clinic", policy => policy
+        .RequireAuthenticatedUser()
+        .RequireAssertion(ctx => ctx.User.HasClaim("token_type", "ClinicAdmin")
+                              || ctx.User.HasClaim("token_type", "ClinicUser")));
 });
 
 // ============================================================

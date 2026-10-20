@@ -37,7 +37,9 @@ public class CreateLabCommandHandler : IRequestHandler<CreateLabCommand, Guid>
 
         var usernameExists =
             await _db.Tenants.AnyAsync(t => t.AdminUsername == request.AdminUsername, cancellationToken) ||
-            await _db.Owners.AnyAsync(o => o.Username == request.AdminUsername, cancellationToken);
+            await _db.Owners.AnyAsync(o => o.Username == request.AdminUsername, cancellationToken) ||
+            await _db.Clinics.AnyAsync(c => c.AdminUsername == request.AdminUsername, cancellationToken) ||
+            await _db.ClinicUsers.AnyAsync(u => u.Username == request.AdminUsername, cancellationToken);
         if (usernameExists)
             throw new ConflictException($"Admin username '{request.AdminUsername}' already in use.");
 

@@ -12,7 +12,7 @@ public class UnifiedLoginCommand : IRequest<UnifiedLoginResult>
 
 public class UnifiedLoginResult
 {
-    // "Lab" or "SuperAdmin" — tells the frontend which dashboard to open.
+    // "Lab" | "SuperAdmin" | "Owner" | "Clinic" — tells the frontend which dashboard to open.
     public string AccountType { get; set; } = default!;
     public string Token { get; set; } = default!;
     public Guid UserId { get; set; }
@@ -22,4 +22,9 @@ public class UnifiedLoginResult
     public string? LabName { get; set; }
     public DateTime ExpiresAt { get; set; }
     public List<string> Permissions { get; set; } = new();
+
+    // Only populated for AccountType = "Clinic".
+    public Guid? ClinicId { get; set; }
+    public string? ClinicName { get; set; }
+    public bool IsClinicAdmin { get; set; }
 }

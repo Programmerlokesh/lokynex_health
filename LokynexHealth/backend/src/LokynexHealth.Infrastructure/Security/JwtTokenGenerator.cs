@@ -151,4 +151,40 @@ public class JwtTokenGenerator : IJwtTokenGenerator
 
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
+
+    public string GenerateClinicToken(
+        Guid clinicId, Guid actorId, bool isAdmin, string name, string clinicRole, IEnumerable<string> permissions)
+    {
+        var secret = _configuration["Jwt:Secret"]!;
+        var issuer = _configuration["Jwt:Issuer"]!;
+        var audience = _configuration["Jwt:Audience"]!;
+        var expiryMinutes = int.Parse(_configuration["Jwt:ExpiryMinutes"] ?? "60");
+
+        var claims = new List<Claim>
+        {
+            new(JwtRegisteredClaimNames.Sub, actorId.ToString()),
+            new(ClaimTypes.NameIdentifier, actorId.ToString()),
+            new(ClaimTypes.Name, name),
+            // One shared role value for the whole clinic area; the real clinic role is a separate claim.
+            new(ClaimTypes.Role, "Clinic"),
+            new("token_type", isAdmin ? "ClinicAdmin" : "ClinicUser"),
+            new("clinic_id", clinicId.ToString()),
+            new("clinic_role", clinicRole),
+            new("permissions", string.Join(",", permissions)),
+            new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+        };
+
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret));
+        var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+        var token = new JwtSecurityToken(
+            issuer: issuer,
+            audience: audience,
+            claims: claims,
+            expires: DateTime.UtcNow.AddMinutes(expiryMinutes),
+            signingCredentials: credentials
+        );
+
+        return new JwtSecurityTokenHandler().WriteToken(token);
+    }
 }

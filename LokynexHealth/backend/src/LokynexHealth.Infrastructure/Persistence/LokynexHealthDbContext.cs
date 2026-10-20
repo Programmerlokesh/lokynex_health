@@ -53,6 +53,19 @@ public class LokynexHealthDbContext : DbContext, IApplicationDbContext
     public DbSet<Owner> Owners => Set<Owner>();
     public DbSet<OwnerLedgerEntry> OwnerLedgerEntries => Set<OwnerLedgerEntry>();
 
+    // ---- Doctor Clinic module (platform schema, scoped by clinic_id) ----
+    public DbSet<Clinic> Clinics => Set<Clinic>();
+    public DbSet<ClinicUser> ClinicUsers => Set<ClinicUser>();
+    public DbSet<ClinicDoctor> ClinicDoctors => Set<ClinicDoctor>();
+    public DbSet<ClinicSchedule> ClinicSchedules => Set<ClinicSchedule>();
+    public DbSet<ClinicBooking> ClinicBookings => Set<ClinicBooking>();
+    public DbSet<ClinicPatient> ClinicPatients => Set<ClinicPatient>();
+    public DbSet<ClinicMedicine> ClinicMedicines => Set<ClinicMedicine>();
+    public DbSet<ClinicPrescription> ClinicPrescriptions => Set<ClinicPrescription>();
+    public DbSet<ClinicPrescriptionItem> ClinicPrescriptionItems => Set<ClinicPrescriptionItem>();
+    public DbSet<ClinicPrescriptionTest> ClinicPrescriptionTests => Set<ClinicPrescriptionTest>();
+    public DbSet<ClinicLedgerEntry> ClinicLedgerEntries => Set<ClinicLedgerEntry>();
+
     // ---- structured blood reports ----
     public DbSet<TestParameter> TestParameters => Set<TestParameter>();
     public DbSet<TestReferenceRange> TestReferenceRanges => Set<TestReferenceRange>();

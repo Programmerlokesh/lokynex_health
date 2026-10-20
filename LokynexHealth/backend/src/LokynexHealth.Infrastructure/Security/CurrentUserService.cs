@@ -41,6 +41,17 @@ public class CurrentUserService : ICurrentUserService
 
     public bool IsTenantAdmin => TokenType == "TenantAdmin";
 
+    public Guid? ClinicId
+    {
+        get
+        {
+            var claim = _httpContextAccessor.HttpContext?.User?.FindFirstValue("clinic_id");
+            return Guid.TryParse(claim, out var id) ? id : null;
+        }
+    }
+
+    public bool IsClinicAdmin => TokenType == "ClinicAdmin";
+
     public List<string> Permissions
     {
         get

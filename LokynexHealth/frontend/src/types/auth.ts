@@ -18,7 +18,7 @@ export interface LoginResponse {
 // The SERVER decides which kind of account signed in, so the browser never
 // has to "try lab first, then SuperAdmin".
 export interface UnifiedLoginResponse {
-  accountType: "Lab" | "SuperAdmin" | "Owner";
+  accountType: "Lab" | "SuperAdmin" | "Owner" | "Clinic";
   token: string;
   userId: string;
   name: string;
@@ -28,4 +28,8 @@ export interface UnifiedLoginResponse {
   expiresAt: string;
   // "ModuleName:View" style strings — empty for LabAdmin/SuperAdmin.
   permissions: string[];
+  // Only when accountType is "Clinic".
+  clinicId?: string | null;
+  clinicName?: string | null;
+  isClinicAdmin?: boolean;
 }
