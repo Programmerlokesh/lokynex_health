@@ -5,18 +5,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="Persistence\Scripts\TenantSchemaTemplate.sql" />
-    <EmbeddedResource Include="Persistence\Scripts\BloodReportFormats.sql" />
-    <EmbeddedResource Include="Persistence\Scripts\BloodReportMachineChemical.sql" />
-    <EmbeddedResource Include="Persistence\Scripts\BloodReportOptions.sql" />
-    <EmbeddedResource Include="Persistence\Scripts\DirectoryOverrides.sql" />
-    <EmbeddedResource Include="Persistence\Scripts\SeedTests01_BloodTests.sql" />
-    <EmbeddedResource Include="Persistence\Scripts\SeedTests02_BloodFormats.sql" />
-    <EmbeddedResource Include="Persistence\Scripts\SeedTests03_SopPack.sql" />
-    <EmbeddedResource Include="Persistence\Scripts\SeedTests04_PanelFormats.sql" />
-    <EmbeddedResource Include="Persistence\Scripts\SeedTests05_OtherTests.sql" />
-    <EmbeddedResource Include="Persistence\Scripts\SeedTests06_MoreTests.sql" />
-        <EmbeddedResource Include="Persistence\Scripts\SeedTests07_ImagingAndOtherDepartments.sql" />
+    <EmbeddedResource Include="Persistence\Scripts\TenantSchema.sql" />
+    <EmbeddedResource Include="Persistence\Scripts\DepartmentsAndTests.sql" />
   </ItemGroup>
 
   <ItemGroup>
