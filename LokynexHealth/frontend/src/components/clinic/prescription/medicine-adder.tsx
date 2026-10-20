@@ -55,7 +55,7 @@ function ByName({ onAdd }: { onAdd: (i: RxItem) => void }) {
       renderOption={(props, m) => (
         <li {...props} key={m.id}>
           <Box sx={{ minWidth: 0 }}>
-            <Typography fontWeight={700} noWrap>
+            <Typography sx={{ fontWeight: 700 }} noWrap>
               {m.brandName}
               {m.form ? ` · ${m.form}` : ""}
             </Typography>
@@ -153,7 +153,7 @@ function ByCompany({ onAdd }: { onAdd: (i: RxItem) => void }) {
         renderOption={(props, m) => (
           <li {...props} key={m.id}>
             <Box sx={{ minWidth: 0 }}>
-              <Typography fontWeight={700} noWrap>
+              <Typography sx={{ fontWeight: 700 }} noWrap>
                 {m.brandName}
               </Typography>
               <Typography

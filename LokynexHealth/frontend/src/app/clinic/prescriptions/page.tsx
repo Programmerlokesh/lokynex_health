@@ -254,7 +254,7 @@ export default function PrescriptionsPage() {
                   }}
                 >
                   <Box sx={{ minWidth: 0 }}>
-                    <Typography fontWeight={800} noWrap>
+                    <Typography sx={{ fontWeight: 800 }} noWrap>
                       {p.patientName}
                       {p.patientAge != null ? ` (${p.patientAge})` : ""}
                     </Typography>

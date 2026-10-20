@@ -178,7 +178,7 @@ export default function ClinicSettingsPage() {
             <Typography
               variant="caption"
               color="text.secondary"
-              fontWeight={700}
+              sx={{ fontWeight: 700 }}
             >
               PRESCRIPTION COLOUR
             </Typography>
@@ -251,7 +251,7 @@ export default function ClinicSettingsPage() {
             gap: 1.5,
           }}
         >
-          <Typography fontWeight={800}>Change my password</Typography>
+          <Typography sx={{ fontWeight: 800 }}>Change my password</Typography>
           <Box
             sx={{
               display: "grid",

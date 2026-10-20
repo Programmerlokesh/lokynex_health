@@ -45,7 +45,7 @@ function History({ id, onClose }: { id: string; onClose: () => void }) {
                 .filter(Boolean)
                 .join(" · ")}
             </Typography>
-            <Typography variant="subtitle2" fontWeight={800}>
+            <Typography variant="subtitle2" sx={{ fontWeight: 800 }}>
               Visits ({data.prescriptions.length})
             </Typography>
             <List dense>
@@ -124,7 +124,7 @@ export default function PatientsPage() {
                 "&:hover": { borderColor: "primary.main" },
               }}
             >
-              <Typography fontWeight={800} noWrap>
+              <Typography sx={{ fontWeight: 800 }} noWrap>
                 {p.name}
                 {p.age != null ? ` (${p.age})` : ""}
               </Typography>

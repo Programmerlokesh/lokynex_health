@@ -112,7 +112,7 @@ export default function ClinicDashboardPage() {
       </Box>
       {canDo(perms, admin, "prescriptions") && (
         <Paper variant="outlined" sx={{ borderRadius: 4, p: 1 }}>
-          <Typography fontWeight={800} sx={{ px: 1.5, pt: 1 }}>
+          <Typography sx={{ fontWeight: 800, px: 1.5, pt: 1 }}>
             Recent prescriptions
           </Typography>
           <List dense>

@@ -141,7 +141,7 @@ export function CreateClinicDialog() {
         <DialogTitle sx={{ fontWeight: 800 }}>Create doctor clinic</DialogTitle>
         <DialogContent sx={{ display: "grid", gap: 2, pt: "8px !important" }}>
           {error && <Alert severity="error">{error}</Alert>}
-          <Typography variant="subtitle2" fontWeight={800}>
+          <Typography variant="subtitle2" sx={{ fontWeight: 800 }}>
             Clinic
           </Typography>
           {txt("clinicName", "Clinic name *")}
@@ -161,7 +161,7 @@ export function CreateClinicDialog() {
             {txt("pincode", "Pincode *")}
             {txt("registrationNo", "Clinic reg. no.")}
           </Box>
-          <Typography variant="subtitle2" fontWeight={800}>
+          <Typography variant="subtitle2" sx={{ fontWeight: 800 }}>
             Doctor / clinic admin (first login)
           </Typography>
           <Box sx={two}>
@@ -183,7 +183,7 @@ export function CreateClinicDialog() {
             {txt("doctorSpecialization", "Specialization")}
             {txt("doctorRegistrationNo", "Medical reg. no.")}
           </Box>
-          <Typography variant="subtitle2" fontWeight={800}>
+          <Typography variant="subtitle2" sx={{ fontWeight: 800 }}>
             Login
           </Typography>
           <Box
@@ -352,7 +352,7 @@ function EditClinicDialog({
                 ))}
               </TextField>
             </Box>
-            <Typography variant="subtitle2" fontWeight={800} sx={{ mt: 1 }}>
+            <Typography variant="subtitle2" sx={{ fontWeight: 800, mt: 1 }}>
               Reset admin password (username: {data?.adminUsername})
             </Typography>
             <Box sx={{ display: "flex", gap: 1 }}>
@@ -453,7 +453,7 @@ export function ClinicsAdminPanel() {
               }}
             >
               <Box sx={{ minWidth: 0 }}>
-                <Typography fontWeight={800} noWrap>
+                <Typography sx={{ fontWeight: 800 }} noWrap>
                   {c.name}
                 </Typography>
                 <Typography variant="body2" color="text.secondary" noWrap>

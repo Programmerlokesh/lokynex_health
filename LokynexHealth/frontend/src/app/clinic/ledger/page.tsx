@@ -390,7 +390,7 @@ export default function ClinicLedgerPage() {
                       }}
                     >
                       <Box sx={{ minWidth: 0 }}>
-                        <Typography fontWeight={800} noWrap>
+                        <Typography sx={{ fontWeight: 800 }} noWrap>
                           {e.category || e.entryType}
                         </Typography>
                         <Typography

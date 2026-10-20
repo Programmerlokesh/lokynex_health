@@ -107,7 +107,7 @@ function PermissionMatrix({
               borderColor: "divider",
             }}
           >
-            <Typography variant="body2" fontWeight={700}>
+            <Typography variant="body2" sx={{ fontWeight: 700 }}>
               {meta.moduleLabels[m] ?? m}
             </Typography>
             {meta.actions.map((a) => (
@@ -413,7 +413,7 @@ export default function UsersPage() {
                 }}
               >
                 <Box sx={{ minWidth: 0 }}>
-                  <Typography fontWeight={800} noWrap>
+                  <Typography sx={{ fontWeight: 800 }} noWrap>
                     {u.name}
                   </Typography>
                   <Typography variant="body2" color="text.secondary" noWrap>

@@ -546,7 +546,7 @@ export function BookingsPanel() {
                   }}
                 >
                   <Box sx={{ minWidth: 0 }}>
-                    <Typography fontWeight={800} noWrap>
+                    <Typography sx={{ fontWeight: 800 }} noWrap>
                       #{b.serialNo} · {b.patientName}
                       {b.patientAge != null ? ` (${b.patientAge})` : ""}
                     </Typography>
@@ -777,7 +777,7 @@ export function SchedulesPanel() {
               }}
             >
               <Box sx={{ minWidth: 0 }}>
-                <Typography fontWeight={800} noWrap>
+                <Typography sx={{ fontWeight: 800 }} noWrap>
                   {DAYS[s.dayOfWeek]} · {fmtTime(s.timeFrom)} –{" "}
                   {fmtTime(s.timeTo)}
                 </Typography>

@@ -490,7 +490,7 @@ export default function MedicinesPage() {
                   }}
                 >
                   <Box sx={{ minWidth: 0 }}>
-                    <Typography fontWeight={800} noWrap>
+                    <Typography sx={{ fontWeight: 800 }} noWrap>
                       {m.brandName}
                     </Typography>
                     <Typography

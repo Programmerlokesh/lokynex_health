@@ -203,7 +203,7 @@ export default function DoctorsPage() {
               }}
             >
               <Box sx={{ minWidth: 0 }}>
-                <Typography fontWeight={800}>{d.fullName}</Typography>
+                <Typography sx={{ fontWeight: 800 }}>{d.fullName}</Typography>
                 <Typography variant="body2" color="text.secondary">
                   {[d.qualification, d.specialization]
                     .filter(Boolean)
