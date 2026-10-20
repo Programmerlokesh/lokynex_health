@@ -68,7 +68,16 @@ public class ExceptionHandlingMiddleware
                     HttpStatusCode.InternalServerError,
                     "Database is out of date",
                     new[] { "The database is missing a table or column this feature needs. Run the pending SQL migrations from the database/ folder, then try again." }),
-                    _ => (HttpStatusCode.InternalServerError, "An unexpected error occurred", GenericError)
+                    PostgresErrorCodes.CheckViolation => (
+                    HttpStatusCode.BadRequest,
+                    "Validation failed",
+                    new[] { $"A value is not allowed by the database rule '{pg.ConstraintName}'." }),
+                    PostgresErrorCodes.ForeignKeyViolation => (
+                    HttpStatusCode.BadRequest,
+                    "Validation failed",
+                    new[] { $"A related record is missing ({pg.ConstraintName})." }),
+                    _ => (HttpStatusCode.InternalServerError, "An unexpected error occurred",
+                          new[] { $"Database error {pg.SqlState}: {pg.MessageText}" })
             };
 
         private static async Task HandleExceptionAsync(HttpContext context, Exception exception)
