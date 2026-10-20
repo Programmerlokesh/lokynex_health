@@ -18,7 +18,7 @@ import { canDo } from "@/lib/clinic/permissions";
 import { fmtRxDate } from "@/lib/clinic/prescription-html";
 import type { PrescriptionListItem } from "@/types/clinic";
 import AddIcon from "@mui/icons-material/Add";
-import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
+import DeleteOutlinedIcon from "@mui/icons-material/DeleteOutlined";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
 import {
@@ -110,7 +110,7 @@ export default function PrescriptionsPage() {
       {canDelete && (
         <Tooltip title="Delete">
           <IconButton size="small" color="error" onClick={() => setDel(p)}>
-            <DeleteOutlineIcon fontSize="small" />
+            <DeleteOutlinedIcon fontSize="small" />
           </IconButton>
         </Tooltip>
       )}

@@ -24,7 +24,7 @@ import type {
 } from "@/types/clinic";
 import AddIcon from "@mui/icons-material/Add";
 import BookmarkAddOutlinedIcon from "@mui/icons-material/BookmarkAddOutlined";
-import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
+import DeleteOutlinedIcon from "@mui/icons-material/DeleteOutlined";
 import ScienceOutlinedIcon from "@mui/icons-material/ScienceOutlined";
 import {
   Autocomplete,
@@ -286,7 +286,7 @@ const MedRow = memo(function MedRow(props: {
             onClick={() => onRemove(k)}
             aria-label="Remove medicine"
           >
-            <DeleteOutlineIcon fontSize="small" />
+            <DeleteOutlinedIcon fontSize="small" />
           </IconButton>
         </Tooltip>
       </Box>
@@ -793,7 +793,7 @@ export function PrescriptionEditor({
                 }
                 aria-label="Remove test"
               >
-                <DeleteOutlineIcon fontSize="small" />
+                <DeleteOutlinedIcon fontSize="small" />
               </IconButton>
             </Box>
           ))}

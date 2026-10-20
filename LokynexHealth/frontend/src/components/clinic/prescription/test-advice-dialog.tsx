@@ -7,7 +7,7 @@ import {
 } from "@/hooks/use-clinic";
 import { useDebounce } from "@/hooks/use-debounce";
 import type { ClinicTest, RxTest } from "@/types/clinic";
-import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
+import AddCircleOutlinedIcon from "@mui/icons-material/AddCircleOutlined";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import SearchIcon from "@mui/icons-material/Search";
 import {
@@ -166,7 +166,7 @@ export function TestAdviceDialog(props: {
         >
           {text.trim() && !exact && (
             <ListItemButton onClick={addCustom} sx={{ color: "primary.main" }}>
-              <AddCircleOutlineIcon fontSize="small" sx={{ mr: 1 }} />
+              <AddCircleOutlinedIcon fontSize="small" sx={{ mr: 1 }} />
               <ListItemText primary={`Add “${text.trim()}” as a custom test`} />
             </ListItemButton>
           )}

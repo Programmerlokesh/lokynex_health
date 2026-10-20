@@ -25,7 +25,7 @@ import {
   printRx,
   rxToPdf,
 } from "@/lib/clinic/prescription-html";
-import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
+import DeleteOutlinedIcon from "@mui/icons-material/DeleteOutlined";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import PictureAsPdfOutlinedIcon from "@mui/icons-material/PictureAsPdfOutlined";
 import PrintOutlinedIcon from "@mui/icons-material/PrintOutlined";
@@ -167,7 +167,7 @@ export default function PrescriptionViewPage() {
             {canDelete && (
               <Button
                 color="error"
-                startIcon={<DeleteOutlineIcon />}
+                startIcon={<DeleteOutlinedIcon />}
                 onClick={() => setConfirmDelete(true)}
               >
                 Delete

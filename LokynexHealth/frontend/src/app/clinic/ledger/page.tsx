@@ -37,7 +37,7 @@ import {
 import type { ClinicLedgerEntry } from "@/types/clinic";
 import type { GranularityChoice } from "@/types/ledger";
 import AddIcon from "@mui/icons-material/Add";
-import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
+import DeleteOutlinedIcon from "@mui/icons-material/DeleteOutlined";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import {
   Box,
@@ -125,7 +125,7 @@ export default function ClinicLedgerPage() {
         {canDelete && (
           <Tooltip title="Delete">
             <IconButton size="small" color="error" onClick={() => setDel(e)}>
-              <DeleteOutlineIcon fontSize="small" />
+              <DeleteOutlinedIcon fontSize="small" />
             </IconButton>
           </Tooltip>
         )}

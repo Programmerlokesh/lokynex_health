@@ -19,7 +19,7 @@ import { mapMedicineCsv, parseCsv } from "@/lib/clinic/csv";
 import { canDo } from "@/lib/clinic/permissions";
 import type { ClinicMedicine, ImportMedicineRow } from "@/types/clinic";
 import AddIcon from "@mui/icons-material/Add";
-import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
+import DeleteOutlinedIcon from "@mui/icons-material/DeleteOutlined";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
 import {
@@ -345,7 +345,7 @@ export default function MedicinesPage() {
       {canDelete && (
         <Tooltip title="Delete">
           <IconButton size="small" color="error" onClick={() => setDel(m)}>
-            <DeleteOutlineIcon fontSize="small" />
+            <DeleteOutlinedIcon fontSize="small" />
           </IconButton>
         </Tooltip>
       )}

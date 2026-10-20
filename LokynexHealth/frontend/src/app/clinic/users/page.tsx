@@ -19,7 +19,7 @@ import { getApiErrorMessage } from "@/lib/api-error";
 import { canDo } from "@/lib/clinic/permissions";
 import type { ClinicRolesMeta, ClinicUser } from "@/types/clinic";
 import AddIcon from "@mui/icons-material/Add";
-import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
+import DeleteOutlinedIcon from "@mui/icons-material/DeleteOutlined";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import LockResetIcon from "@mui/icons-material/LockReset";
 import {
@@ -483,7 +483,7 @@ export default function UsersPage() {
                       color="error"
                       onClick={() => setDel(u)}
                     >
-                      <DeleteOutlineIcon fontSize="small" />
+                      <DeleteOutlinedIcon fontSize="small" />
                     </IconButton>
                   </Tooltip>
                 )}
