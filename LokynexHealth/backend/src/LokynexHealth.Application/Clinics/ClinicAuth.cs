@@ -196,6 +196,13 @@ public class UpdateClinicProfileCommand : IRequest
     public string AccentColor { get; set; } = "#0E7C86";
 }
 
+public static class RxLayoutRules
+{
+    public const int MaxChars = 2_500_000; // two compressed banner images + settings
+}
+
+public class UpdateClinicProfileCommandValidator : AbstractValidator<UpdateClinicProfileCommand>
+{
     private static bool IsValidLayoutJson(string? json)
     {
         if (string.IsNullOrWhiteSpace(json)) return true;
@@ -204,12 +211,6 @@ public class UpdateClinicProfileCommand : IRequest
         catch (System.Text.Json.JsonException) { return false; }
     }
 
-    public UpdateClinicProfileCommandValidator()
-    {
-
-
-public class UpdateClinicProfileCommandValidator : AbstractValidator<UpdateClinicProfileCommand>
-{
     public UpdateClinicProfileCommandValidator()
     {
         RuleFor(x => x.Tagline).MaximumLength(200);
@@ -224,7 +225,6 @@ public class UpdateClinicProfileCommandValidator : AbstractValidator<UpdateClini
             .WithMessage("Prescription layout is invalid or too large (header/footer images must be small).");
     }
 }
-
 
 public class UpdateClinicProfileCommandHandler : IRequestHandler<UpdateClinicProfileCommand>
 {
@@ -244,6 +244,7 @@ public class UpdateClinicProfileCommandHandler : IRequestHandler<UpdateClinicPro
         c.RegistrationNo = ClinicScope.Clean(r.RegistrationNo);
         c.LogoUrl = string.IsNullOrEmpty(r.LogoUrl) ? null : r.LogoUrl;
         c.FooterNote = ClinicScope.Clean(r.FooterNote);
+        c.RxLayout = string.IsNullOrWhiteSpace(r.RxLayout) ? null : r.RxLayout;
         c.AccentColor = r.AccentColor;
         c.UpdatedAt = DateTimeOffset.UtcNow;
         await _db.SaveChangesAsync(ct);
