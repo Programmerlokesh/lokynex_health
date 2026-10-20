@@ -142,6 +142,8 @@ CREATE TABLE IF NOT EXISTS technicians (
     created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at      TIMESTAMPTZ
 );
+-- labs created before WhatsApp numbers existed: add the column (no-op when present)
+ALTER TABLE technicians ADD COLUMN IF NOT EXISTS whatsapp_number VARCHAR(20);
 CREATE INDEX IF NOT EXISTS idx_technicians_branch    ON technicians (branch_id);
 CREATE INDEX IF NOT EXISTS idx_technicians_name_trgm ON technicians USING gin (full_name gin_trgm_ops);
 CREATE INDEX IF NOT EXISTS idx_technicians_phone     ON technicians (phone);
