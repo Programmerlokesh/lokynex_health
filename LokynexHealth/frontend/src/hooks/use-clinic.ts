@@ -218,6 +218,26 @@ export const useClinicPatientHistory = (id: string | null) =>
     enabled: !!id,
   });
 
+export function useClinicPatientMutations() {
+  const qc = useQueryClient();
+  const refresh = () => {
+    qc.invalidateQueries({ queryKey: ["clinic-patients"] });
+    qc.invalidateQueries({ queryKey: ["clinic-patient-history"] });
+  };
+  return {
+    update: useMutation({
+      mutationFn: ({
+        id,
+        data,
+      }: {
+        id: string;
+        data: Parameters<typeof A.updateClinicPatientApi>[1];
+      }) => A.updateClinicPatientApi(id, data),
+      onSuccess: refresh,
+    }),
+  };
+}
+
 // medicines
 export const useMedicineSearch = (
   p: { q?: string; company?: string },

@@ -3,10 +3,11 @@
 import { PageTitle } from "@/components/clinic/clinic-shell";
 import {
   EmptyState,
-  StatusChip,
   useDialogFullScreen,
   useToast,
 } from "@/components/clinic/clinic-ui";
+import { SpecialtyIcon3D } from "@/components/clinic/specialty-icon-3d";
+import { SearchBar, StatusPill, kitCardSx } from "@/components/common/page-kit";
 import {
   useClinicDoctors,
   useClinicMe,
@@ -14,10 +15,12 @@ import {
 } from "@/hooks/use-clinic";
 import { getApiErrorMessage } from "@/lib/api-error";
 import { canDo } from "@/lib/clinic/permissions";
+import { ALL_SPECIALIZATIONS } from "@/lib/clinic/specializations";
 import type { ClinicDoctor } from "@/types/clinic";
 import AddIcon from "@mui/icons-material/Add";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import {
+  Autocomplete,
   Box,
   Button,
   Dialog,
@@ -26,7 +29,6 @@ import {
   DialogTitle,
   IconButton,
   MenuItem,
-  Paper,
   TextField,
   Typography,
 } from "@mui/material";
@@ -53,6 +55,7 @@ function DoctorDialog({
     email: doctor?.email ?? "",
     status: doctor?.status ?? "Active",
   });
+  const [done, setDone] = useState<{ name: string; spec: string } | null>(null);
   const set = (k: keyof typeof f, v: string) => setF((p) => ({ ...p, [k]: v }));
   const submit = () => {
     if (!f.fullName.trim()) {
@@ -65,11 +68,46 @@ function DoctorDialog({
         data: { ...f, status: f.status as "Active" | "Inactive" },
       },
       {
-        onSuccess: onClose,
+        onSuccess: () => {
+          if (doctor) onClose();
+          else
+            setDone({ name: f.fullName.trim(), spec: f.specialization.trim() });
+        },
         onError: (e) => toast(getApiErrorMessage(e), "error"),
       },
     );
   };
+
+  if (done) {
+    return (
+      <Dialog open onClose={onClose} fullWidth maxWidth="xs">
+        <DialogContent
+          sx={{
+            textAlign: "center",
+            py: 4,
+            display: "grid",
+            justifyItems: "center",
+            gap: 1.5,
+          }}
+        >
+          <SpecialtyIcon3D specialization={done.spec} size={96} />
+          <Typography variant="h6" sx={{ fontWeight: 800 }}>
+            {done.name} added
+          </Typography>
+          <Typography color="text.secondary">
+            {done.spec || "No specialization set"}
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ justifyContent: "center", pb: 3 }}>
+          <Button variant="contained" onClick={onClose}>
+            Done
+          </Button>
+        </DialogActions>
+        {toastNode}
+      </Dialog>
+    );
+  }
+
   return (
     <Dialog
       open={open}
@@ -82,12 +120,16 @@ function DoctorDialog({
         {doctor ? "Edit doctor" : "Add doctor"}
       </DialogTitle>
       <DialogContent sx={{ display: "grid", gap: 1.5, pt: "8px !important" }}>
-        <TextField
-          size="small"
-          label="Full name *"
-          value={f.fullName}
-          onChange={(e) => set("fullName", e.target.value)}
-        />
+        <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+          <SpecialtyIcon3D specialization={f.specialization} size={64} />
+          <TextField
+            fullWidth
+            size="small"
+            label="Full name *"
+            value={f.fullName}
+            onChange={(e) => set("fullName", e.target.value)}
+          />
+        </Box>
         <TextField
           size="small"
           label="Qualification (printed on prescription)"
@@ -102,11 +144,21 @@ function DoctorDialog({
             gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
           }}
         >
-          <TextField
+          <Autocomplete
+            freeSolo
             size="small"
-            label="Specialization"
-            value={f.specialization}
-            onChange={(e) => set("specialization", e.target.value)}
+            options={ALL_SPECIALIZATIONS}
+            groupBy={(o) => (typeof o === "string" ? "" : o.group)}
+            getOptionLabel={(o) => (typeof o === "string" ? o : o.name)}
+            inputValue={f.specialization}
+            onInputChange={(_, v) => set("specialization", v)}
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                label="Specialization"
+                helperText="Pick from the list or type your own"
+              />
+            )}
           />
           <TextField
             size="small"
@@ -156,6 +208,7 @@ export default function DoctorsPage() {
   const { data: doctors } = useClinicDoctors();
   const [editing, setEditing] = useState<ClinicDoctor | null>(null);
   const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
   const canCreate = canDo(me?.permissions, me?.isAdmin, "doctors", "create");
   const canEdit = canDo(me?.permissions, me?.isAdmin, "doctors", "edit");
   const openDialog = (d: ClinicDoctor | null) => {
@@ -163,11 +216,19 @@ export default function DoctorsPage() {
     setOpen(true);
   };
 
+  const q = search.trim().toLowerCase();
+  const shown = (doctors ?? []).filter(
+    (d) =>
+      !q ||
+      d.fullName.toLowerCase().includes(q) ||
+      (d.specialization ?? "").toLowerCase().includes(q),
+  );
+
   return (
     <>
       <PageTitle
         title="Doctors"
-        subtitle="Doctors of this clinic — their details are printed on prescriptions"
+        subtitle="Doctors of this clinic. Their details are printed on prescriptions."
         actions={
           canCreate && (
             <Button
@@ -180,42 +241,74 @@ export default function DoctorsPage() {
           )
         }
       />
-      {!doctors?.length ? (
-        <EmptyState text="No doctors yet." />
+      <Box sx={{ mb: 2 }}>
+        <SearchBar
+          value={search}
+          onChange={setSearch}
+          placeholder="Search by name or specialization"
+        />
+      </Box>
+      {!shown.length ? (
+        <EmptyState
+          text={
+            doctors?.length
+              ? "No doctor matches your search."
+              : "No doctors yet."
+          }
+        />
       ) : (
         <Box
           sx={{
             display: "grid",
-            gap: 1.25,
-            gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" },
+            gap: 1.5,
+            gridTemplateColumns: {
+              xs: "1fr",
+              md: "1fr 1fr",
+              xl: "repeat(3, 1fr)",
+            },
           }}
         >
-          {doctors.map((d) => (
-            <Paper
+          {shown.map((d) => (
+            <Box
               key={d.id}
-              variant="outlined"
               sx={{
+                ...kitCardSx,
                 p: 2,
-                borderRadius: 4,
                 display: "flex",
-                justifyContent: "space-between",
-                gap: 1,
+                gap: 2,
+                alignItems: "center",
+                opacity: d.status === "Active" ? 1 : 0.7,
               }}
             >
-              <Box sx={{ minWidth: 0 }}>
-                <Typography sx={{ fontWeight: 800 }}>{d.fullName}</Typography>
-                <Typography variant="body2" color="text.secondary">
-                  {[d.qualification, d.specialization]
+              <SpecialtyIcon3D specialization={d.specialization} size={60} />
+              <Box sx={{ minWidth: 0, flex: 1 }}>
+                <Typography sx={{ fontWeight: 800 }} noWrap>
+                  {d.fullName}
+                </Typography>
+                <Typography
+                  variant="body2"
+                  color="primary"
+                  sx={{ fontWeight: 600 }}
+                  noWrap
+                >
+                  {d.specialization || "No specialization"}
+                </Typography>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ display: "block" }}
+                  noWrap
+                >
+                  {[
+                    d.qualification,
+                    d.registrationNo && `Reg. ${d.registrationNo}`,
+                    d.phone,
+                  ]
                     .filter(Boolean)
                     .join(" · ") || "—"}
                 </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  {[d.registrationNo && `Reg. ${d.registrationNo}`, d.phone]
-                    .filter(Boolean)
-                    .join(" · ")}
-                </Typography>
                 <Box sx={{ mt: 0.75 }}>
-                  <StatusChip status={d.status} />
+                  <StatusPill active={d.status === "Active"} label={d.status} />
                 </Box>
               </Box>
               {canEdit && (
@@ -226,7 +319,7 @@ export default function DoctorsPage() {
                   <EditOutlinedIcon />
                 </IconButton>
               )}
-            </Paper>
+            </Box>
           ))}
         </Box>
       )}

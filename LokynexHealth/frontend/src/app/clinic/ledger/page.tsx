@@ -7,6 +7,7 @@ import {
   useToast,
 } from "@/components/clinic/clinic-ui";
 import { ClinicLedgerEntryDialog } from "@/components/clinic/ledger/clinic-ledger-entry-dialog";
+import { ClinicPnl } from "@/components/clinic/ledger/clinic-pnl";
 import {
   OutflowDonut,
   PnlWaterfall,
@@ -16,7 +17,6 @@ import {
   LedgerKpiCards,
 } from "@/components/ledger/ledger-kpi-cards";
 import { LedgerTrendChart } from "@/components/ledger/ledger-trend-chart";
-import { PnlStatement } from "@/components/ledger/pnl-statement";
 import {
   useClinicLedgerAnalytics,
   useClinicLedgerEntries,
@@ -160,7 +160,15 @@ export default function ClinicLedgerPage() {
         }
       />
 
-      <Paper variant="outlined" sx={{ p: 1.25, borderRadius: 4, mb: 2 }}>
+      <Paper
+        variant="outlined"
+        sx={{
+          p: 1.5,
+          borderRadius: "20px",
+          mb: 2,
+          boxShadow: "0 6px 20px rgba(23,43,77,0.05)",
+        }}
+      >
         <Box
           sx={{
             display: "flex",
@@ -269,7 +277,7 @@ export default function ClinicLedgerPage() {
           </Box>
         )
       ) : tab === "pnl" ? (
-        <PnlStatement
+        <ClinicPnl
           current={data.current}
           previous={data.previous}
           periodLabel={label}

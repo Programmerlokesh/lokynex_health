@@ -7,6 +7,7 @@ import {
   useDialogFullScreen,
   useToast,
 } from "@/components/clinic/clinic-ui";
+import { OnlineMedicineSearch } from "@/components/clinic/online-medicine-search";
 import {
   useClinicMe,
   useClinicMedicineMutations,
@@ -98,6 +99,23 @@ function MedicineDialog({
         {med ? "Edit medicine" : "Add medicine"}
       </DialogTitle>
       <DialogContent sx={{ display: "grid", gap: 1.5, pt: "8px !important" }}>
+        <OnlineMedicineSearch
+          onPick={(m) =>
+            setF((p) => ({
+              ...p,
+              brandName: m.brandName,
+              company: m.company || p.company,
+              composition: m.composition || m.genericName || p.composition,
+              form:
+                m.form ||
+                (m.route
+                  ? m.route.charAt(0).toUpperCase() + m.route.slice(1)
+                  : p.form),
+              defaultDosage: m.dosage || p.defaultDosage,
+              defaultInstructions: m.frequency || p.defaultInstructions,
+            }))
+          }
+        />
         <Box
           sx={{
             display: "grid",

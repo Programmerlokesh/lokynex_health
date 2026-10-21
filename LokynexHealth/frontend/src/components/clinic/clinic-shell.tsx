@@ -1,20 +1,25 @@
 "use client";
 
-import { PlatformShell } from "@/components/platform/platform-shell";
-import { useClinicAuthGuard } from "@/hooks/use-clinic-auth-guard";
+import { ClinicTopbar } from "@/components/clinic/clinic-topbar";
 import { useClinicMe } from "@/hooks/use-clinic";
-import { glassPanelSx, iconTileSx, railItemSx } from "@/lib/home-theme";
+import { useClinicAuthGuard } from "@/hooks/use-clinic-auth-guard";
 import { CLINIC_NAV, canDo } from "@/lib/clinic/permissions";
+import {
+  glassPanelSx,
+  homeGradient,
+  iconTileSx,
+  railItemSx,
+} from "@/lib/home-theme";
 import { useClinicAuthStore } from "@/store/clinic-auth-store";
 import AccountBalanceWalletOutlinedIcon from "@mui/icons-material/AccountBalanceWalletOutlined";
 import DashboardOutlinedIcon from "@mui/icons-material/DashboardOutlined";
+import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
 import EventAvailableOutlinedIcon from "@mui/icons-material/EventAvailableOutlined";
 import GroupsOutlinedIcon from "@mui/icons-material/GroupsOutlined";
 import LocalHospitalOutlinedIcon from "@mui/icons-material/LocalHospitalOutlined";
 import MedicationOutlinedIcon from "@mui/icons-material/MedicationOutlined";
 import PeopleAltOutlinedIcon from "@mui/icons-material/PeopleAltOutlined";
 import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
-import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
 import { Box, CircularProgress } from "@mui/material";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -52,14 +57,25 @@ export function ClinicShell({ children }: { children: ReactNode }) {
 
   const perms = me?.permissions ?? session?.permissions ?? [];
   const isAdmin = me?.isAdmin ?? session?.isAdmin ?? false;
-  const items = CLINIC_NAV.filter((n) => n.module === null || canDo(perms, isAdmin, n.module));
+  const items = CLINIC_NAV.filter(
+    (n) => n.module === null || canDo(perms, isAdmin, n.module),
+  );
 
   return (
-    <PlatformShell
-      subtitle={`${me?.clinicName ?? session?.clinicName ?? "Doctor Clinic"} · ${me?.actorRole === "ClinicAdmin" || isAdmin ? "Admin" : (session?.role ?? "")}`}
-      userName={session?.name ?? null}
-      onLogout={() => { logout(); router.push("/login"); }}
-    >
+    <Box sx={{ minHeight: "100dvh", background: homeGradient }}>
+      <ClinicTopbar
+        userName={me?.actorName ?? session?.name ?? null}
+        roleLabel={
+          me?.actorRole === "ClinicAdmin" || isAdmin
+            ? "Admin"
+            : (session?.role ?? "")
+        }
+        clinicName={me?.clinicName ?? session?.clinicName ?? "Doctor Clinic"}
+        onLogout={() => {
+          logout();
+          router.push("/login");
+        }}
+      />
       <Box
         sx={{
           display: "flex",
@@ -92,7 +108,8 @@ export function ClinicShell({ children }: { children: ReactNode }) {
           }}
         >
           {items.map((n) => {
-            const active = pathname === n.href || pathname.startsWith(`${n.href}/`);
+            const active =
+              pathname === n.href || pathname.startsWith(`${n.href}/`);
             return (
               <Box
                 key={n.key}
@@ -102,7 +119,9 @@ export function ClinicShell({ children }: { children: ReactNode }) {
                 sx={{ ...railItemSx(active), textDecoration: "none" }}
               >
                 <Box sx={iconTileSx(active)}>{ICONS[n.key]}</Box>
-                <Box component="span" sx={{ whiteSpace: "nowrap" }}>{n.label}</Box>
+                <Box component="span" sx={{ whiteSpace: "nowrap" }}>
+                  {n.label}
+                </Box>
               </Box>
             );
           })}
@@ -110,18 +129,47 @@ export function ClinicShell({ children }: { children: ReactNode }) {
 
         <Box sx={{ flex: 1, minWidth: 0, width: "100%" }}>{children}</Box>
       </Box>
-    </PlatformShell>
+    </Box>
   );
 }
 
-export function PageTitle({ title, subtitle, actions }: { title: string; subtitle?: string; actions?: ReactNode }) {
+export function PageTitle({
+  title,
+  subtitle,
+  actions,
+}: {
+  title: string;
+  subtitle?: string;
+  actions?: ReactNode;
+}) {
   return (
-    <Box sx={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 1.5, mb: 2 }} className="no-print">
+    <Box
+      sx={{
+        display: "flex",
+        flexWrap: "wrap",
+        alignItems: "center",
+        justifyContent: "space-between",
+        gap: 1.5,
+        mb: 2,
+      }}
+      className="no-print"
+    >
       <Box sx={{ minWidth: 0 }}>
-        <Box component="h2" sx={{ m: 0, fontSize: { xs: 20, sm: 24 }, fontWeight: 800 }}>{title}</Box>
-        {subtitle && <Box sx={{ color: "text.secondary", fontSize: 13.5, mt: 0.25 }}>{subtitle}</Box>}
+        <Box
+          component="h2"
+          sx={{ m: 0, fontSize: { xs: 20, sm: 24 }, fontWeight: 800 }}
+        >
+          {title}
+        </Box>
+        {subtitle && (
+          <Box sx={{ color: "text.secondary", fontSize: 13.5, mt: 0.25 }}>
+            {subtitle}
+          </Box>
+        )}
       </Box>
-      {actions && <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>{actions}</Box>}
+      {actions && (
+        <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>{actions}</Box>
+      )}
     </Box>
   );
 }

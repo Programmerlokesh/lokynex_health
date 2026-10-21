@@ -30,6 +30,7 @@ import type {
   SaveClinicMedicineRequest,
   SaveClinicUserRequest,
   SavePrescriptionRequest,
+  UpdateClinicPatientRequest,
   UpdateClinicProfileRequest,
   UpdateClinicRequest,
 } from "@/types/clinic";
@@ -158,6 +159,11 @@ export const getClinicPatientsApi = async (p: {
     .data;
 export const getClinicPatientHistoryApi = async (id: string) =>
   (await api.get<ClinicPatientHistory>(`/clinic/patients/${id}/history`)).data;
+
+export const updateClinicPatientApi = async (
+  id: string,
+  d: UpdateClinicPatientRequest,
+) => (await api.put<ClinicPatient>(`/clinic/patients/${id}`, d)).data;
 
 /* medicines */
 export const searchClinicMedicinesApi = async (p: {
