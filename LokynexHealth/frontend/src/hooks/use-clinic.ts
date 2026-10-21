@@ -41,6 +41,10 @@ export function useClinicAdminMutations() {
       mutationFn: ({ id, pw }: { id: string; pw: string }) =>
         A.resetClinicAdminPasswordApi(id, pw),
     }),
+    remove: useMutation({
+      mutationFn: (id: string) => A.deleteClinicApi(id),
+      onSuccess: refresh,
+    }),
   };
 }
 

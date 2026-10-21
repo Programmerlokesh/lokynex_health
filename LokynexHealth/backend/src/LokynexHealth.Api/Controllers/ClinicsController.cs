@@ -44,4 +44,11 @@ public class ClinicsController : ControllerBase
         await _mediator.Send(command, ct);
         return NoContent();
     }
+
+    [HttpDelete("{id:guid}")]
+    public async Task<IActionResult> Delete(Guid id, CancellationToken ct)
+    {
+        await _mediator.Send(new DeleteClinicCommand { Id = id }, ct);
+        return NoContent();
+    }
 }

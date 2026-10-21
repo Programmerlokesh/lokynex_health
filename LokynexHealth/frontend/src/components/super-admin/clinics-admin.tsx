@@ -9,9 +9,15 @@ import {
 } from "@/hooks/use-clinic";
 import { useDebounce } from "@/hooks/use-debounce";
 import { getApiErrorMessage } from "@/lib/api-error";
-import type { ClinicStatus, CreateClinicRequest } from "@/types/clinic";
+import type {
+  ClinicStatus,
+  ClinicSummary,
+  CreateClinicRequest,
+} from "@/types/clinic";
 import AddIcon from "@mui/icons-material/Add";
+import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
+import KeyOutlinedIcon from "@mui/icons-material/KeyOutlined";
 import SearchIcon from "@mui/icons-material/Search";
 import {
   Alert,
@@ -27,6 +33,7 @@ import {
   MenuItem,
   Paper,
   TextField,
+  Tooltip,
   Typography,
   useMediaQuery,
   useTheme,
@@ -402,12 +409,141 @@ function EditClinicDialog({
   );
 }
 
+/* ---------------- reset password ---------------- */
+function ResetPasswordDialog({
+  clinic,
+  onClose,
+}: {
+  clinic: ClinicSummary;
+  onClose: () => void;
+}) {
+  const { resetPassword } = useClinicAdminMutations();
+  const [pw, setPw] = useState("");
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+
+  const submit = () => {
+    setMsg(null);
+    resetPassword.mutate(
+      { id: clinic.id, pw },
+      {
+        onSuccess: () => {
+          setPw("");
+          setMsg({ ok: true, text: "Password changed." });
+        },
+        onError: (e) => setMsg({ ok: false, text: getApiErrorMessage(e) }),
+      },
+    );
+  };
+
+  return (
+    <Dialog open onClose={onClose} fullWidth maxWidth="xs">
+      <DialogTitle sx={{ fontWeight: 800 }}>Change password</DialogTitle>
+      <DialogContent sx={{ display: "grid", gap: 1.5, pt: "8px !important" }}>
+        <Typography variant="body2" color="text.secondary">
+          {clinic.name} · username: <b>@{clinic.adminUsername}</b>
+        </Typography>
+        {msg && (
+          <Alert severity={msg.ok ? "success" : "error"}>{msg.text}</Alert>
+        )}
+        <PasswordTextField
+          size="small"
+          fullWidth
+          label="New password (min 8)"
+          value={pw}
+          onChange={(e) => setPw(e.target.value)}
+          autoComplete="new-password"
+        />
+      </DialogContent>
+      <DialogActions sx={{ px: 3, pb: 2 }}>
+        <Button onClick={onClose}>Close</Button>
+        <Button
+          variant="contained"
+          onClick={submit}
+          disabled={pw.length < 8 || resetPassword.isPending}
+        >
+          {resetPassword.isPending ? (
+            <CircularProgress size={20} color="inherit" />
+          ) : (
+            "Change password"
+          )}
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+}
+
+/* ---------------- delete ---------------- */
+function DeleteClinicDialog({
+  clinic,
+  onClose,
+}: {
+  clinic: ClinicSummary;
+  onClose: () => void;
+}) {
+  const { remove } = useClinicAdminMutations();
+  const [typed, setTyped] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const matches =
+    typed.trim().toUpperCase() === clinic.clinicCode.toUpperCase();
+
+  const submit = () => {
+    setError(null);
+    remove.mutate(clinic.id, {
+      onSuccess: onClose,
+      onError: (e) => setError(getApiErrorMessage(e)),
+    });
+  };
+
+  return (
+    <Dialog open onClose={onClose} fullWidth maxWidth="xs">
+      <DialogTitle sx={{ fontWeight: 800 }}>Delete clinic?</DialogTitle>
+      <DialogContent sx={{ display: "grid", gap: 1.5, pt: "8px !important" }}>
+        {error && <Alert severity="error">{error}</Alert>}
+        <Alert severity="warning">
+          <b>{clinic.name}</b> and ALL its data (users, doctors, schedules,
+          bookings, patients, medicines, prescriptions and ledger) will be
+          permanently deleted. This cannot be undone.
+        </Alert>
+        <Typography variant="body2">
+          Type the clinic code <b>{clinic.clinicCode}</b> to confirm.
+        </Typography>
+        <TextField
+          size="small"
+          fullWidth
+          autoFocus
+          label="Clinic code"
+          value={typed}
+          onChange={(e) => setTyped(e.target.value)}
+          autoComplete="off"
+        />
+      </DialogContent>
+      <DialogActions sx={{ px: 3, pb: 2 }}>
+        <Button onClick={onClose}>Cancel</Button>
+        <Button
+          variant="contained"
+          color="error"
+          onClick={submit}
+          disabled={!matches || remove.isPending}
+        >
+          {remove.isPending ? (
+            <CircularProgress size={20} color="inherit" />
+          ) : (
+            "Delete clinic"
+          )}
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+}
+
 /* ---------------- list ---------------- */
 export function ClinicsAdminPanel() {
   const [search, setSearch] = useState("");
   const q = useDebounce(search.trim(), 300);
   const { data, isLoading, error } = useClinics({ search: q || undefined });
   const [editId, setEditId] = useState<string | null>(null);
+  const [pwClinic, setPwClinic] = useState<ClinicSummary | null>(null);
+  const [delClinic, setDelClinic] = useState<ClinicSummary | null>(null);
 
   return (
     <Box sx={{ display: "grid", gap: 1.5 }}>
@@ -466,12 +602,39 @@ export function ClinicsAdminPanel() {
                   <StatusChip status={c.status} />
                 </Box>
               </Box>
-              <IconButton
-                onClick={() => setEditId(c.id)}
-                aria-label="Edit clinic"
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "flex-start",
+                  flexShrink: 0,
+                }}
               >
-                <EditOutlinedIcon />
-              </IconButton>
+                <Tooltip title="Edit clinic">
+                  <IconButton
+                    onClick={() => setEditId(c.id)}
+                    aria-label="Edit clinic"
+                  >
+                    <EditOutlinedIcon />
+                  </IconButton>
+                </Tooltip>
+                <Tooltip title="Change password">
+                  <IconButton
+                    onClick={() => setPwClinic(c)}
+                    aria-label="Change admin password"
+                  >
+                    <KeyOutlinedIcon />
+                  </IconButton>
+                </Tooltip>
+                <Tooltip title="Delete clinic">
+                  <IconButton
+                    color="error"
+                    onClick={() => setDelClinic(c)}
+                    aria-label="Delete clinic"
+                  >
+                    <DeleteOutlineIcon />
+                  </IconButton>
+                </Tooltip>
+              </Box>
             </Paper>
           ))}
         </Box>
@@ -481,6 +644,20 @@ export function ClinicsAdminPanel() {
           key={editId}
           id={editId}
           onClose={() => setEditId(null)}
+        />
+      )}
+      {pwClinic && (
+        <ResetPasswordDialog
+          key={pwClinic.id}
+          clinic={pwClinic}
+          onClose={() => setPwClinic(null)}
+        />
+      )}
+      {delClinic && (
+        <DeleteClinicDialog
+          key={delClinic.id}
+          clinic={delClinic}
+          onClose={() => setDelClinic(null)}
         />
       )}
     </Box>

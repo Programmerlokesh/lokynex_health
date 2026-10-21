@@ -63,6 +63,10 @@ export const resetClinicAdminPasswordApi = async (
   });
 };
 
+export const deleteClinicApi = async (id: string) => {
+  await superAdminApiClient.delete(`/Clinics/${id}`);
+};
+
 /* ============ Clinic portal ============ */
 export const getClinicMeApi = async () =>
   (await api.get<ClinicMe>("/clinic/me")).data;
