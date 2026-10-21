@@ -235,6 +235,7 @@ builder.Services.AddValidatorsFromAssembly(typeof(CreateUserCommand).Assembly);
 // Controllers + Swagger (with Bearer auth support)
 // ============================================================
 builder.Services.AddControllers();
+builder.Services.AddHealthChecks();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
@@ -287,4 +288,5 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+app.MapHealthChecks("/api/health");
 app.Run();
