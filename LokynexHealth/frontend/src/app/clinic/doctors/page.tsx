@@ -6,7 +6,6 @@ import {
   useDialogFullScreen,
   useToast,
 } from "@/components/clinic/clinic-ui";
-import { SpecialtyIcon3D } from "@/components/clinic/specialty-icon-3d";
 import { SearchBar, StatusPill, kitCardSx } from "@/components/common/page-kit";
 import {
   useClinicDoctors,
@@ -16,6 +15,7 @@ import {
 import { getApiErrorMessage } from "@/lib/api-error";
 import { canDo } from "@/lib/clinic/permissions";
 import { ALL_SPECIALIZATIONS } from "@/lib/clinic/specializations";
+import { SpecialtyIcon3D } from "@/lib/clinic/specialty-icon-3d";
 import type { ClinicDoctor } from "@/types/clinic";
 import AddIcon from "@mui/icons-material/Add";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
