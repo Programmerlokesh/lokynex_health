@@ -249,6 +249,21 @@ export interface ClinicPatient {
   pincode?: string | null;
   lastVisitAt?: string | null;
   visitCount: number;
+  createdAt?: string | null;
+  /** Who last edited the details by hand, and when (null = never edited). */
+  editedByUsername?: string | null;
+  editedAt?: string | null;
+}
+
+export interface UpdateClinicPatientRequest {
+  name: string;
+  age?: number | null;
+  gender?: string | null;
+  phone: string;
+  whatsappNumber?: string | null;
+  email?: string | null;
+  address?: string | null;
+  pincode?: string | null;
 }
 
 export interface ClinicPatientHistory {
