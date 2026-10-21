@@ -2,7 +2,10 @@
 
 import { ReportPadPreview } from "@/components/report-pad/report-pad-preview";
 import { cardSx, pillBtnSx } from "@/components/reports/report-shell";
-import { useSaveLabReportSettings } from "@/hooks/use-blood-reports";
+import {
+  useDeleteDepartmentPad,
+  useSaveLabReportSettings,
+} from "@/hooks/use-blood-reports";
 import { getApiErrorMessage } from "@/lib/api-error";
 import {
   buildPrintDocument,
@@ -97,7 +100,10 @@ const SAMPLE_ROWS: ReportRow[] = [
 
 const SAMPLE_TOKEN = "0123456789abcdef0123456789abcdef";
 
-function makeSample(labName: string | null | undefined) {
+function makeSample(
+  labName: string | null | undefined,
+  departmentName?: string,
+) {
   const now = new Date().toISOString();
   const form: BloodReportFormDto = {
     orderId: "sample",
@@ -106,7 +112,7 @@ function makeSample(labName: string | null | undefined) {
     orderNumber: "ORD-0001",
     orderCreatedAt: now,
     testName: "Complete Blood Count (CBC)",
-    departmentName: "Haematology",
+    departmentName: departmentName || "Haematology",
     patientName: "Sample Patient",
     patientCode: "PT-0001",
     patientPhone: "9876543210",
@@ -323,13 +329,21 @@ const MODES: { value: boolean; title: string; text: string }[] = [
 
 export function ReportPadEditor({
   initial,
+  departmentId = null,
+  departmentName,
+  onDirtyChange,
 }: {
   initial: LabReportSettingsDto;
+  /** null = the lab default pad; otherwise the pad of this department only. */
+  departmentId?: string | null;
+  departmentName?: string;
+  onDirtyChange?: (dirty: boolean) => void;
 }) {
   const theme = useTheme();
   const isNarrow = useMediaQuery(theme.breakpoints.down("lg"));
   const labName = useAuthStore((s) => s.user?.labName);
   const save = useSaveLabReportSettings();
+  const resetPad = useDeleteDepartmentPad();
 
   const [draft, setDraft] = useState<LabReportSettingsDto>(initial);
   const [dirty, setDirty] = useState(false);
@@ -337,6 +351,10 @@ export function ReportPadEditor({
   const [toast, setToast] = useState<string | null>(null);
   const [tab, setTab] = useState<"edit" | "preview">("edit");
   const [qr, setQr] = useState<string | null>(null);
+
+  useEffect(() => {
+    onDirtyChange?.(dirty);
+  }, [dirty, onDirtyChange]);
 
   const set = <K extends keyof LabReportSettingsDto>(
     k: K,
@@ -367,7 +385,10 @@ export function ReportPadEditor({
     return () => window.removeEventListener("beforeunload", h);
   }, [dirty]);
 
-  const sample = useMemo(() => makeSample(labName), [labName]);
+  const sample = useMemo(
+    () => makeSample(labName, departmentName),
+    [labName, departmentName],
+  );
 
   const parts = useMemo(
     () =>
@@ -404,11 +425,33 @@ export function ReportPadEditor({
   async function handleSave() {
     setError(null);
     try {
-      await save.mutateAsync(draft);
+      await save.mutateAsync({ ...draft, departmentId });
       setDirty(false);
-      setToast("Report pad saved.");
+      setToast(
+        departmentId
+          ? `${departmentName ?? "Department"} report pad saved.`
+          : "Report pad saved.",
+      );
     } catch (e) {
       setError(getApiErrorMessage(e, "Could not save the report pad."));
+    }
+  }
+
+  async function handleResetToDefault() {
+    if (!departmentId) return;
+    if (
+      !window.confirm(
+        `Remove the ${departmentName ?? "department"} pad? Its reports will use the lab default pad again.`,
+      )
+    )
+      return;
+    setError(null);
+    try {
+      await resetPad.mutateAsync(departmentId);
+      setDirty(false);
+      setToast("Back to the lab default pad.");
+    } catch (e) {
+      setError(getApiErrorMessage(e, "Could not reset this pad."));
     }
   }
 
@@ -424,6 +467,16 @@ export function ReportPadEditor({
 
   const controls = (
     <Box sx={{ display: "grid", gap: 1.5, minWidth: 0 }}>
+      {departmentId && (
+        <Alert
+          severity={initial.isCustom ? "success" : "info"}
+          sx={{ py: 0.25 }}
+        >
+          {initial.isCustom
+            ? `${departmentName} has its own report pad. Only ${departmentName} reports use it.`
+            : `${departmentName} is using the lab default pad. Edit and save to give it its own pad.`}
+        </Alert>
+      )}
       <Box sx={{ display: "grid", gap: 1 }}>
         {MODES.map((m) => {
           const on = draft.useLetterhead === m.value;
@@ -631,11 +684,22 @@ export function ReportPadEditor({
           p: 1.5,
           display: "grid",
           gap: 1,
-          gridTemplateColumns: { xs: "1fr 1fr", sm: "repeat(2, auto)" },
+          gridTemplateColumns: { xs: "1fr 1fr", sm: "repeat(3, auto)" },
           justifyContent: { sm: "end" },
           alignItems: "center",
         }}
       >
+        {departmentId && initial.isCustom && (
+          <Button
+            variant="outlined"
+            color="error"
+            disabled={resetPad.isPending}
+            onClick={() => void handleResetToDefault()}
+            sx={pillBtnSx}
+          >
+            Use lab default
+          </Button>
+        )}
         <Button
           variant="outlined"
           color="inherit"

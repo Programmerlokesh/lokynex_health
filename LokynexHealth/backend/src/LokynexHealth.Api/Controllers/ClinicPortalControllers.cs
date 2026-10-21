@@ -199,6 +199,15 @@ public class ClinicPatientsController : ControllerBase
     [HttpGet("{id:guid}/history")]
     public async Task<IActionResult> History(Guid id, CancellationToken ct)
         => Ok(await _mediator.Send(new GetClinicPatientHistoryQuery { Id = id }, ct));
+
+    // Edit a saved patient. The signed-in username and the time are recorded.
+    [HttpPut("{id:guid}")]
+    [ClinicPermission("patients", "edit")]
+    public async Task<IActionResult> Update(Guid id, [FromBody] UpdateClinicPatientCommand command, CancellationToken ct)
+    {
+        command.Id = id;
+        return Ok(await _mediator.Send(command, ct));
+    }
 }
 
 [ApiController]

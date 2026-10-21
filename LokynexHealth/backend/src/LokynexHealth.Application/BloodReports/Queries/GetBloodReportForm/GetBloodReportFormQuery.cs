@@ -151,13 +151,19 @@ public class GetBloodReportFormQueryHandler : IRequestHandler<GetBloodReportForm
             dto.Remarks = info.Interpretation;
         }
 
-        // ---- letterhead settings (branch row overrides the lab default) ----
+        // ---- letterhead settings: department pad > branch row > lab default ----
         Guid? branchId = order.Branch?.Id;
+        Guid? departmentId = item.Test.DepartmentId;
         var rows = await _db.LabReportSettings.AsNoTracking()
             .Where(s => s.BranchId == null || s.BranchId == branchId)
             .ToListAsync(ct);
-        var s = (branchId is not null ? rows.FirstOrDefault(x => x.BranchId == branchId) : null)
-                ?? rows.FirstOrDefault(x => x.BranchId == null);
+        var s = (departmentId is not null
+                    ? rows.FirstOrDefault(x => x.BranchId == null && x.DepartmentId == departmentId)
+                    : null)
+                ?? (branchId is not null
+                    ? rows.FirstOrDefault(x => x.BranchId == branchId && x.DepartmentId == null)
+                    : null)
+                ?? rows.FirstOrDefault(x => x.BranchId == null && x.DepartmentId == null);
 
         if (s is not null)
         {

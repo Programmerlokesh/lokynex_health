@@ -19,6 +19,10 @@ export interface BloodParameterDto {
 }
 
 export interface LabReportSettingsDto {
+  /** null / missing = the lab default pad, otherwise the pad of one department. */
+  departmentId?: string | null;
+  /** true when this department has its own saved pad (not just the default). */
+  isCustom?: boolean;
   useLetterhead: boolean;
   headerHtml: string | null;
   footerHtml: string | null;

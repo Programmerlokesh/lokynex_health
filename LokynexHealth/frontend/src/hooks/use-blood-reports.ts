@@ -1,5 +1,7 @@
 import {
+  deleteDepartmentPadApi,
   getBloodReportFormApi,
+  getCustomPadDepartmentsApi,
   getLabReportSettingsApi,
   logReportDeliveryApi,
   saveBloodReportApi,
@@ -36,13 +38,22 @@ export function useSaveBloodReport() {
   });
 }
 
-/** Lab header / footer / blank space / signature (the "Report Pad"). */
-export function useLabReportSettings() {
+/** Header / footer / blank space / signature (the "Report Pad") of the lab default or one department. */
+export function useLabReportSettings(departmentId?: string | null) {
   return useQuery({
-    queryKey: ["lab-report-settings"],
-    queryFn: getLabReportSettingsApi,
+    queryKey: ["lab-report-settings", departmentId ?? "default"],
+    queryFn: () => getLabReportSettingsApi(departmentId),
     staleTime: 0,
     refetchOnMount: "always",
+    refetchOnWindowFocus: false,
+  });
+}
+
+/** Departments that already have their own pad. */
+export function useCustomPadDepartments() {
+  return useQuery({
+    queryKey: ["lab-report-settings-departments"],
+    queryFn: getCustomPadDepartmentsApi,
     refetchOnWindowFocus: false,
   });
 }
@@ -53,6 +64,19 @@ export function useSaveLabReportSettings() {
     mutationFn: (data: LabReportSettingsDto) => saveLabReportSettingsApi(data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["lab-report-settings"] });
+      qc.invalidateQueries({ queryKey: ["lab-report-settings-departments"] });
+      qc.invalidateQueries({ queryKey: ["blood-report-form"] });
+    },
+  });
+}
+
+export function useDeleteDepartmentPad() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (departmentId: string) => deleteDepartmentPadApi(departmentId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["lab-report-settings"] });
+      qc.invalidateQueries({ queryKey: ["lab-report-settings-departments"] });
       qc.invalidateQueries({ queryKey: ["blood-report-form"] });
     },
   });

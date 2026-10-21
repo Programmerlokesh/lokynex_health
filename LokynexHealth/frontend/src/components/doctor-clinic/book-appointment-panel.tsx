@@ -1,5 +1,6 @@
 "use client";
 
+import { Avatar, kitCardSx } from "@/components/common/page-kit";
 import { useBranches } from "@/hooks/use-branches";
 import { useDebounce } from "@/hooks/use-debounce";
 import {
@@ -8,8 +9,8 @@ import {
 } from "@/hooks/use-doctor-clinic";
 import { useDoctors } from "@/hooks/use-lookups";
 import { getApiErrorMessage } from "@/lib/api-error";
-import { formatMoney } from "@/lib/format";
-import { AvailableSlotDto, ClinicPaymentMethod } from "@/types/doctor-clinic";
+import { formatMoney, toDateInputValue } from "@/lib/format";
+import { ClinicPaymentMethod } from "@/types/doctor-clinic";
 import { LookupDto } from "@/types/lookup";
 import {
   Alert,
@@ -18,332 +19,311 @@ import {
   Button,
   Chip,
   CircularProgress,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
-  Grid,
   MenuItem,
   TextField,
   Typography,
-  useMediaQuery,
-  useTheme,
 } from "@mui/material";
 import { useMemo, useState } from "react";
 import { PAYMENT_METHODS, formatTime } from "./clinic-utils";
 
+/**
+ * Same flow as the Doctor Clinic "Book" screen: pick branch, doctor and date,
+ * choose a time slot, fill the patient and book - all on one page.
+ */
 export function BookAppointmentPanel() {
-  const theme = useTheme();
-  const fullScreen = useMediaQuery(theme.breakpoints.down("sm"));
-
   const [branchId, setBranchId] = useState("");
   const [doctor, setDoctor] = useState<LookupDto | null>(null);
   const [doctorSearch, setDoctorSearch] = useState("");
   const debouncedDoctorSearch = useDebounce(doctorSearch, 350);
-  const [date, setDate] = useState("");
+  const [date, setDate] = useState(toDateInputValue(new Date()));
 
-  const [selectedSlot, setSelectedSlot] = useState<AvailableSlotDto | null>(
-    null,
-  );
-  const [patientName, setPatientName] = useState("");
-  const [patientPhone, setPatientPhone] = useState("");
-  const [patientEmail, setPatientEmail] = useState("");
-  const [reason, setReason] = useState("");
-  const [visitFee, setVisitFee] = useState("");
-  const [paymentMethod, setPaymentMethod] =
-    useState<ClinicPaymentMethod>("Cash");
+  const [slot, setSlot] = useState<string | null>(null);
+  const [f, setF] = useState({
+    name: "",
+    phone: "",
+    email: "",
+    note: "",
+    fee: "",
+    method: "Cash" as ClinicPaymentMethod,
+  });
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [bookedMsg, setBookedMsg] = useState<string | null>(null);
 
   const { data: branches } = useBranches({ pageSize: 100 });
   // Only active doctors can take new bookings.
   const { data: doctorResult } = useDoctors(debouncedDoctorSearch, true);
 
+  // a single-branch lab never needs to pick one
+  const soleBranchId = branches?.items.length === 1 ? branches.items[0].id : "";
+  const activeBranchId = branchId || soleBranchId;
+
   const doctorId = doctor?.id ?? null;
   const slotParams = useMemo(
-    () => (doctorId && branchId && date ? { doctorId, branchId, date } : null),
-    [doctorId, branchId, date],
+    () =>
+      doctorId && activeBranchId && date
+        ? { doctorId, branchId: activeBranchId, date }
+        : null,
+    [doctorId, activeBranchId, date],
   );
-  const { data: slots, isLoading: slotsLoading } =
-    useAvailableSlots(slotParams);
+  const { data: slots, isFetching } = useAvailableSlots(slotParams);
+  const book = useBookAppointment();
 
-  const bookAppointment = useBookAppointment();
+  const set = <K extends keyof typeof f>(k: K, v: (typeof f)[K]) =>
+    setF((p) => ({ ...p, [k]: v }));
 
-  const feeNumber = visitFee.trim() === "" ? 0 : Number(visitFee);
-  const feeInvalid = !Number.isFinite(feeNumber) || feeNumber < 0;
+  function submit() {
+    const e: Record<string, string> = {};
+    if (!slotParams) e.doctor = "Pick a branch, doctor and date";
+    if (!slot) e.slot = "Choose a time slot";
+    if (!f.name.trim()) e.name = "Required";
+    if (!f.phone.trim()) e.phone = "Required";
+    const fee = f.fee.trim() === "" ? 0 : Number(f.fee);
+    if (!Number.isFinite(fee) || fee < 0) e.fee = "Invalid amount";
+    setErrors(e);
+    if (Object.keys(e).length || !doctorId || !slot) return;
 
-  function resetBookingForm() {
-    setSelectedSlot(null);
-    setPatientName("");
-    setPatientPhone("");
-    setPatientEmail("");
-    setReason("");
-    setVisitFee("");
-    setPaymentMethod("Cash");
-    bookAppointment.reset();
-  }
-
-  function closeDialog() {
-    setSelectedSlot(null);
-    bookAppointment.reset();
-  }
-
-  function handleBook(e: React.FormEvent) {
-    e.preventDefault();
-    if (!selectedSlot || !doctorId || !branchId || !date) return;
-    if (!patientName.trim() || !patientPhone.trim() || feeInvalid) return;
-
-    bookAppointment.mutate(
+    book.mutate(
       {
         doctorId,
-        branchId,
+        branchId: activeBranchId,
         bookingDate: date,
-        timeSlot: selectedSlot.timeSlot,
-        patientName: patientName.trim(),
-        patientPhone: patientPhone.trim(),
-        patientEmail: patientEmail.trim() || undefined,
-        note: reason.trim() || undefined,
-        visitFee: feeNumber,
-        paymentMethod: feeNumber > 0 ? paymentMethod : undefined,
+        timeSlot: slot,
+        patientName: f.name.trim(),
+        patientPhone: f.phone.trim(),
+        patientEmail: f.email.trim() || undefined,
+        note: f.note.trim() || undefined,
+        visitFee: fee,
+        paymentMethod: fee > 0 ? f.method : undefined,
       },
       {
-        onSuccess: (result) => {
+        onSuccess: (r) => {
           const feePart =
-            feeNumber > 0
-              ? ` Fee ₹${formatMoney(feeNumber)} (${paymentMethod}).`
-              : "";
+            fee > 0 ? ` Fee ₹${formatMoney(fee)} (${f.method}).` : "";
           setBookedMsg(
-            `${patientName.trim()} booked — Serial #${result.serialNo}, ${formatTime(selectedSlot.timeSlot)} on ${date}.${feePart}`,
+            `${f.name.trim()} booked, serial #${r.serialNo} at ${formatTime(slot)} on ${date}.${feePart}`,
           );
-          resetBookingForm();
+          setF({
+            name: "",
+            phone: "",
+            email: "",
+            note: "",
+            fee: "",
+            method: "Cash",
+          });
+          setSlot(null);
         },
       },
     );
   }
 
   return (
-    <Box>
-      <Box
-        sx={{
-          bgcolor: "background.paper",
-          border: 1,
-          borderColor: "divider",
-          borderRadius: 3,
-          p: { xs: 1.5, sm: 2.5 },
-          mb: 2.5,
-        }}
-      >
-        <Grid container spacing={2}>
-          <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-            <TextField
-              select
-              label="Branch"
-              size="small"
-              fullWidth
-              value={branchId}
-              onChange={(e) => {
-                setBranchId(e.target.value);
-                setDoctor(null);
-              }}
-            >
-              {branches?.items.map((b) => (
-                <MenuItem key={b.id} value={b.id}>
-                  {b.branchName}
-                </MenuItem>
-              ))}
-            </TextField>
-          </Grid>
-          <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-            <Autocomplete
-              options={doctorResult?.items ?? []}
-              value={doctor}
-              isOptionEqualToValue={(o, v) => o.id === v.id}
-              getOptionLabel={(o) => `${o.fullName} — ${o.phone}`}
-              filterOptions={(x) => x}
-              onInputChange={(_, v) => setDoctorSearch(v)}
-              onChange={(_, v) => setDoctor(v)}
-              disabled={!branchId}
-              renderInput={(params) => (
-                <TextField {...params} label="Doctor" size="small" />
-              )}
-            />
-          </Grid>
-          <Grid size={{ xs: 12, sm: 6, md: 4 }}>
-            <TextField
-              label="Date"
-              type="date"
-              size="small"
-              fullWidth
-              slotProps={{ inputLabel: { shrink: true } }}
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-            />
-          </Grid>
-        </Grid>
-      </Box>
-
+    <Box
+      sx={{ ...kitCardSx, p: { xs: 1.5, sm: 2.5 }, display: "grid", gap: 2 }}
+    >
       {bookedMsg && (
-        <Alert
-          severity="success"
-          sx={{ mb: 2.5 }}
-          onClose={() => setBookedMsg(null)}
-        >
+        <Alert severity="success" onClose={() => setBookedMsg(null)}>
           {bookedMsg}
         </Alert>
       )}
-
-      {!slotParams ? (
-        <Typography variant="body2" color="text.secondary">
-          Pick a branch, doctor, and date to see available slots.
-        </Typography>
-      ) : slotsLoading ? (
-        <Box sx={{ display: "flex", justifyContent: "center", py: 6 }}>
-          <CircularProgress size={28} />
-        </Box>
-      ) : !slots || slots.length === 0 ? (
-        <Typography variant="body2" color="text.secondary">
-          This doctor doesn&apos;t hold clinic hours on the selected day.
-        </Typography>
-      ) : (
-        <Box sx={{ display: "flex", gap: 1.5, flexWrap: "wrap" }}>
-          {slots.map((slot) => (
-            <Chip
-              key={slot.timeSlot}
-              label={`${formatTime(slot.timeSlot)} · ${slot.availableCount}/${slot.maxPatients} left`}
-              clickable={!slot.isFull}
-              disabled={slot.isFull}
-              color={slot.isFull ? "default" : "primary"}
-              variant={slot.isFull ? "outlined" : "filled"}
-              onClick={() => !slot.isFull && setSelectedSlot(slot)}
-            />
-          ))}
-        </Box>
+      {book.isError && (
+        <Alert severity="error">
+          {getApiErrorMessage(book.error, "Could not book this slot.")}
+        </Alert>
       )}
 
-      <Dialog
-        open={!!selectedSlot}
-        onClose={closeDialog}
-        fullWidth
-        maxWidth="xs"
-        fullScreen={fullScreen}
+      <Box
+        sx={{
+          display: "grid",
+          gap: 1.5,
+          gridTemplateColumns: { xs: "1fr", sm: "1fr 1.4fr 1fr" },
+        }}
       >
-        <DialogTitle sx={{ fontWeight: 700 }}>
-          Book {selectedSlot && formatTime(selectedSlot.timeSlot)} Slot
-        </DialogTitle>
-        <Box
-          component="form"
-          onSubmit={handleBook}
-          sx={{
-            display: "flex",
-            flexDirection: "column",
-            flex: 1,
-            minHeight: 0,
+        <TextField
+          select
+          size="small"
+          label="Branch"
+          value={activeBranchId}
+          onChange={(e) => {
+            setBranchId(e.target.value);
+            setDoctor(null);
+            setSlot(null);
           }}
         >
-          <DialogContent
-            sx={{ display: "flex", flexDirection: "column", gap: 2 }}
-          >
-            {bookAppointment.isError && (
-              <Alert severity="error">
-                {getApiErrorMessage(
-                  bookAppointment.error,
-                  "Could not book this slot.",
-                )}
-              </Alert>
-            )}
+          {branches?.items.map((b) => (
+            <MenuItem key={b.id} value={b.id}>
+              {b.branchName}
+            </MenuItem>
+          ))}
+        </TextField>
+        <Autocomplete
+          size="small"
+          options={doctorResult?.items ?? []}
+          value={doctor}
+          isOptionEqualToValue={(o, v) => o.id === v.id}
+          getOptionLabel={(o) => o.fullName}
+          filterOptions={(x) => x}
+          onInputChange={(_, v, reason) => {
+            if (reason === "input") setDoctorSearch(v);
+          }}
+          onChange={(_, v) => {
+            setDoctor(v);
+            setSlot(null);
+          }}
+          disabled={!activeBranchId}
+          noOptionsText="No doctor found"
+          renderOption={(props, o) => {
+            const { key, ...rest } = props;
+            return (
+              <Box component="li" key={key} {...rest} sx={{ gap: 1.25 }}>
+                <Avatar name={o.fullName} size={30} />
+                <Box sx={{ minWidth: 0 }}>
+                  <Typography variant="body2" sx={{ fontWeight: 600 }} noWrap>
+                    {o.fullName}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary" noWrap>
+                    {o.phone}
+                  </Typography>
+                </Box>
+              </Box>
+            );
+          }}
+          renderInput={(params) => (
+            <TextField
+              {...params}
+              label="Doctor"
+              error={!!errors.doctor}
+              helperText={errors.doctor}
+            />
+          )}
+        />
+        <TextField
+          size="small"
+          type="date"
+          label="Date"
+          value={date}
+          onChange={(e) => {
+            setDate(e.target.value);
+            setSlot(null);
+          }}
+          slotProps={{ inputLabel: { shrink: true } }}
+        />
+      </Box>
 
-            <TextField
-              label="Patient Name"
-              size="small"
-              fullWidth
-              required
-              value={patientName}
-              onChange={(e) => setPatientName(e.target.value)}
-            />
-            <TextField
-              label="Patient Phone"
-              size="small"
-              fullWidth
-              required
-              type="tel"
-              value={patientPhone}
-              onChange={(e) => setPatientPhone(e.target.value)}
-            />
-            <TextField
-              label="Patient Email (optional)"
-              size="small"
-              fullWidth
-              type="email"
-              value={patientEmail}
-              onChange={(e) => setPatientEmail(e.target.value)}
-            />
-            <TextField
-              label="Reason for visit"
-              size="small"
-              fullWidth
-              multiline
-              minRows={2}
-              value={reason}
-              onChange={(e) => setReason(e.target.value)}
-            />
-
-            <Box
-              sx={{
-                display: "flex",
-                gap: 2,
-                flexDirection: { xs: "column", sm: "row" },
-              }}
-            >
-              <TextField
-                label="Visit fee (₹)"
-                size="small"
-                fullWidth
-                type="number"
-                value={visitFee}
-                error={feeInvalid}
-                helperText={feeInvalid ? "Enter 0 or more" : undefined}
-                onChange={(e) => setVisitFee(e.target.value)}
-                slotProps={{
-                  htmlInput: { min: 0, step: "any", inputMode: "decimal" },
-                }}
+      <Box>
+        <Typography variant="subtitle2" sx={{ fontWeight: 800, mb: 0.75 }}>
+          Time slot{" "}
+          {errors.slot && (
+            <Typography component="span" color="error" variant="caption">
+              — {errors.slot}
+            </Typography>
+          )}
+        </Typography>
+        {!slotParams ? (
+          <Typography variant="body2" color="text.secondary">
+            Pick a branch, doctor and date to see the slots.
+          </Typography>
+        ) : isFetching ? (
+          <CircularProgress size={20} />
+        ) : !slots?.length ? (
+          <Typography variant="body2" color="text.secondary">
+            This doctor has no clinic hours on the selected day.
+          </Typography>
+        ) : (
+          <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
+            {slots.map((s) => (
+              <Chip
+                key={s.timeSlot}
+                clickable={!s.isFull}
+                disabled={s.isFull}
+                color={slot === s.timeSlot ? "primary" : "default"}
+                variant={slot === s.timeSlot ? "filled" : "outlined"}
+                onClick={() => setSlot(s.timeSlot)}
+                label={`${formatTime(s.timeSlot)} · ${s.isFull ? "full" : `${s.availableCount} left`}`}
               />
-              <TextField
-                select
-                label="Payment method"
-                size="small"
-                fullWidth
-                disabled={feeNumber <= 0}
-                value={paymentMethod}
-                onChange={(e) =>
-                  setPaymentMethod(e.target.value as ClinicPaymentMethod)
-                }
-              >
-                {PAYMENT_METHODS.map((m) => (
-                  <MenuItem key={m} value={m}>
-                    {m}
-                  </MenuItem>
-                ))}
-              </TextField>
-            </Box>
-          </DialogContent>
-          <DialogActions sx={{ px: 3, pb: 3 }}>
-            <Button onClick={closeDialog} color="inherit">
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              variant="contained"
-              disabled={
-                bookAppointment.isPending ||
-                !patientName.trim() ||
-                !patientPhone.trim() ||
-                feeInvalid
-              }
-            >
-              {bookAppointment.isPending ? "Booking..." : "Confirm Booking"}
-            </Button>
-          </DialogActions>
-        </Box>
-      </Dialog>
+            ))}
+          </Box>
+        )}
+      </Box>
+
+      <Box
+        sx={{
+          display: "grid",
+          gap: 1.5,
+          gridTemplateColumns: { xs: "1fr 1fr", md: "2fr 1.2fr 1.2fr" },
+        }}
+      >
+        <TextField
+          size="small"
+          label="Patient name *"
+          value={f.name}
+          onChange={(e) => set("name", e.target.value)}
+          error={!!errors.name}
+          helperText={errors.name}
+          sx={{ gridColumn: { xs: "1 / -1", md: "auto" } }}
+        />
+        <TextField
+          size="small"
+          label="Mobile *"
+          type="tel"
+          value={f.phone}
+          onChange={(e) => set("phone", e.target.value)}
+          error={!!errors.phone}
+          helperText={errors.phone}
+        />
+        <TextField
+          size="small"
+          label="Email"
+          type="email"
+          value={f.email}
+          onChange={(e) => set("email", e.target.value)}
+        />
+        <TextField
+          size="small"
+          label="Visit fee (₹)"
+          type="number"
+          value={f.fee}
+          onChange={(e) => set("fee", e.target.value)}
+          error={!!errors.fee}
+          helperText={errors.fee}
+        />
+        <TextField
+          select
+          size="small"
+          label="Payment"
+          value={f.method}
+          onChange={(e) => set("method", e.target.value as ClinicPaymentMethod)}
+          disabled={!(Number(f.fee) > 0)}
+        >
+          {PAYMENT_METHODS.map((m) => (
+            <MenuItem key={m} value={m}>
+              {m}
+            </MenuItem>
+          ))}
+        </TextField>
+        <TextField
+          size="small"
+          label="Reason / note"
+          value={f.note}
+          onChange={(e) => set("note", e.target.value)}
+          sx={{ gridColumn: { xs: "1 / -1", md: "auto" } }}
+        />
+      </Box>
+
+      <Box>
+        <Button
+          variant="contained"
+          size="large"
+          onClick={submit}
+          disabled={book.isPending}
+          sx={{ fontWeight: 800, borderRadius: "999px", px: 4 }}
+        >
+          {book.isPending ? (
+            <CircularProgress size={22} color="inherit" />
+          ) : (
+            "Book appointment"
+          )}
+        </Button>
+      </Box>
     </Box>
   );
 }

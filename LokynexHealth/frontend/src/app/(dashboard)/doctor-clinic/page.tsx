@@ -1,14 +1,14 @@
 "use client";
 
+import { PageHeader } from "@/components/common/page-kit";
 import { BookAppointmentPanel } from "@/components/doctor-clinic/book-appointment-panel";
 import { BookingsPanel } from "@/components/doctor-clinic/bookings-panel";
 import { CreateScheduleDialog } from "@/components/doctor-clinic/create-schedule-dialog";
 import { DoctorsPanel } from "@/components/doctor-clinic/doctors-panel";
 import { SchedulesTable } from "@/components/doctor-clinic/schedules-table";
 import { MicroscopeIcon } from "@/components/icons/lab-icons";
-import { brand } from "@/components/providers/mui-theme-provider";
 import { useSchedules } from "@/hooks/use-doctor-clinic";
-import { Box, CircularProgress, Tab, Tabs, Typography } from "@mui/material";
+import { Box, CircularProgress, Tab, Tabs } from "@mui/material";
 import { useState } from "react";
 
 export default function DoctorClinicPage() {
@@ -17,33 +17,14 @@ export default function DoctorClinicPage() {
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}>
-      <Box
-        sx={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          flexWrap: "wrap",
-          gap: 1.5,
-        }}
-      >
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-          <Box
-            sx={{
-              bgcolor: "#ECFDF5",
-              color: brand.teal,
-              p: 1,
-              borderRadius: 2,
-              display: "flex",
-            }}
-          >
-            <MicroscopeIcon fontSize="small" />
-          </Box>
-          <Typography variant="h5" sx={{ fontWeight: 700 }}>
-            Doctor Clinic
-          </Typography>
-        </Box>
-        {tab === 0 && <CreateScheduleDialog />}
-      </Box>
+      <PageHeader
+        icon={<MicroscopeIcon />}
+        tint="#ECFDF5"
+        color="#00BFA6"
+        title="Doctor Clinic"
+        subtitle="Book patients into a chamber, see the day's list, manage schedules and doctors"
+        actions={tab === 2 ? <CreateScheduleDialog /> : undefined}
+      />
 
       <Tabs
         value={tab}
@@ -52,13 +33,15 @@ export default function DoctorClinicPage() {
         scrollButtons="auto"
         allowScrollButtonsMobile
       >
+        <Tab label="Book" />
+        <Tab label="Patient list" />
         <Tab label="Schedules" />
-        <Tab label="Book Appointment" />
-        <Tab label="Bookings" />
         <Tab label="Doctors" />
       </Tabs>
 
-      {tab === 0 &&
+      {tab === 0 && <BookAppointmentPanel />}
+      {tab === 1 && <BookingsPanel />}
+      {tab === 2 &&
         (isLoading ? (
           <Box sx={{ display: "flex", justifyContent: "center", py: 6 }}>
             <CircularProgress size={28} />
@@ -66,8 +49,6 @@ export default function DoctorClinicPage() {
         ) : (
           <SchedulesTable rows={schedules ?? []} />
         ))}
-      {tab === 1 && <BookAppointmentPanel />}
-      {tab === 2 && <BookingsPanel />}
       {tab === 3 && <DoctorsPanel />}
     </Box>
   );

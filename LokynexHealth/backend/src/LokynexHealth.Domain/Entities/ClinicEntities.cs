@@ -125,6 +125,10 @@ public class ClinicPatient : BaseEntity
     public string? Address { get; set; }
     public string? Pincode { get; set; }
     public DateTimeOffset? LastVisitAt { get; set; }
+
+    /// <summary>Username of the person who last edited this patient's details by hand (NULL = never edited).</summary>
+    public string? EditedByUsername { get; set; }
+    public DateTimeOffset? EditedAt { get; set; }
 }
 
 public class ClinicMedicine : BaseEntity

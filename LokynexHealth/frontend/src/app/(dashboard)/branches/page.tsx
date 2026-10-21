@@ -1,24 +1,16 @@
 "use client";
 
 import { BranchesTable } from "@/components/branches/branches-table";
+import { PageHeader, SearchBar, StatStrip } from "@/components/common/page-kit";
 import { BranchIcon } from "@/components/icons/lab-icons";
-import { brand } from "@/components/providers/mui-theme-provider";
 import { useBranches } from "@/hooks/use-branches";
 import { useDebounce } from "@/hooks/use-debounce";
-import SearchIcon from "@mui/icons-material/Search";
-import {
-  Alert,
-  Box,
-  CircularProgress,
-  InputAdornment,
-  TextField,
-  Typography,
-} from "@mui/material";
+import { Alert, Box, CircularProgress } from "@mui/material";
 import { useState } from "react";
 
 export default function BranchesPage() {
   const [search, setSearch] = useState("");
-  const debouncedSearch = useDebounce(search, 400); // typing settles before the API is called
+  const debouncedSearch = useDebounce(search, 400);
 
   const { data, isLoading, isError } = useBranches({
     search: debouncedSearch || undefined,
@@ -26,40 +18,31 @@ export default function BranchesPage() {
     pageSize: 20,
   });
 
+  const items = data?.items ?? [];
+  const activeCount = items.filter((b) => b.status === "Active").length;
+
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}>
-      <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-        <Box
-          sx={{
-            bgcolor: "#E0F2FE",
-            color: brand.electricBlue,
-            p: 1,
-            borderRadius: 2,
-            display: "flex",
-          }}
-        >
-          <BranchIcon fontSize="small" />
-        </Box>
-        <Typography variant="h5" sx={{ fontWeight: 700 }}>
-          Branches
-        </Typography>
-      </Box>
+      <PageHeader
+        icon={<BranchIcon />}
+        title="Branches"
+        subtitle="Your lab locations and their contact details"
+      />
 
-      <TextField
-        placeholder="Search by branch name or code..."
-        size="small"
+      {data && (
+        <StatStrip
+          items={[
+            { label: "Total branches", value: data.totalCount },
+            { label: "Active", value: activeCount, color: "#16A34A" },
+            { label: "Inactive", value: items.length - activeCount },
+          ]}
+        />
+      )}
+
+      <SearchBar
         value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        sx={{ width: "100%", maxWidth: 400 }}
-        slotProps={{
-          input: {
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon fontSize="small" />
-              </InputAdornment>
-            ),
-          },
-        }}
+        onChange={setSearch}
+        placeholder="Search by branch name or code..."
       />
 
       {isLoading && (
@@ -68,7 +51,7 @@ export default function BranchesPage() {
         </Box>
       )}
       {isError && <Alert severity="error">Failed to load branches.</Alert>}
-      {data && <BranchesTable branches={data.items} />}
+      {data && <BranchesTable branches={items} />}
     </Box>
   );
 }

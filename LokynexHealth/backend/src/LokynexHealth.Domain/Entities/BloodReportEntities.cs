@@ -54,6 +54,9 @@ public class ReportResult : BaseEntity
 public class LabReportSetting : BaseEntity
 {
     public Guid? BranchId { get; set; }
+
+    /// <summary>NULL = lab default pad; otherwise the pad used only for this department's reports.</summary>
+    public Guid? DepartmentId { get; set; }
     public bool UseLetterhead { get; set; } = true;
     public string? HeaderHtml { get; set; }
     public string? FooterHtml { get; set; }

@@ -7,7 +7,11 @@ using Microsoft.EntityFrameworkCore;
 namespace LokynexHealth.Application.BloodReports.Settings;
 
 // ---------------- GET ----------------
-public class GetLabReportSettingsQuery : IRequest<LabReportSettingDto> { }
+public class GetLabReportSettingsQuery : IRequest<LabReportSettingDto>
+{
+    /// <summary>NULL = lab default. Otherwise the pad of that department (falls back to the default).</summary>
+    public Guid? DepartmentId { get; set; }
+}
 
 public class GetLabReportSettingsQueryHandler : IRequestHandler<GetLabReportSettingsQuery, LabReportSettingDto>
 {
@@ -16,10 +20,21 @@ public class GetLabReportSettingsQueryHandler : IRequestHandler<GetLabReportSett
 
     public async Task<LabReportSettingDto> Handle(GetLabReportSettingsQuery request, CancellationToken ct)
     {
-        var s = await _db.LabReportSettings.AsNoTracking().FirstOrDefaultAsync(x => x.BranchId == null, ct);
-        if (s is null) return new LabReportSettingDto();
+        LabReportSetting? s = null;
+        var custom = false;
+        if (request.DepartmentId is Guid did)
+        {
+            s = await _db.LabReportSettings.AsNoTracking()
+                .FirstOrDefaultAsync(x => x.BranchId == null && x.DepartmentId == did, ct);
+            custom = s is not null;
+        }
+        s ??= await _db.LabReportSettings.AsNoTracking()
+            .FirstOrDefaultAsync(x => x.BranchId == null && x.DepartmentId == null, ct);
+        if (s is null) return new LabReportSettingDto { DepartmentId = request.DepartmentId };
         return new LabReportSettingDto
         {
+            DepartmentId = request.DepartmentId,
+            IsCustom = custom,
             UseLetterhead = s.UseLetterhead,
             HeaderHtml = s.HeaderHtml,
             FooterHtml = s.FooterHtml,
@@ -33,10 +48,49 @@ public class GetLabReportSettingsQueryHandler : IRequestHandler<GetLabReportSett
     }
 }
 
+// ---------------- LIST departments that have their own pad ----------------
+public class GetCustomPadDepartmentsQuery : IRequest<List<Guid>> { }
+
+public class GetCustomPadDepartmentsQueryHandler : IRequestHandler<GetCustomPadDepartmentsQuery, List<Guid>>
+{
+    private readonly IApplicationDbContext _db;
+    public GetCustomPadDepartmentsQueryHandler(IApplicationDbContext db) => _db = db;
+
+    public Task<List<Guid>> Handle(GetCustomPadDepartmentsQuery request, CancellationToken ct) =>
+        _db.LabReportSettings.AsNoTracking()
+            .Where(x => x.BranchId == null && x.DepartmentId != null)
+            .Select(x => x.DepartmentId!.Value)
+            .ToListAsync(ct);
+}
+
+// ---------------- DELETE (department goes back to the lab default pad) ----------------
+public class DeleteDepartmentPadCommand : IRequest
+{
+    public Guid DepartmentId { get; set; }
+}
+
+public class DeleteDepartmentPadCommandHandler : IRequestHandler<DeleteDepartmentPadCommand>
+{
+    private readonly IApplicationDbContext _db;
+    public DeleteDepartmentPadCommandHandler(IApplicationDbContext db) => _db = db;
+
+    public async Task Handle(DeleteDepartmentPadCommand request, CancellationToken ct)
+    {
+        var s = await _db.LabReportSettings
+            .FirstOrDefaultAsync(x => x.BranchId == null && x.DepartmentId == request.DepartmentId, ct);
+        if (s is null) return;
+        _db.LabReportSettings.Remove(s);
+        await _db.SaveChangesAsync(ct);
+    }
+}
+
 // ---------------- PUT ----------------
 public class SaveLabReportSettingsCommand : IRequest
 {
     public Guid? UpdatedBy { get; set; }
+
+    /// <summary>NULL = lab default pad, otherwise the pad of one department.</summary>
+    public Guid? DepartmentId { get; set; }
     public bool UseLetterhead { get; set; }
     public string? HeaderHtml { get; set; }
     public string? FooterHtml { get; set; }
@@ -71,10 +125,17 @@ public class SaveLabReportSettingsCommandHandler : IRequestHandler<SaveLabReport
     public async Task Handle(SaveLabReportSettingsCommand request, CancellationToken ct)
     {
         var now = DateTimeOffset.UtcNow;
-        var s = await _db.LabReportSettings.FirstOrDefaultAsync(x => x.BranchId == null, ct);
+        var s = await _db.LabReportSettings
+            .FirstOrDefaultAsync(x => x.BranchId == null && x.DepartmentId == request.DepartmentId, ct);
         if (s is null)
         {
-            s = new LabReportSetting { Id = Guid.NewGuid(), BranchId = null, CreatedAt = now };
+            s = new LabReportSetting
+            {
+                Id = Guid.NewGuid(),
+                BranchId = null,
+                DepartmentId = request.DepartmentId,
+                CreatedAt = now
+            };
             _db.LabReportSettings.Add(s);
         }
         else

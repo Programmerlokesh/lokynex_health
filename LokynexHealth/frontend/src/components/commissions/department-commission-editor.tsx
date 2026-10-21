@@ -1,5 +1,8 @@
 "use client";
 
+import { Avatar } from "@/components/common/page-kit";
+import { getDeptMeta } from "@/components/departments/department-meta";
+import { DeptIconBadge } from "@/components/departments/dept-icon-badge";
 import {
   useBulkSetCommissions,
   useEffectiveCommissions,
@@ -14,8 +17,13 @@ import {
 import { getApiErrorMessage } from "@/lib/api-error";
 import { formatMoney } from "@/lib/format";
 import { EffectiveCommissionDto } from "@/types/commission";
+import { DepartmentDto } from "@/types/department";
 import { LookupDto } from "@/types/lookup";
+import HandshakeOutlinedIcon from "@mui/icons-material/HandshakeOutlined";
+import MedicalServicesOutlinedIcon from "@mui/icons-material/MedicalServicesOutlined";
 import RestartAltIcon from "@mui/icons-material/RestartAlt";
+import ScienceOutlinedIcon from "@mui/icons-material/ScienceOutlined";
+import SearchIcon from "@mui/icons-material/Search";
 import {
   Alert,
   Autocomplete,
@@ -24,6 +32,7 @@ import {
   Chip,
   CircularProgress,
   IconButton,
+  InputAdornment,
   MenuItem,
   Paper,
   Table,
@@ -33,6 +42,8 @@ import {
   TableHead,
   TableRow,
   TextField,
+  ToggleButton,
+  ToggleButtonGroup,
   Tooltip,
   Typography,
 } from "@mui/material";
@@ -46,7 +57,7 @@ type Draft = { type: string; value: string } | { reset: true };
 
 const sameNumber = (a: string, b: number) => Number(a) === b;
 
-function CommissionTable({
+export function CommissionTable({
   entityType,
   entityId,
   departmentId,
@@ -58,6 +69,7 @@ function CommissionTable({
   rows: EffectiveCommissionDto[];
 }) {
   const [drafts, setDrafts] = useState<Record<string, Draft>>({});
+  const [testSearch, setTestSearch] = useState("");
   const [message, setMessage] = useState<{
     severity: "success" | "error";
     text: string;
@@ -149,6 +161,11 @@ function CommissionTable({
     );
   }
 
+  const q = testSearch.trim().toLowerCase();
+  const visibleRows = q
+    ? rows.filter((r) => r.testName.toLowerCase().includes(q))
+    : rows;
+
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
       {message && (
@@ -157,11 +174,32 @@ function CommissionTable({
         </Alert>
       )}
 
+      <TextField
+        size="small"
+        placeholder={`Search ${rows.length} tests...`}
+        value={testSearch}
+        onChange={(e) => setTestSearch(e.target.value)}
+        slotProps={{
+          input: {
+            startAdornment: (
+              <InputAdornment position="start">
+                <SearchIcon fontSize="small" />
+              </InputAdornment>
+            ),
+          },
+        }}
+        sx={{
+          maxWidth: 360,
+          "& .MuiOutlinedInput-root": { borderRadius: "12px" },
+        }}
+      />
+
       <TableContainer
         component={Paper}
-        sx={{ borderRadius: 3, boxShadow: "0 4px 16px rgba(23,43,77,0.06)" }}
+        variant="outlined"
+        sx={{ borderRadius: 3, maxHeight: { md: "48vh" }, overflow: "auto" }}
       >
-        <Table size="small">
+        <Table size="small" stickyHeader sx={{ minWidth: 640 }}>
           <TableHead>
             <TableRow sx={{ bgcolor: "action.hover" }}>
               <TableCell sx={{ fontWeight: 600 }}>Test</TableCell>
@@ -175,7 +213,18 @@ function CommissionTable({
             </TableRow>
           </TableHead>
           <TableBody>
-            {rows.map((row) => {
+            {visibleRows.length === 0 && (
+              <TableRow>
+                <TableCell
+                  colSpan={6}
+                  align="center"
+                  sx={{ py: 3, color: "text.secondary" }}
+                >
+                  No test matches “{testSearch}”.
+                </TableCell>
+              </TableRow>
+            )}
+            {visibleRows.map((row) => {
               const cur = shown(row);
               const isCustom = drafts[row.testId]
                 ? !cur.reset
@@ -275,18 +324,36 @@ function CommissionTable({
   );
 }
 
+const TYPE_META: Record<EntityType, { icon: React.ReactNode; color: string }> =
+  {
+    Doctor: {
+      icon: <MedicalServicesOutlinedIcon fontSize="small" />,
+      color: "#0EA5E9",
+    },
+    Referral: {
+      icon: <HandshakeOutlinedIcon fontSize="small" />,
+      color: "#7C3AED",
+    },
+    Technician: {
+      icon: <ScienceOutlinedIcon fontSize="small" />,
+      color: "#00BFA6",
+    },
+  };
+
+const fieldSx = { "& .MuiOutlinedInput-root": { borderRadius: "12px" } };
+
 /**
  * Commission Setup, step by step:
- *   1. choose Doctor / Referral / Technician and the person
- *   2. choose a department
- *   3. edit the commission of every test under it, then save once.
+ *   1. choose Doctor / Referral / Technician, then search the person
+ *   2. search / choose a department
+ *   3. edit the rate of every test under it, then save once.
  */
 export function DepartmentCommissionEditor() {
   const [entityType, setEntityType] = useState<EntityType>("Doctor");
   const [person, setPerson] = useState<LookupDto | null>(null);
   const [personInput, setPersonInput] = useState("");
   const debouncedInput = useDebounce(personInput, 300);
-  const [departmentId, setDepartmentId] = useState("");
+  const [department, setDepartment] = useState<DepartmentDto | null>(null);
 
   const { data: doctors } = useDoctors(
     entityType === "Doctor" ? debouncedInput : "",
@@ -309,6 +376,7 @@ export function DepartmentCommissionEditor() {
     [departments],
   );
 
+  const departmentId = department?.id ?? null;
   const {
     data: rows,
     isLoading,
@@ -316,57 +384,61 @@ export function DepartmentCommissionEditor() {
   } = useEffectiveCommissions({
     entityType,
     entityId: person?.id ?? null,
-    departmentId: departmentId || null,
+    departmentId,
   });
 
   return (
-    <Paper
-      variant="outlined"
-      sx={{
-        p: 2,
-        borderRadius: 3,
-        display: "flex",
-        flexDirection: "column",
-        gap: 2,
-      }}
-    >
-      <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
-        Update commission by department
-      </Typography>
-
-      <Box
-        sx={{
-          display: "grid",
-          gap: 1.5,
-          gridTemplateColumns: { xs: "1fr", md: "160px 1fr 1fr" },
-        }}
-      >
-        <TextField
-          select
+    <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+      {/* 1. who */}
+      <Box>
+        <Typography sx={{ fontWeight: 800, mb: 1 }}>
+          1. Who gets the commission?
+        </Typography>
+        <ToggleButtonGroup
+          exclusive
           size="small"
-          label="Commission for"
           value={entityType}
-          onChange={(e) => {
-            setEntityType(e.target.value as EntityType);
+          onChange={(_, v: EntityType | null) => {
+            if (!v) return;
+            setEntityType(v);
             setPerson(null);
             setPersonInput("");
           }}
+          sx={{ mb: 1.5, flexWrap: "wrap", gap: 0.75 }}
         >
           {ENTITY_TYPES.map((t) => (
-            <MenuItem key={t} value={t}>
+            <ToggleButton
+              key={t}
+              value={t}
+              sx={{
+                borderRadius: "999px !important",
+                border: "1px solid !important",
+                borderColor: "divider",
+                px: 1.75,
+                gap: 0.75,
+                fontWeight: 700,
+                textTransform: "none",
+                "&.Mui-selected": {
+                  bgcolor: TYPE_META[t].color,
+                  color: "#fff",
+                  "&:hover": { bgcolor: TYPE_META[t].color },
+                },
+              }}
+            >
+              {TYPE_META[t].icon}
               {t}
-            </MenuItem>
+            </ToggleButton>
           ))}
-        </TextField>
+        </ToggleButtonGroup>
 
         <Autocomplete
           key={entityType}
-          size="small"
           options={options}
           value={person}
           isOptionEqualToValue={(a, b) => a.id === b.id}
           getOptionLabel={(o) => o.fullName}
           filterOptions={entityType === "Technician" ? undefined : (o) => o}
+          noOptionsText={`No ${entityType.toLowerCase()} found`}
           onInputChange={(_, v, reason) => {
             if (reason === "input") setPersonInput(v);
           }}
@@ -374,9 +446,10 @@ export function DepartmentCommissionEditor() {
           renderOption={(props, o) => {
             const { key, ...rest } = props;
             return (
-              <Box component="li" key={key} {...rest}>
+              <Box component="li" key={key} {...rest} sx={{ gap: 1.25 }}>
+                <Avatar name={o.fullName} size={32} />
                 <Box sx={{ minWidth: 0 }}>
-                  <Typography variant="body2" noWrap>
+                  <Typography variant="body2" sx={{ fontWeight: 600 }} noWrap>
                     {o.fullName}
                   </Typography>
                   <Typography variant="caption" color="text.secondary" noWrap>
@@ -387,56 +460,102 @@ export function DepartmentCommissionEditor() {
               </Box>
             );
           }}
-          renderInput={(params) => <TextField {...params} label={entityType} />}
-        />
-
-        <TextField
-          select
-          size="small"
-          label="Department"
-          value={departmentId}
-          disabled={!person}
-          onChange={(e) => setDepartmentId(e.target.value)}
-          helperText={
-            !person ? `Select a ${entityType.toLowerCase()} first` : undefined
-          }
-        >
-          {activeDepartments.length === 0 && (
-            <MenuItem value="" disabled>
-              No departments available
-            </MenuItem>
+          renderInput={(params) => (
+            <TextField
+              {...params}
+              placeholder={`Search ${entityType.toLowerCase()} by name or phone...`}
+              sx={fieldSx}
+            />
           )}
-          {activeDepartments.map((d) => (
-            <MenuItem key={d.id} value={d.id}>
-              {d.name}
-            </MenuItem>
-          ))}
-        </TextField>
+        />
       </Box>
 
-      {!person || !departmentId ? (
-        <Typography variant="body2" color="text.secondary">
-          Pick a {entityType.toLowerCase()} and a department to see and edit the
-          commission of every test under it.
+      {/* 2. which department */}
+      <Box>
+        <Typography sx={{ fontWeight: 800, mb: 1 }}>
+          2. Which department?
         </Typography>
-      ) : isLoading ? (
-        <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
-          <CircularProgress size={26} />
-        </Box>
-      ) : isError ? (
-        <Alert severity="error">
-          Failed to load the tests of this department.
-        </Alert>
-      ) : (
-        <CommissionTable
-          // fresh draft state whenever the person / department changes
-          key={`${entityType}-${person.id}-${departmentId}`}
-          entityType={entityType}
-          entityId={person.id}
-          departmentId={departmentId}
-          rows={rows ?? []}
+        <Autocomplete
+          options={activeDepartments}
+          value={department}
+          disabled={!person}
+          isOptionEqualToValue={(a, b) => a.id === b.id}
+          getOptionLabel={(d) => d.name}
+          noOptionsText="No department found"
+          onChange={(_, v) => setDepartment(v)}
+          renderOption={(props, d) => {
+            const { key, ...rest } = props;
+            const meta = getDeptMeta(d.name);
+            return (
+              <Box component="li" key={key} {...rest} sx={{ gap: 1.25 }}>
+                <DeptIconBadge Icon={meta.Icon} color={meta.color} size={30} />
+                <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                  {d.name}
+                </Typography>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ ml: "auto" }}
+                >
+                  {d.testCount} tests
+                </Typography>
+              </Box>
+            );
+          }}
+          renderInput={(params) => (
+            <TextField
+              {...params}
+              placeholder={
+                person
+                  ? "Search department..."
+                  : `Select a ${entityType.toLowerCase()} first`
+              }
+              sx={fieldSx}
+            />
+          )}
         />
-      )}
-    </Paper>
+      </Box>
+
+      {/* 3. rates */}
+      <Box>
+        <Typography sx={{ fontWeight: 800, mb: 1 }}>
+          3. Tests and rates
+        </Typography>
+        {!person || !department ? (
+          <Box
+            sx={{
+              border: "1px dashed",
+              borderColor: "divider",
+              borderRadius: 3,
+              p: 3,
+              textAlign: "center",
+              color: "text.secondary",
+            }}
+          >
+            <Typography variant="body2">
+              Pick a {entityType.toLowerCase()} and a department to see every
+              test under it with its commission rate.
+            </Typography>
+          </Box>
+        ) : isLoading ? (
+          <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
+            <CircularProgress size={26} />
+          </Box>
+        ) : isError ? (
+          <Alert severity="error">
+            Failed to load the tests of this department.
+          </Alert>
+        ) : (
+          <CommissionTable
+            // fresh draft state whenever the person / department changes
+            key={`${entityType}-${person.id}-${department.id}`}
+            entityType={entityType}
+            entityId={person.id}
+            departmentId={department.id}
+            rows={rows ?? []}
+          />
+        )}
+      </Box>
+    </Box>
   );
 }

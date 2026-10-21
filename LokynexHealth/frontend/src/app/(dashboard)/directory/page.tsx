@@ -1,11 +1,11 @@
 "use client";
 
+import { PageHeader, SearchBar } from "@/components/common/page-kit";
 import { CreateDoctorDialog } from "@/components/directory/create-doctor-dialog";
 import { CreateReferralDialog } from "@/components/directory/create-referral-dialog";
 import { CreateTechnicianDialog } from "@/components/directory/create-technician-dialog";
 import { DirectoryTable } from "@/components/directory/directory-table";
 import { TeamIcon } from "@/components/icons/lab-icons";
-import { brand } from "@/components/providers/mui-theme-provider";
 import { useDebounce } from "@/hooks/use-debounce";
 import {
   useDoctorsList,
@@ -13,18 +13,17 @@ import {
   useTechniciansList,
 } from "@/hooks/use-directory";
 import { getApiErrorMessage } from "@/lib/api-error";
-import SearchIcon from "@mui/icons-material/Search";
-import {
-  Alert,
-  Box,
-  CircularProgress,
-  InputAdornment,
-  Tab,
-  Tabs,
-  TextField,
-  Typography,
-} from "@mui/material";
-import { useState } from "react";
+import HandshakeOutlinedIcon from "@mui/icons-material/HandshakeOutlined";
+import MedicalServicesOutlinedIcon from "@mui/icons-material/MedicalServicesOutlined";
+import ScienceOutlinedIcon from "@mui/icons-material/ScienceOutlined";
+import { Alert, Box, CircularProgress, Typography } from "@mui/material";
+import { ReactNode, useState } from "react";
+
+const TABS: { label: string; color: string; tint: string; icon: ReactNode }[] = [
+  { label: "Doctors", color: "#0EA5E9", tint: "#E0F2FE", icon: <MedicalServicesOutlinedIcon /> },
+  { label: "Referrals", color: "#7C3AED", tint: "#EDE9FE", icon: <HandshakeOutlinedIcon /> },
+  { label: "Technicians", color: "#00BFA6", tint: "#CCFBF1", icon: <ScienceOutlinedIcon /> },
+];
 
 export default function DirectoryPage() {
   const [tab, setTab] = useState(0);
@@ -36,66 +35,94 @@ export default function DirectoryPage() {
   const referrals = useReferralsList(tab === 1 ? debouncedSearch : "");
   const technicians = useTechniciansList(tab === 2 ? debouncedSearch : "");
 
-  const activeQuery = [doctors, referrals, technicians][tab];
+  const queries = [doctors, referrals, technicians];
+  const activeQuery = queries[tab];
+  const t = TABS[tab];
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}>
+      <PageHeader
+        icon={<TeamIcon />}
+        title="Doctor / Referral / Technician"
+        subtitle="People who refer patients or work in your lab"
+        actions={
+          tab === 0 ? (
+            <CreateDoctorDialog />
+          ) : tab === 1 ? (
+            <CreateReferralDialog />
+          ) : (
+            <CreateTechnicianDialog />
+          )
+        }
+      />
+
+      {/* three big switch cards, each shows its own count */}
       <Box
         sx={{
-          display: "flex",
-          alignItems: { xs: "stretch", sm: "center" },
-          flexDirection: { xs: "column", sm: "row" },
-          justifyContent: "space-between",
+          display: "grid",
+          gridTemplateColumns: { xs: "1fr", sm: "repeat(3, 1fr)" },
           gap: 1.5,
         }}
       >
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-          <Box
-            sx={{
-              bgcolor: "#E0F2FE",
-              color: brand.electricBlue,
-              p: 1,
-              borderRadius: 2,
-              display: "flex",
-            }}
-          >
-            <TeamIcon fontSize="small" />
-          </Box>
-          <Typography variant="h5" sx={{ fontWeight: 700 }}>
-            Doctor / Referral / Technician
-          </Typography>
-        </Box>
-        {tab === 0 && <CreateDoctorDialog />}
-        {tab === 1 && <CreateReferralDialog />}
-        {tab === 2 && <CreateTechnicianDialog />}
+        {TABS.map((x, i) => {
+          const on = i === tab;
+          const count = queries[i].data?.totalCount ?? queries[i].data?.items.length;
+          return (
+            <Box
+              key={x.label}
+              component="button"
+              type="button"
+              onClick={() => {
+                setTab(i);
+                setSearch("");
+              }}
+              sx={{
+                font: "inherit",
+                textAlign: "left",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                gap: 1.5,
+                p: 1.75,
+                borderRadius: "18px",
+                color: "text.primary",
+                bgcolor: on ? x.tint : "background.paper",
+                border: "2px solid",
+                borderColor: on ? x.color : "divider",
+                transition: "border-color .15s, background-color .15s",
+              }}
+            >
+              <Box
+                sx={{
+                  width: 42,
+                  height: 42,
+                  borderRadius: "12px",
+                  display: "grid",
+                  placeItems: "center",
+                  bgcolor: on ? x.color : x.tint,
+                  color: on ? "#fff" : x.color,
+                }}
+              >
+                {x.icon}
+              </Box>
+              <Box>
+                <Typography sx={{ fontWeight: 800, color: on ? "#172B4D" : undefined }}>
+                  {x.label}
+                </Typography>
+                <Typography sx={{ fontSize: 12.5, color: on ? "#475569" : "text.secondary" }}>
+                  {count !== undefined ? `${count} listed` : "—"}
+                </Typography>
+              </Box>
+            </Box>
+          );
+        })}
       </Box>
 
-      <Tabs
-        value={tab}
-        onChange={(_, v) => setTab(v)}
-        variant="scrollable"
-        allowScrollButtonsMobile
-      >
-        <Tab label="Doctors" />
-        <Tab label="Referrals" />
-        <Tab label="Technicians" />
-      </Tabs>
-
-      <TextField
-        placeholder="Search by name, email, or phone..."
-        size="small"
+      <SearchBar
         value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        sx={{ width: "100%", maxWidth: { sm: 380 } }}
-        slotProps={{
-          input: {
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon fontSize="small" />
-              </InputAdornment>
-            ),
-          },
-        }}
+        onChange={setSearch}
+        placeholder={`Search ${t.label.toLowerCase()} by name, email, or phone...`}
+        maxWidth={420}
       />
 
       {activeQuery.isLoading && (

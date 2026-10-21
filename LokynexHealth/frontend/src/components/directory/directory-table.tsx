@@ -1,6 +1,12 @@
 "use client";
 
 import {
+  Avatar,
+  EmptyState,
+  kitCardSx,
+  StatusPill,
+} from "@/components/common/page-kit";
+import {
   DIRECTORY_LABEL,
   DirectoryFormDialog,
 } from "@/components/directory/directory-form-dialog";
@@ -10,8 +16,12 @@ import {
 } from "@/hooks/use-directory";
 import { getApiErrorMessage } from "@/lib/api-error";
 import { DirectoryKind, DirectoryRecord } from "@/types/directory";
+import CallOutlinedIcon from "@mui/icons-material/CallOutlined";
 import DeleteOutlineIcon from "@mui/icons-material/Delete";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
+import MailOutlinedIcon from "@mui/icons-material/MailOutlined";
+import PlaceOutlinedIcon from "@mui/icons-material/PlaceOutlined";
+import WhatsAppIcon from "@mui/icons-material/WhatsApp";
 import {
   Alert,
   Box,
@@ -23,19 +33,11 @@ import {
   DialogContentText,
   DialogTitle,
   IconButton,
-  Paper,
   Snackbar,
   Switch,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
   Tooltip,
   Typography,
 } from "@mui/material";
-import { motion } from "framer-motion";
 import { memo, useCallback, useState } from "react";
 
 type RowHandlers = {
@@ -99,118 +101,93 @@ function RowActions({
   );
 }
 
-function StatusChip({ status }: { status: string }) {
-  return (
-    <Chip
-      label={status}
-      size="small"
-      color={status === "Active" ? "success" : "default"}
-      variant="outlined"
-    />
-  );
-}
-
-const DesktopRow = memo(function DesktopRow({
-  kind,
-  row,
-  index,
-  busy,
-  ...handlers
-}: RowProps) {
-  return (
-    <motion.tr
-      initial={{ opacity: 0, x: -8 }}
-      animate={{ opacity: 1, x: 0 }}
-      transition={{ duration: 0.2, delay: Math.min(index, 15) * 0.03 }}
-      style={{
-        display: "table-row",
-        opacity: row.status === "Active" ? 1 : 0.6,
-      }}
-    >
-      <TableCell sx={{ fontWeight: 500 }}>{row.fullName}</TableCell>
-      <TableCell>{row.phone}</TableCell>
-      <TableCell>{row.whatsappNumber ?? "—"}</TableCell>
-      <TableCell>{row.email ?? "—"}</TableCell>
-      {kind !== "referral" && <TableCell>{extraOf(kind, row)}</TableCell>}
-      <TableCell
-        sx={{
-          maxWidth: 200,
-          overflow: "hidden",
-          textOverflow: "ellipsis",
-          whiteSpace: "nowrap",
-        }}
-        title={row.address ?? undefined}
-      >
-        {row.address ?? "—"}
-      </TableCell>
-      <TableCell>
-        <StatusChip status={row.status} />
-      </TableCell>
-      <TableCell align="right">
-        <RowActions row={row} busy={busy} {...handlers} />
-      </TableCell>
-    </motion.tr>
-  );
-});
-
-const MobileCard = memo(function MobileCard({
+const DirectoryCard = memo(function DirectoryCard({
   kind,
   row,
   busy,
   ...handlers
 }: Omit<RowProps, "index">) {
   const extra = extraOf(kind, row);
-  const line = (label: string, value: string | null | undefined) =>
-    value ? (
-      <Typography
-        variant="body2"
-        color="text.secondary"
-        sx={{ wordBreak: "break-word" }}
-      >
-        <Box component="span" sx={{ fontWeight: 600, color: "text.primary" }}>
-          {label}:{" "}
-        </Box>
-        {value}
-      </Typography>
-    ) : null;
-
-  return (
-    <Paper
-      sx={{
-        p: 1.5,
-        borderRadius: 3,
-        boxShadow: "0 4px 16px rgba(23,43,77,0.06)",
-        opacity: row.status === "Active" ? 1 : 0.7,
-      }}
-    >
+  const active = row.status === "Active";
+  const info = (icon: React.ReactNode, text: string | null | undefined) =>
+    text ? (
       <Box
         sx={{
           display: "flex",
-          justifyContent: "space-between",
-          alignItems: "flex-start",
           gap: 1,
+          alignItems: "flex-start",
+          color: "text.secondary",
+          minWidth: 0,
         }}
       >
-        <Typography sx={{ fontWeight: 600, wordBreak: "break-word" }}>
-          {row.fullName}
+        <Box sx={{ display: "flex", mt: "2px" }}>{icon}</Box>
+        <Typography sx={{ fontSize: 13, wordBreak: "break-word" }}>
+          {text}
         </Typography>
-        <StatusChip status={row.status} />
       </Box>
+    ) : null;
+
+  return (
+    <Box
+      sx={{
+        ...kitCardSx,
+        p: 2,
+        display: "flex",
+        flexDirection: "column",
+        gap: 1.25,
+        opacity: active ? 1 : 0.72,
+      }}
+    >
+      <Box sx={{ display: "flex", gap: 1.5, alignItems: "center" }}>
+        <Avatar name={row.fullName} size={46} />
+        <Box sx={{ flex: 1, minWidth: 0 }}>
+          <Typography
+            sx={{
+              fontWeight: 800,
+              fontSize: 15.5,
+              lineHeight: 1.25,
+              wordBreak: "break-word",
+            }}
+          >
+            {row.fullName}
+          </Typography>
+          {extra && extra !== "—" && (
+            <Chip
+              label={extra}
+              size="small"
+              variant="outlined"
+              color={kind === "doctor" ? "primary" : "default"}
+              sx={{ mt: 0.5, maxWidth: "100%" }}
+            />
+          )}
+        </Box>
+        <StatusPill active={active} label={row.status} />
+      </Box>
+
+      <Box sx={{ display: "grid", gap: 0.6 }}>
+        {info(<CallOutlinedIcon sx={{ fontSize: 16 }} />, row.phone)}
+        {row.whatsappNumber &&
+          info(
+            <WhatsAppIcon sx={{ fontSize: 16, color: "#16A34A" }} />,
+            row.whatsappNumber,
+          )}
+        {info(<MailOutlinedIcon sx={{ fontSize: 16 }} />, row.email)}
+        {info(<PlaceOutlinedIcon sx={{ fontSize: 16 }} />, row.address)}
+      </Box>
+
       <Box
-        sx={{ mt: 0.5, display: "flex", flexDirection: "column", gap: 0.25 }}
+        sx={{
+          mt: "auto",
+          pt: 1,
+          borderTop: 1,
+          borderColor: "divider",
+          display: "flex",
+          justifyContent: "flex-end",
+        }}
       >
-        {line("Mobile", row.phone)}
-        {line("WhatsApp", row.whatsappNumber)}
-        {line("Email", row.email)}
-        {kind === "doctor" &&
-          line("Specialization", extra !== "—" ? extra : null)}
-        {kind === "technician" && line("Branch", extra)}
-        {line("Address", row.address)}
-      </Box>
-      <Box sx={{ mt: 1, display: "flex", justifyContent: "flex-end" }}>
         <RowActions row={row} busy={busy} {...handlers} />
       </Box>
-    </Paper>
+    </Box>
   );
 });
 
@@ -255,74 +232,26 @@ export function DirectoryTable({
   }
 
   if (rows.length === 0) {
-    return (
-      <Typography variant="body2" color="text.secondary">
-        No records found.
-      </Typography>
-    );
+    return <EmptyState text="No records found." />;
   }
 
   const busyId = status.isPending ? status.variables?.id : undefined;
 
   return (
     <>
-      {/* Desktop / tablet: table */}
-      <TableContainer
-        component={Paper}
-        sx={{
-          display: { xs: "none", md: "block" },
-          borderRadius: 3,
-          boxShadow: "0 4px 16px rgba(23,43,77,0.06)",
-          overflowX: "auto",
-        }}
-      >
-        <Table size="small" sx={{ minWidth: 900 }}>
-          <TableHead>
-            <TableRow sx={{ bgcolor: "action.hover" }}>
-              <TableCell sx={{ fontWeight: 600 }}>Name</TableCell>
-              <TableCell sx={{ fontWeight: 600 }}>Mobile</TableCell>
-              <TableCell sx={{ fontWeight: 600 }}>WhatsApp</TableCell>
-              <TableCell sx={{ fontWeight: 600 }}>Email</TableCell>
-              {kind === "doctor" && (
-                <TableCell sx={{ fontWeight: 600 }}>Specialization</TableCell>
-              )}
-              {kind === "technician" && (
-                <TableCell sx={{ fontWeight: 600 }}>Branch</TableCell>
-              )}
-              <TableCell sx={{ fontWeight: 600 }}>Address</TableCell>
-              <TableCell sx={{ fontWeight: 600 }}>Status</TableCell>
-              <TableCell sx={{ fontWeight: 600 }} align="right">
-                Actions
-              </TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {rows.map((row, i) => (
-              <DesktopRow
-                key={row.id}
-                kind={kind}
-                row={row}
-                index={i}
-                busy={busyId === row.id}
-                onEdit={onEdit}
-                onDelete={onDelete}
-                onToggle={onToggle}
-              />
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
-
-      {/* Phone: cards */}
       <Box
         sx={{
-          display: { xs: "flex", md: "none" },
-          flexDirection: "column",
-          gap: 1.5,
+          display: "grid",
+          gridTemplateColumns: {
+            xs: "1fr",
+            md: "repeat(2, 1fr)",
+            xl: "repeat(3, 1fr)",
+          },
+          gap: 2,
         }}
       >
         {rows.map((row) => (
-          <MobileCard
+          <DirectoryCard
             key={row.id}
             kind={kind}
             row={row}

@@ -21,6 +21,12 @@ public class BloodReportParameterDto
 
 public class LabReportSettingDto
 {
+    /// <summary>NULL = lab default pad.</summary>
+    public Guid? DepartmentId { get; set; }
+
+    /// <summary>True when this department has its own saved pad (false = it falls back to the lab default).</summary>
+    public bool IsCustom { get; set; }
+
     public bool UseLetterhead { get; set; } = true;
     public string? HeaderHtml { get; set; }
     public string? FooterHtml { get; set; }

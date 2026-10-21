@@ -463,8 +463,13 @@ CREATE TABLE IF NOT EXISTS lab_report_settings (
     created_at                  TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at                  TIMESTAMPTZ
 );
-CREATE UNIQUE INDEX IF NOT EXISTS uq_lab_report_settings_branch
-    ON lab_report_settings (COALESCE(branch_id, '00000000-0000-0000-0000-000000000000'::uuid));
+-- Per-department report pad (department_id NULL = lab default pad)
+ALTER TABLE lab_report_settings
+    ADD COLUMN IF NOT EXISTS department_id UUID REFERENCES departments(id) ON DELETE CASCADE;
+DROP INDEX IF EXISTS uq_lab_report_settings_branch;
+CREATE UNIQUE INDEX IF NOT EXISTS uq_lab_report_settings_branch_dept
+    ON lab_report_settings (COALESCE(branch_id, '00000000-0000-0000-0000-000000000000'::uuid),
+                            COALESCE(department_id, '00000000-0000-0000-0000-000000000000'::uuid));
 
 -- print / download / WhatsApp log
 CREATE TABLE IF NOT EXISTS report_deliveries (

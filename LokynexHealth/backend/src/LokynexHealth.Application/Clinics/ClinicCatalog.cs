@@ -25,6 +25,11 @@ public class ClinicPatientDto
     public string? Pincode { get; set; }
     public DateTimeOffset? LastVisitAt { get; set; }
     public int VisitCount { get; set; }
+    public DateTimeOffset CreatedAt { get; set; }
+
+    /// <summary>Who last edited the details by hand, and when (NULL = never edited).</summary>
+    public string? EditedByUsername { get; set; }
+    public DateTimeOffset? EditedAt { get; set; }
 }
 
 public class SearchClinicPatientsQuery : IRequest<PagedResult<ClinicPatientDto>>
@@ -88,7 +93,10 @@ public class SearchClinicPatientsQueryHandler : IRequestHandler<SearchClinicPati
                 Address = p.Address,
                 Pincode = p.Pincode,
                 LastVisitAt = p.LastVisitAt,
-                VisitCount = visits.GetValueOrDefault(p.Id)
+                VisitCount = visits.GetValueOrDefault(p.Id),
+                CreatedAt = p.CreatedAt,
+                EditedByUsername = p.EditedByUsername,
+                EditedAt = p.EditedAt
             }).ToList(),
             TotalCount = total,
             PageNumber = page,
@@ -146,9 +154,91 @@ public class GetClinicPatientHistoryQueryHandler : IRequestHandler<GetClinicPati
                 Address = p.Address,
                 Pincode = p.Pincode,
                 LastVisitAt = p.LastVisitAt,
-                VisitCount = list.Count
+                VisitCount = list.Count,
+                CreatedAt = p.CreatedAt,
+                EditedByUsername = p.EditedByUsername,
+                EditedAt = p.EditedAt
             },
             Prescriptions = list
+        };
+    }
+}
+
+// ---------- edit a patient by hand (records who + when) ----------
+public class UpdateClinicPatientCommand : IRequest<ClinicPatientDto>
+{
+    public Guid Id { get; set; }
+    public string Name { get; set; } = default!;
+    public int? Age { get; set; }
+    public string? Gender { get; set; }
+    public string Phone { get; set; } = default!;
+    public string? WhatsappNumber { get; set; }
+    public string? Email { get; set; }
+    public string? Address { get; set; }
+    public string? Pincode { get; set; }
+}
+
+public class UpdateClinicPatientCommandValidator : AbstractValidator<UpdateClinicPatientCommand>
+{
+    public UpdateClinicPatientCommandValidator()
+    {
+        RuleFor(x => x.Name).NotEmpty().MaximumLength(150);
+        RuleFor(x => x.Age).InclusiveBetween(0, 150).When(x => x.Age.HasValue);
+        RuleFor(x => x.Gender).MaximumLength(10);
+        RuleFor(x => x.Phone).RequiredMobile();
+        RuleFor(x => x.WhatsappNumber).OptionalMobile();
+        RuleFor(x => x.Email).MaximumLength(150);
+        RuleFor(x => x.Pincode).MaximumLength(10);
+    }
+}
+
+public class UpdateClinicPatientCommandHandler : IRequestHandler<UpdateClinicPatientCommand, ClinicPatientDto>
+{
+    private readonly IApplicationDbContext _db;
+    private readonly ICurrentUserService _user;
+    public UpdateClinicPatientCommandHandler(IApplicationDbContext db, ICurrentUserService user) { _db = db; _user = user; }
+
+    public async Task<ClinicPatientDto> Handle(UpdateClinicPatientCommand r, CancellationToken ct)
+    {
+        var cid = ClinicScope.Id(_user);
+        var p = await _db.ClinicPatients.FirstOrDefaultAsync(x => x.Id == r.Id && x.ClinicId == cid, ct)
+                ?? throw new NotFoundException("Patient", r.Id);
+
+        var phone = ClinicRules.Mobile(r.Phone)!;
+        var now = DateTimeOffset.UtcNow;
+
+        p.Name = r.Name.Trim();
+        p.Age = r.Age;
+        p.Gender = ClinicScope.Clean(r.Gender);
+        p.Phone = phone;
+        p.WhatsappNumber = ClinicRules.Mobile(r.WhatsappNumber) ?? phone;
+        p.Email = ClinicScope.Clean(r.Email);
+        p.Address = ClinicScope.Clean(r.Address);
+        p.Pincode = ClinicScope.Clean(r.Pincode);
+        p.UpdatedAt = now;
+        p.EditedAt = now;
+        p.EditedByUsername = _user.Username;
+
+        await _db.SaveChangesAsync(ct);
+
+        var visits = await _db.ClinicPrescriptions.AsNoTracking()
+            .CountAsync(x => x.ClinicId == cid && x.PatientId == p.Id, ct);
+        return new ClinicPatientDto
+        {
+            Id = p.Id,
+            Name = p.Name,
+            Age = p.Age,
+            Gender = p.Gender,
+            Phone = p.Phone,
+            WhatsappNumber = p.WhatsappNumber,
+            Email = p.Email,
+            Address = p.Address,
+            Pincode = p.Pincode,
+            LastVisitAt = p.LastVisitAt,
+            VisitCount = visits,
+            CreatedAt = p.CreatedAt,
+            EditedByUsername = p.EditedByUsername,
+            EditedAt = p.EditedAt
         };
     }
 }

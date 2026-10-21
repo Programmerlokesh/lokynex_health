@@ -1,101 +1,112 @@
 "use client";
 
-import { BranchDto } from "@/types/branch";
-import EditIcon from "@mui/icons-material/EditOutlined";
 import {
-  Chip,
-  IconButton,
-  Paper,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Typography,
-} from "@mui/material";
-import { motion } from "framer-motion";
+  Avatar,
+  EmptyState,
+  kitCardSx,
+  StatusPill,
+} from "@/components/common/page-kit";
+import { BranchDto } from "@/types/branch";
+import CallOutlinedIcon from "@mui/icons-material/CallOutlined";
+import EditIcon from "@mui/icons-material/EditOutlined";
+import MailOutlineIcon from "@mui/icons-material/MailOutlined";
+import PlaceOutlinedIcon from "@mui/icons-material/PlaceOutlined";
+import { Box, Chip, IconButton, Tooltip, Typography } from "@mui/material";
 import { useState } from "react";
 import { EditBranchDialog } from "./edit-branch-dialog";
+
+function Line({ icon, text }: { icon: React.ReactNode; text?: string | null }) {
+  return (
+    <Box
+      sx={{
+        display: "flex",
+        gap: 1,
+        alignItems: "flex-start",
+        color: "text.secondary",
+        fontSize: 13,
+        minWidth: 0,
+      }}
+    >
+      <Box sx={{ display: "flex", mt: "2px" }}>{icon}</Box>
+      <Typography sx={{ fontSize: 13, wordBreak: "break-word" }}>
+        {text || "—"}
+      </Typography>
+    </Box>
+  );
+}
 
 export function BranchesTable({ branches }: { branches: BranchDto[] }) {
   const [editing, setEditing] = useState<BranchDto | null>(null);
 
-  if (branches.length === 0) {
-    return (
-      <Typography variant="body2" color="text.secondary">
-        No branches found.
-      </Typography>
-    );
-  }
+  if (branches.length === 0) return <EmptyState text="No branches found." />;
 
   return (
     <>
-      <TableContainer
-        component={Paper}
-        sx={{ borderRadius: 3, boxShadow: "0 4px 16px rgba(23,43,77,0.06)" }}
+      <Box
+        sx={{
+          display: "grid",
+          gridTemplateColumns: {
+            xs: "1fr",
+            md: "repeat(2, 1fr)",
+            xl: "repeat(3, 1fr)",
+          },
+          gap: 2,
+        }}
       >
-        <Table>
-          <TableHead>
-            <TableRow sx={{ bgcolor: "action.hover" }}>
-              <TableCell sx={{ fontWeight: 600 }}>Branch Name</TableCell>
-              <TableCell sx={{ fontWeight: 600 }}>Code</TableCell>
-              <TableCell sx={{ fontWeight: 600 }}>Phone</TableCell>
-              <TableCell sx={{ fontWeight: 600 }}>Address</TableCell>
-              <TableCell sx={{ fontWeight: 600 }}>Status</TableCell>
-              <TableCell sx={{ fontWeight: 600 }} align="right">
-                Actions
-              </TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {branches.map((branch, i) => (
-              <motion.tr
-                key={branch.id}
-                initial={{ opacity: 0, x: -8 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.25, delay: i * 0.04 }}
-                style={{ display: "table-row" }}
-              >
-                <TableCell sx={{ fontWeight: 500 }}>
-                  {branch.branchName}
-                </TableCell>
-                <TableCell>
-                  <Chip
-                    label={branch.branchCode}
-                    size="small"
-                    variant="outlined"
-                  />
-                </TableCell>
-                <TableCell>{branch.branchPhone ?? "—"}</TableCell>
-                <TableCell
-                  sx={{
-                    maxWidth: 220,
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  {branch.branchAddress ?? "—"}
-                </TableCell>
-                <TableCell>
-                  <Chip
-                    label={branch.status}
-                    size="small"
-                    color={branch.status === "Active" ? "success" : "default"}
-                    variant="outlined"
-                  />
-                </TableCell>
-                <TableCell align="right">
-                  <IconButton size="small" onClick={() => setEditing(branch)}>
+        {branches.map((b) => {
+          const active = b.status === "Active";
+          return (
+            <Box
+              key={b.id}
+              sx={{
+                ...kitCardSx,
+                p: 2.25,
+                display: "flex",
+                flexDirection: "column",
+                gap: 1.5,
+                borderLeft: 4,
+                borderLeftColor: active ? "success.main" : "divider",
+              }}
+            >
+              <Box sx={{ display: "flex", gap: 1.5, alignItems: "center" }}>
+                <Avatar name={b.branchName} size={44} />
+                <Box sx={{ flex: 1, minWidth: 0 }}>
+                  <Typography
+                    sx={{ fontWeight: 800, fontSize: 16, lineHeight: 1.2 }}
+                    noWrap
+                  >
+                    {b.branchName}
+                  </Typography>
+                  <Box sx={{ display: "flex", gap: 0.75, mt: 0.5, flexWrap: "wrap" }}>
+                    <Chip label={b.branchCode} size="small" variant="outlined" />
+                    {b.isMain && (
+                      <Chip label="Main" size="small" color="primary" />
+                    )}
+                  </Box>
+                </Box>
+                <Tooltip title="Edit branch">
+                  <IconButton onClick={() => setEditing(b)}>
                     <EditIcon fontSize="small" />
                   </IconButton>
-                </TableCell>
-              </motion.tr>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
+                </Tooltip>
+              </Box>
+
+              <Box sx={{ display: "grid", gap: 0.75 }}>
+                <Line icon={<CallOutlinedIcon sx={{ fontSize: 16 }} />} text={b.branchPhone} />
+                <Line icon={<MailOutlineIcon sx={{ fontSize: 16 }} />} text={b.branchEmail} />
+                <Line
+                  icon={<PlaceOutlinedIcon sx={{ fontSize: 16 }} />}
+                  text={[b.branchAddress, b.branchPincode].filter(Boolean).join(" - ")}
+                />
+              </Box>
+
+              <Box>
+                <StatusPill active={active} label={b.status} />
+              </Box>
+            </Box>
+          );
+        })}
+      </Box>
 
       <EditBranchDialog
         key={editing?.id ?? "closed"}

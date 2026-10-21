@@ -1,64 +1,76 @@
 "use client";
 
 import { CommissionOverridesTable } from "@/components/commissions/commission-overrides-table";
-import { DepartmentCommissionEditor } from "@/components/commissions/department-commission-editor";
 import { SetCommissionOverrideDialog } from "@/components/commissions/set-commission-override-dialog";
+import { PageHeader, SearchBar } from "@/components/common/page-kit";
 import { CommissionIcon } from "@/components/icons/lab-icons";
-import { brand } from "@/components/providers/mui-theme-provider";
 import { useCommissionOverrides } from "@/hooks/use-commissions";
 import { Box, CircularProgress, Tab, Tabs, Typography } from "@mui/material";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 const TABS = ["All", "Doctor", "Referral", "Technician"] as const;
 
 export default function CommissionSetupPage() {
   const [tab, setTab] = useState(0);
+  const [search, setSearch] = useState("");
   const entityType = TABS[tab] === "All" ? "" : TABS[tab];
 
   const { data, isLoading } = useCommissionOverrides(entityType);
 
+  const rows = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    const all = data?.items ?? [];
+    return q
+      ? all.filter(
+          (r) =>
+            r.entityName.toLowerCase().includes(q) ||
+            r.testName.toLowerCase().includes(q),
+        )
+      : all;
+  }, [data, search]);
+
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}>
+      <PageHeader
+        icon={<CommissionIcon />}
+        tint="#EDE9FE"
+        color="#7C3AED"
+        title="Commission Setup"
+        subtitle="Custom per-test rates for a doctor, referral or technician. They win over the test's default commission."
+        actions={<SetCommissionOverrideDialog />}
+      />
+
       <Box
         sx={{
           display: "flex",
-          alignItems: "center",
+          alignItems: { xs: "stretch", md: "center" },
+          flexDirection: { xs: "column", md: "row" },
           justifyContent: "space-between",
-          flexWrap: "wrap",
           gap: 1.5,
         }}
       >
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-          <Box
-            sx={{
-              bgcolor: "#EDE9FE",
-              color: brand.purple,
-              p: 1,
-              borderRadius: 2,
-              display: "flex",
-            }}
-          >
-            <CommissionIcon fontSize="small" />
-          </Box>
-          <Typography variant="h5" sx={{ fontWeight: 700 }}>
-            Commission Setup
+        <Box>
+          <Typography variant="subtitle1" sx={{ fontWeight: 800 }}>
+            Custom commissions
+          </Typography>
+          <Typography variant="caption" color="text.secondary">
+            {data ? `${rows.length} shown` : ""}
           </Typography>
         </Box>
-        <SetCommissionOverrideDialog />
+        <SearchBar
+          value={search}
+          onChange={setSearch}
+          placeholder="Search by person or test..."
+          maxWidth={360}
+        />
       </Box>
 
-      <Typography variant="body2" color="text.secondary" sx={{ mt: -1.5 }}>
-        Per-test commission overrides for a specific doctor, referral, or
-        technician — takes precedence over the test&apos;s default commission.
-      </Typography>
-
-      <DepartmentCommissionEditor />
-
-      <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
-        All custom commissions
-      </Typography>
-
-      <Tabs value={tab} onChange={(_, v) => setTab(v)}>
+      <Tabs
+        value={tab}
+        onChange={(_, v) => setTab(v)}
+        variant="scrollable"
+        allowScrollButtonsMobile
+      >
         {TABS.map((t) => (
           <Tab key={t} label={t} />
         ))}
@@ -69,7 +81,7 @@ export default function CommissionSetupPage() {
           <CircularProgress size={28} />
         </Box>
       ) : (
-        <CommissionOverridesTable rows={data?.items ?? []} />
+        <CommissionOverridesTable rows={rows} />
       )}
     </Box>
   );

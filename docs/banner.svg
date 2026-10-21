@@ -1,0 +1,80 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 380" width="1280" height="380" role="img" aria-label="Lokynex Health - Precision lab management, built right.">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#071b4a"/>
+      <stop offset="0.55" stop-color="#0b4aa8"/>
+      <stop offset="1" stop-color="#0ea5e9"/>
+    </linearGradient>
+    <linearGradient id="liquid" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#67e8f9"/>
+      <stop offset="1" stop-color="#06b6d4"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.35" r="0.6">
+      <stop offset="0" stop-color="#22d3ee" stop-opacity="0.35"/>
+      <stop offset="1" stop-color="#22d3ee" stop-opacity="0"/>
+    </radialGradient>
+    <pattern id="dots" width="28" height="28" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="2" r="1.4" fill="#ffffff" fill-opacity="0.10"/>
+    </pattern>
+    <clipPath id="round"><rect width="1280" height="380" rx="24"/></clipPath>
+  </defs>
+
+  <g clip-path="url(#round)">
+    <rect width="1280" height="380" fill="url(#bg)"/>
+    <rect width="1280" height="380" fill="url(#dots)"/>
+    <ellipse cx="640" cy="120" rx="520" ry="220" fill="url(#glow)"/>
+
+    <!-- soft floating orbs -->
+    <circle cx="140" cy="300" r="120" fill="#ffffff" fill-opacity="0.05">
+      <animate attributeName="cy" values="300;270;300" dur="9s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="1160" cy="90" r="150" fill="#ffffff" fill-opacity="0.06">
+      <animate attributeName="cy" values="90;125;90" dur="11s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="1010" cy="330" r="70" fill="#22d3ee" fill-opacity="0.12">
+      <animate attributeName="cx" values="1010;1040;1010" dur="8s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="260" cy="70" r="46" fill="#22d3ee" fill-opacity="0.10">
+      <animate attributeName="cx" values="260;235;260" dur="10s" repeatCount="indefinite"/>
+    </circle>
+
+    <!-- flask icon -->
+    <g transform="translate(640 0)">
+      <path d="M-14 36 H14 M-11 36 V68 L-38 118 A10 10 0 0 0 -29 134 H29 A10 10 0 0 0 38 118 L11 68 V36"
+            fill="none" stroke="#ffffff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M-24 104 H24 L36 124 A6 6 0 0 1 31 130 H-31 A6 6 0 0 1 -36 124 Z" fill="url(#liquid)"/>
+      <circle cx="-6" cy="92" r="4" fill="#67e8f9">
+        <animate attributeName="cy" values="100;60;100" dur="3.2s" repeatCount="indefinite"/>
+        <animate attributeName="opacity" values="1;0;1" dur="3.2s" repeatCount="indefinite"/>
+      </circle>
+      <circle cx="8" cy="96" r="3" fill="#ffffff">
+        <animate attributeName="cy" values="104;56;104" dur="2.6s" repeatCount="indefinite"/>
+        <animate attributeName="opacity" values="0.9;0;0.9" dur="2.6s" repeatCount="indefinite"/>
+      </circle>
+    </g>
+
+    <!-- title -->
+    <text x="640" y="212" text-anchor="middle" fill="#ffffff"
+          font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="68" font-weight="800" letter-spacing="6">LOKYNEX HEALTH</text>
+
+    <text x="640" y="262" text-anchor="middle"
+          font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="30" font-weight="600" fill="#ffffff">
+      Precision lab management, <tspan fill="#22d3ee">built right.</tspan>
+    </text>
+
+    <text x="640" y="302" text-anchor="middle" fill="#dbeafe" fill-opacity="0.9"
+          font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="19" letter-spacing="1">
+      Multi-tenant SaaS for diagnostic labs &amp; doctor clinics
+    </text>
+
+    <!-- pills -->
+    <g font-family="'Segoe UI', 'Helvetica Neue', Arial, sans-serif" font-size="14" font-weight="600" fill="#ffffff" text-anchor="middle">
+      <rect x="418" y="326" width="132" height="30" rx="15" fill="#ffffff" fill-opacity="0.14" stroke="#ffffff" stroke-opacity="0.25"/>
+      <text x="484" y="346">Next.js 16</text>
+      <rect x="566" y="326" width="132" height="30" rx="15" fill="#ffffff" fill-opacity="0.14" stroke="#ffffff" stroke-opacity="0.25"/>
+      <text x="632" y="346">.NET 10</text>
+      <rect x="714" y="326" width="132" height="30" rx="15" fill="#ffffff" fill-opacity="0.14" stroke="#ffffff" stroke-opacity="0.25"/>
+      <text x="780" y="346">PostgreSQL</text>
+    </g>
+  </g>
+</svg>

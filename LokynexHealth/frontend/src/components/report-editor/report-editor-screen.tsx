@@ -74,6 +74,7 @@ export function ReportEditorScreen({ orderId, itemId, docId, type }: Props) {
   const [toast, setToast] = useState<Toast | null>(null);
   const [zoom, setZoom] = useState(1);
   const [showHF, setShowHF] = useState(true);
+  const [hfTouched, setHfTouched] = useState(false);
   const [spell, setSpell] = useState(true);
   const [tplOpen, setTplOpen] = useState(false);
   const [tplName, setTplName] = useState("");
@@ -264,6 +265,11 @@ export function ReportEditorScreen({ orderId, itemId, docId, type }: Props) {
   }
 
   const resetKey = docId ?? "new";
+  // A saved report with no header/footer (e.g. a Word file opened "as it is") has none, so those
+  // blocks stay hidden until the user turns them on from the toolbar.
+  const isUploaded = !!doc;
+  const hasHF = !!(doc?.headerContent?.trim() || doc?.footerContent?.trim());
+  const hfVisible = hfTouched ? showHF : isUploaded && !hasHF ? false : showHF;
   const saving = createDoc.isPending || updateDoc.isPending;
 
   return (
@@ -324,8 +330,11 @@ export function ReportEditorScreen({ orderId, itemId, docId, type }: Props) {
           snippets={def.snippets}
           zoom={zoom}
           onZoom={setZoom}
-          showHeaderFooter={showHF}
-          onToggleHeaderFooter={() => setShowHF((v) => !v)}
+          showHeaderFooter={hfVisible}
+          onToggleHeaderFooter={() => {
+            setShowHF(!hfVisible);
+            setHfTouched(true);
+          }}
           spellcheck={spell}
           onToggleSpellcheck={() => setSpell((v) => !v)}
           onSave={() => void save()}
@@ -360,7 +369,7 @@ export function ReportEditorScreen({ orderId, itemId, docId, type }: Props) {
               fontSize: 14,
             }}
           >
-            <Box sx={{ display: showHF ? "block" : "none" }}>
+            <Box sx={{ display: hfVisible ? "block" : "none" }}>
               <RichEditor
                 ref={headerRef}
                 ariaLabel="Report header"
@@ -388,7 +397,7 @@ export function ReportEditorScreen({ orderId, itemId, docId, type }: Props) {
               />
             </Box>
 
-            <Box sx={{ display: showHF ? "block" : "none" }}>
+            <Box sx={{ display: hfVisible ? "block" : "none" }}>
               <RichEditor
                 ref={footerRef}
                 ariaLabel="Report footer"

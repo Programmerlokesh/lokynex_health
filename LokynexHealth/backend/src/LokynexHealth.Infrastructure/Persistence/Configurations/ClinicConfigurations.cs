@@ -119,6 +119,7 @@ public class ClinicPatientConfiguration : IEntityTypeConfiguration<ClinicPatient
         b.Property(x => x.WhatsappNumber).HasMaxLength(20);
         b.Property(x => x.Email).HasMaxLength(150);
         b.Property(x => x.Pincode).HasMaxLength(10);
+        b.Property(x => x.EditedByUsername).HasMaxLength(100);
         b.HasIndex(x => new { x.ClinicId, x.Phone });
     }
 }

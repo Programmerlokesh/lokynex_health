@@ -139,11 +139,17 @@ public class GetPublicReportQueryHandler : IRequestHandler<GetPublicReportQuery,
             .ToListAsync(ct);
 
         Guid? branchId = order.Branch?.Id;
+        Guid? departmentId = item.Test.DepartmentId;
         var rows = await _db.LabReportSettings.AsNoTracking()
             .Where(s => s.BranchId == null || s.BranchId == branchId)
             .ToListAsync(ct);
-        var settings = (branchId is not null ? rows.FirstOrDefault(x => x.BranchId == branchId) : null)
-                       ?? rows.FirstOrDefault(x => x.BranchId == null);
+        var settings = (departmentId is not null
+                           ? rows.FirstOrDefault(x => x.BranchId == null && x.DepartmentId == departmentId)
+                           : null)
+                       ?? (branchId is not null
+                           ? rows.FirstOrDefault(x => x.BranchId == branchId && x.DepartmentId == null)
+                           : null)
+                       ?? rows.FirstOrDefault(x => x.BranchId == null && x.DepartmentId == null);
         if (settings is not null)
         {
             dto.PathologistName = settings.PathologistName;

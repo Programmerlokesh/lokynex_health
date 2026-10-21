@@ -1,5 +1,6 @@
 "use client";
 
+import { Avatar, EmptyState, kitCardSx, StatusPill } from "@/components/common/page-kit";
 import { EditUserDialog } from "@/components/users/edit-user-dialog";
 import { ResetPasswordDialog } from "@/components/users/reset-password-dialog";
 import { useDeleteUser, useToggleUserStatus } from "@/hooks/use-users";
@@ -11,6 +12,7 @@ import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import VpnKeyOutlinedIcon from "@mui/icons-material/VpnKeyOutlined";
 import {
   Alert,
+  Box,
   Button,
   Chip,
   Dialog,
@@ -45,11 +47,7 @@ export function UsersTable({ users }: { users: UserDto[] }) {
   const deleteUser = useDeleteUser();
 
   if (users.length === 0) {
-    return (
-      <Typography variant="body2" color="text.secondary">
-        No users found.
-      </Typography>
-    );
+    return <EmptyState text="No users found." />;
   }
 
   function handleConfirmDelete() {
@@ -65,18 +63,16 @@ export function UsersTable({ users }: { users: UserDto[] }) {
           table sideways instead of squeezing every column unreadably small. */}
       <TableContainer
         component={Paper}
-        sx={{ borderRadius: 3, boxShadow: 1, overflowX: "auto" }}
+        sx={{ ...kitCardSx, boxShadow: "0 6px 20px rgba(23,43,77,0.05)", overflowX: "auto" }}
       >
-        <Table sx={{ minWidth: 760 }}>
+        <Table sx={{ minWidth: 820 }}>
           <TableHead>
-            <TableRow sx={{ bgcolor: "action.hover" }}>
-              <TableCell sx={{ fontWeight: 600 }}>Name</TableCell>
-              <TableCell sx={{ fontWeight: 600 }}>Username</TableCell>
-              <TableCell sx={{ fontWeight: 600 }}>Email</TableCell>
-              <TableCell sx={{ fontWeight: 600 }}>Phone</TableCell>
-              <TableCell sx={{ fontWeight: 600 }}>Role</TableCell>
-              <TableCell sx={{ fontWeight: 600 }}>Branch</TableCell>
-              <TableCell sx={{ fontWeight: 600 }}>Status</TableCell>
+            <TableRow sx={{ bgcolor: "action.hover", "& th": { fontSize: 12.5, color: "text.secondary", borderBottom: 1, borderColor: "divider" } }}>
+              <TableCell sx={{ fontWeight: 700 }}>User</TableCell>
+              <TableCell sx={{ fontWeight: 700 }}>Contact</TableCell>
+              <TableCell sx={{ fontWeight: 700 }}>Role</TableCell>
+              <TableCell sx={{ fontWeight: 700 }}>Branch</TableCell>
+              <TableCell sx={{ fontWeight: 700 }}>Status</TableCell>
               <TableCell sx={{ fontWeight: 600 }} align="right">
                 Actions
               </TableCell>
@@ -93,19 +89,32 @@ export function UsersTable({ users }: { users: UserDto[] }) {
                   transition={{ duration: 0.25, delay: i * 0.04 }}
                   style={{ display: "table-row" }}
                 >
-                  <TableCell sx={{ fontWeight: 500 }}>{user.name}</TableCell>
-                  <TableCell>{user.username}</TableCell>
-                  <TableCell>{user.email}</TableCell>
-                  <TableCell>{user.phone}</TableCell>
-                  <TableCell>{user.roleName ?? "—"}</TableCell>
+                  <TableCell>
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1.25 }}>
+                      <Avatar name={user.name} />
+                      <Box sx={{ minWidth: 0 }}>
+                        <Typography sx={{ fontWeight: 700, fontSize: 14 }}>
+                          {user.name}
+                          {isSelf && (
+                            <Chip label="You" size="small" color="primary" sx={{ ml: 0.75, height: 18, fontSize: 11 }} />
+                          )}
+                        </Typography>
+                        <Typography sx={{ fontSize: 12, color: "text.secondary" }}>
+                          @{user.username}
+                        </Typography>
+                      </Box>
+                    </Box>
+                  </TableCell>
+                  <TableCell>
+                    <Typography sx={{ fontSize: 13 }}>{user.email}</Typography>
+                    <Typography sx={{ fontSize: 12, color: "text.secondary" }}>{user.phone}</Typography>
+                  </TableCell>
+                  <TableCell>
+                    <Chip label={user.roleName ?? "No role"} size="small" variant="outlined" />
+                  </TableCell>
                   <TableCell>{user.branchName ?? "—"}</TableCell>
                   <TableCell>
-                    <Chip
-                      label={user.status}
-                      size="small"
-                      color={user.status === "Active" ? "success" : "default"}
-                      variant="outlined"
-                    />
+                    <StatusPill active={user.status === "Active"} label={user.status} />
                   </TableCell>
                   <TableCell align="right" sx={{ whiteSpace: "nowrap" }}>
                     <Tooltip title="Edit">

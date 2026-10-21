@@ -21,10 +21,7 @@ import {
 } from "@/lib/blood-report/build-report";
 import { formatDateTime } from "@/lib/format";
 import { printHtml } from "@/lib/order-report";
-import { buildFieldMap, mergeFields } from "@/lib/report-editor/merge-fields";
 import {
-  buildFooterHtml,
-  buildHeaderHtml,
   detectModality,
   getModality,
   MODALITIES,
@@ -199,20 +196,24 @@ export default function OrderReportsPage() {
     setDocxBusy(true);
     try {
       const mammoth = await import("mammoth");
-      const result = await mammoth.convertToHtml({
-        arrayBuffer: await file.arrayBuffer(),
-      });
-      const fields = buildFieldMap(
-        order!,
-        activeItem!,
-        getModality(type).reportTitle,
+      // Keep the Word file exactly as it is: no lab header/footer is added.
+      const result = await mammoth.convertToHtml(
+        { arrayBuffer: await file.arrayBuffer() },
+        {
+          styleMap: [
+            "u => u",
+            "strike => s",
+            "p[style-name='Title'] => h2:fresh",
+            "p[style-name='Subtitle'] => h3:fresh",
+          ],
+        },
       );
       const res = await createDoc.mutateAsync({
         orderItemId: activeItem!.id,
         sourceType: "UploadedDocument",
-        headerContent: mergeFields(buildHeaderHtml(), fields),
+        headerContent: "",
         bodyContent: sanitizeHtml(result.value),
-        footerContent: mergeFields(buildFooterHtml(), fields),
+        footerContent: "",
       });
       router.push(`/reports/editor?docId=${res.id}&type=${type}`);
     } catch (e) {
