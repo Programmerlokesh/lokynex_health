@@ -15,9 +15,9 @@ import type {
   CreateClinicRequest,
 } from "@/types/clinic";
 import AddIcon from "@mui/icons-material/Add";
-import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
+import DeleteOutlineIcon from "@mui/icons-material/DeleteOutlined";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
-import KeyOutlinedIcon from "@mui/icons-material/KeyOutlined";
+import KeyOutlinedIcon from "@mui/icons-material/VpnKeyOutlined";
 import SearchIcon from "@mui/icons-material/Search";
 import {
   Alert,
